@@ -10,11 +10,13 @@ cd "$(dirname "$0")/../turtlebot3_ws"
 # Check if workspace is built
 if [ ! -d "install" ]; then
     echo "❌ Workspace not built! Building now..."
-    colcon build --packages-select warehouse_robot_system
+    cd ..
+    ./scripts/build_project.sh
     if [ $? -ne 0 ]; then
         echo "❌ Build failed!"
         exit 1
     fi
+    cd turtlebot3_ws
 fi
 
 source install/setup.bash

@@ -9,6 +9,15 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+# Fix library path conflicts with Anaconda
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+# Prioritize system libraries over Anaconda
+list(REMOVE_ITEM CMAKE_SYSTEM_PREFIX_PATH "/home/aryan/anaconda3")
+list(REMOVE_ITEM CMAKE_PREFIX_PATH "/home/aryan/anaconda3")
+
 # -------------------- Dependencies --------------------
 find_package(ament_cmake REQUIRED)
 
@@ -87,10 +96,16 @@ ament_target_dependencies(camera_red_detector
   image_transport
   cv_bridge
 )
-# Plain signature (no PRIVATE/PUBLIC keywords)
+# Link libraries with explicit system paths to avoid Anaconda conflicts
 target_link_libraries(camera_red_detector
   ${OpenCV_LIBS}
 )
+
+# Explicitly link system curl to resolve conflicts
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(CURL REQUIRED libcurl)
+target_link_libraries(camera_red_detector ${CURL_LIBRARIES})
+target_include_directories(camera_red_detector PRIVATE ${CURL_INCLUDE_DIRS})
 
 # Obstacles — Gazebo plugins
 set(OBSTACLE_LIBS obstacles obstacle1 obstacle2)

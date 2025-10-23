@@ -117,6 +117,18 @@ CWallFollowingController::eState CWallFollowingController::get_state() const
 // Compute velocity command based on current state and sensor data
 CWallFollowingController::SVelocityCommand CWallFollowingController::compute_velocity(double aDelta_time)
 {
+  // DISABLE WALL FOLLOWING FOR SLAM - Set to false to re-enable wall following
+  static const bool WALL_FOLLOWING_ENABLED = false;
+  
+  if (!WALL_FOLLOWING_ENABLED) {
+    SVelocityCommand sCmd;
+    sCmd.mLinear = 0.0;
+    sCmd.mAngular = 0.0;
+    RCLCPP_DEBUG_THROTTLE(node_->get_logger(), *node_->get_clock(), 5000,
+                          "Wall following disabled - robot ready for SLAM teleop control");
+    return sCmd;
+  }
+
   // Validate input
   if (aDelta_time <= 0.0)
   {

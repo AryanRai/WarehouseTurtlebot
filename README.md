@@ -19,6 +19,19 @@ This project implements a heterogeneous warehouse robot system using polymorphic
 
 ## 🚀 Quick Start
 
+### ⚡ Interactive Quick Start
+```bash
+# Interactive menu with all options
+./scripts/quick_start.sh
+```
+
+### 🛠️ First Time Setup
+```bash
+# Install dependencies and build
+./scripts/setup_dependencies.sh
+./scripts/build_project.sh
+```
+
 ### 🧪 Test Warehouse Robot System
 ```bash
 # Quick test of all components
@@ -47,7 +60,16 @@ This project implements a heterogeneous warehouse robot system using polymorphic
 
 | Script | Description |
 |--------|-------------|
+| `scripts/quick_start.sh` | Interactive menu for all project operations |
+| `scripts/setup_dependencies.sh` | Install system dependencies and configure environment |
+| `scripts/build_project.sh` | Build project with Anaconda conflict resolution |
 | `scripts/test_warehouse_system.sh` | Test warehouse robot system components |
+| `scripts/run_full_slam_demo.sh` | Complete SLAM demo with maze generation |
+| `scripts/run_slam_sim.sh` | SLAM simulation with RViz visualization |
+| `scripts/run_teleop.sh` | Manual robot control via keyboard |
+| `scripts/spawn_robot.sh` | Spawn TurtleBot3 in existing Gazebo simulation |
+
+See `scripts/README.md` for detailed documentation.
 | `scripts/run_full_slam_demo.sh` | Complete maze + SLAM demonstration |
 | `scripts/run_slam_sim.sh` | SLAM simulation with RViz visualization |
 | `scripts/run_teleop.sh` | Manual robot control via keyboard |
