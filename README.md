@@ -16,6 +16,7 @@ This project implements a heterogeneous warehouse robot system using polymorphic
 - **Autonomous Navigation** - Real-time mapping and path planning
 - **Dynamic Robot Management** - Runtime robot type switching
 - **ROS2 Integration** - Full compatibility with TurtleBot3 ecosystem
+- **Configurable Control** - Wall following disabled for SLAM operation
 
 ## 🚀 Quick Start
 

@@ -4,25 +4,12 @@ This folder contains utility scripts for running the warehouse robot system with
 
 ## Available Scripts
 
-### 🛠️ Setup & Build
-- **`setup_dependencies.sh`** - Install required system dependencies
-  - Installs TurtleBot3 and Cartographer packages
-  - Sets up environment variables
-  - Initializes git submodules
-  - Handles ROS2 package dependencies
-
+### 🛠️ Build
 - **`build_project.sh`** - Build the project with Anaconda conflict resolution
   - Temporarily removes Anaconda from build environment
   - Builds packages in correct order
   - Handles library path conflicts
   - Supports clean builds with `./scripts/build_project.sh clean`
-
-### 🏭 Warehouse Robot System Testing
-- **`test_warehouse_system.sh`** - Test the warehouse robot system components
-  - Tests SLAM module functionality
-  - Demonstrates polymorphic robot behavior
-  - Validates build and basic operations
-  - Auto-builds if needed
 
 ### 🤖 SLAM Simulation
 - **`run_slam_sim.sh`** - Complete SLAM simulation with RViz
@@ -43,46 +30,18 @@ This folder contains utility scripts for running the warehouse robot system with
   - Use w/x for linear velocity, a/d for angular velocity
   - Space/s for emergency stop
 
-### 🗺️ Full Demo
-- **`run_full_slam_demo.sh`** - Complete maze + SLAM demonstration
-  - Generates custom maze using Mgen
-  - Launches Gazebo with the maze
-  - Provides instructions for running SLAM simulation
-  - Multiple difficulty levels available
-
 ## Usage Examples
 
-### First Time Setup
+### Build the Project
 ```bash
-# 1. Install dependencies
-./scripts/setup_dependencies.sh
-
-# 2. Build the project
+# Build all packages
 ./scripts/build_project.sh
 
-# 3. Test the system
-./scripts/test_warehouse_system.sh
+# Clean build if needed
+./scripts/build_project.sh clean
 ```
 
-### Quick Test
-```bash
-# Test the warehouse robot system
-./scripts/test_warehouse_system.sh
-```
-
-### Full SLAM Demo
-```bash
-# Terminal 1: Generate maze and launch Gazebo
-./scripts/run_full_slam_demo.sh
-
-# Terminal 2: Start SLAM simulation
-./scripts/run_slam_sim.sh
-
-# Terminal 3: Control the robot
-./scripts/run_teleop.sh
-```
-
-### Manual Maze + SLAM
+### SLAM Simulation
 ```bash
 # Terminal 1: Generate and launch maze
 ./launch_mgen.sh
@@ -94,14 +53,10 @@ This folder contains utility scripts for running the warehouse robot system with
 ./scripts/run_teleop.sh
 ```
 
-### Build Issues (Anaconda Conflicts)
+### Manual Robot Control
 ```bash
-# If you get library conflicts, use the special build script
-./scripts/build_project.sh clean
-
-# Or deactivate conda first
-conda deactivate
-./scripts/build_project.sh
+# Start teleop control (requires Gazebo + robot spawned)
+./scripts/run_teleop.sh
 ```
 
 ## System Requirements
@@ -112,31 +67,23 @@ conda deactivate
 - Python 3 (for maze generation)
 - Built warehouse_robot_system package
 
-## Features Demonstrated
-
-### Polymorphic Robot System
-- Factory pattern for robot creation
-- Abstract base class with virtual methods
-- Specialized InspectionRobot and DeliveryRobot classes
-- Dynamic robot type switching capabilities
+## Features
 
 ### SLAM Integration
-- Frontier-based exploration using Expanding Wavefront Detection
-- A* pathfinding with cost maps
-- Grid-based occupancy map processing
-- Real-time coordinate transformations
-
-### ROS2 Integration
-- Proper message passing and topic communication
-- Integration with TurtleBot3 hardware interface
 - Cartographer SLAM for real-time mapping
 - RViz visualization for monitoring
+- Manual teleop control (wall following disabled)
+
+### Warehouse Robot System
+- Polymorphic robot design with factory pattern
+- Frontier-based exploration algorithms
+- A* pathfinding implementation
 
 ## Troubleshooting
 
 ### Build Issues
 ```bash
-# Use the special build script for Anaconda conflicts
+# Use the build script for Anaconda conflicts
 ./scripts/build_project.sh clean
 
 # Or manually in workspace
@@ -146,10 +93,7 @@ colcon build --packages-select warehouse_robot_system
 
 ### Missing Dependencies
 ```bash
-# Run the setup script
-./scripts/setup_dependencies.sh
-
-# Or install manually
+# Install TurtleBot3 packages
 sudo apt install ros-humble-turtlebot3*
 sudo apt install ros-humble-cartographer*
 sudo apt install libcurl4-openssl-dev
@@ -162,15 +106,6 @@ conda deactivate
 
 # Use the build script that handles conflicts
 ./scripts/build_project.sh
-
-# Or manually remove from environment
-export PATH=$(echo $PATH | tr ':' '\n' | grep -v anaconda3 | tr '\n' ':')
-```
-
-### Maze Generator Issues
-```bash
-# Initialize submodule
-git submodule update --init --recursive
 ```
 
 ### Gazebo Model Issues

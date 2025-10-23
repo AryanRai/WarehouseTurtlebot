@@ -69,6 +69,8 @@ class CWallFollowingController
      * @brief Compute velocity command based on current state and sensors
      * @param aDelta_time Time since last computation (seconds)
      * @return Velocity command for robot
+     * @note Wall following is currently DISABLED for SLAM operation.
+     *       Set WALL_FOLLOWING_ENABLED = true in compute_velocity() to re-enable.
      */
     SVelocityCommand compute_velocity(double aDelta_time);
     
