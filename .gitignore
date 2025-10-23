@@ -1,0 +1,61 @@
+# Build directories
+build/
+install/
+log/
+
+# ROS 2 / Colcon build artifacts
+**/build/
+**/install/
+**/log/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# Compiled binaries and libraries
+*.o
+*.so
+*.a
+*.exe
+*.dll
+*.dylib
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE and editor files
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/c_cpp_properties.json
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# ROS specific
+devel/
+.catkin_workspace
+
+# Gazebo logs
+*.log
+
+# Generated maze files (if not needed in repo)
+generated_mazes/
+
+# System files
+Thumbs.db
+.directory
