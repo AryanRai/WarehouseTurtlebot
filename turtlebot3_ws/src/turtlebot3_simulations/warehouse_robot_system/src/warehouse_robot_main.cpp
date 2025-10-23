@@ -1,6 +1,6 @@
-// MTRX3760 2025 Project 2: Warehouse Robot DevKit
+// MTRX3760 2025 Project 2: Warehouse Robot
 // File: warehouse_robot_main.cpp
-// Author(s): Dylan George
+// Author(s): Aryan Rai 
 //
 // Main entry point for the warehouse robot system
 

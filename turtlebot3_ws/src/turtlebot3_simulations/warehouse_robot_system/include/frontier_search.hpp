@@ -1,6 +1,6 @@
-// MTRX3760 2025 Project 2: Warehouse Robot DevKit
+// MTRX3760 2025 Project 2: Warehouse Robot 
 // File: frontier_search.hpp
-// Author(s): Dylan George
+// Author(s): Aryan Rai
 //
 // FrontierSearch class converted from Python reference for frontier detection
 

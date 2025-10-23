@@ -1,6 +1,6 @@
-// MTRX3760 2025 Project 2: Warehouse Robot DevKit
+// MTRX3760 2025 Project 2: Warehouse Robot 
 // File: path_planner.hpp
-// Author(s): Dylan George
+// Author(s): Aryan Rai
 //
 // PathPlanner class converted from Python reference for A* pathfinding
 

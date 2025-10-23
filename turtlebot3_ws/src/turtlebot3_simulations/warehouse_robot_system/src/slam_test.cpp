@@ -1,6 +1,6 @@
-// MTRX3760 2025 Project 2: Warehouse Robot DevKit
+// MTRX3760 2025 Project 2: Warehouse Robot 
 // File: slam_test.cpp
-// Author(s): Dylan George
+// Author(s): Aryan Rai
 //
 // Simple test for SLAM module functionality
 

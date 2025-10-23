@@ -12,12 +12,12 @@ This folder contains utility scripts for running the warehouse robot system with
   - Supports clean builds with `./scripts/build_project.sh clean`
 
 ### 🤖 SLAM Simulation
-- **`run_slam_sim.sh`** - Complete SLAM simulation with RViz
-  - Launches RViz for visualization
-  - Spawns TurtleBot3 in simulation
-  - Starts SLAM (Cartographer) mapping
-  - Runs warehouse robot system
-  - Provides real-time status monitoring
+- **`run_autonomous_slam.sh`** - Autonomous SLAM with frontier exploration
+  - Complete autonomous mapping system
+  - Frontier detection and exploration
+  - A* path planning and navigation
+  - Returns to origin when mapping complete
+  - Transitions to operational mode
 
 - **`spawn_robot.sh`** - Spawn TurtleBot3 in existing Gazebo simulation
   - Spawns robot at specified coordinates
@@ -30,6 +30,25 @@ This folder contains utility scripts for running the warehouse robot system with
   - Use w/x for linear velocity, a/d for angular velocity
   - Space/s for emergency stop
 
+### 🛑 Cleanup & Kill Scripts
+- **`kill_all_ros.sh`** - Comprehensive ROS2 process cleanup
+  - Graceful shutdown of all ROS2 nodes
+  - Kills Gazebo, RViz, and related processes
+  - Cleans up shared memory and temporary files
+  - Shows summary of remaining processes
+
+- **`kill_ros_force.sh`** - Force kill all ROS processes
+  - Aggressive immediate termination
+  - Use when normal shutdown fails
+  - Nuclear option for stuck processes
+
+### 🔍 Diagnostics
+- **`diagnose_ros.sh`** - Comprehensive ROS2 system diagnostics
+  - Checks running nodes and topics
+  - Validates transforms and message rates
+  - Identifies common issues
+  - Provides troubleshooting recommendations
+
 ## Usage Examples
 
 ### Build the Project
@@ -41,22 +60,32 @@ This folder contains utility scripts for running the warehouse robot system with
 ./scripts/build_project.sh clean
 ```
 
-### SLAM Simulation
+### Autonomous SLAM
 ```bash
 # Terminal 1: Generate and launch maze
 ./launch_mgen.sh
 
-# Terminal 2: Run SLAM simulation
-./scripts/run_slam_sim.sh
-
-# Terminal 3: Control robot
-./scripts/run_teleop.sh
+# Terminal 2: Run autonomous SLAM
+./scripts/run_autonomous_slam.sh
+# Robot explores automatically using frontier detection
 ```
 
 ### Manual Robot Control
 ```bash
 # Start teleop control (requires Gazebo + robot spawned)
 ./scripts/run_teleop.sh
+```
+
+### Emergency Cleanup
+```bash
+# Graceful cleanup of all ROS processes
+./scripts/kill_all_ros.sh
+
+# Force kill everything (when things are stuck)
+./scripts/kill_ros_force.sh
+
+# Diagnose issues
+./scripts/diagnose_ros.sh
 ```
 
 ## System Requirements
@@ -69,15 +98,18 @@ This folder contains utility scripts for running the warehouse robot system with
 
 ## Features
 
-### SLAM Integration
+### Autonomous SLAM System
+- Fully autonomous frontier-based exploration
+- High-level state machine (MAPPING → OPERATIONAL)
+- A* pathfinding with obstacle avoidance
+- Returns to origin when mapping complete
 - Cartographer SLAM for real-time mapping
 - RViz visualization for monitoring
-- Manual teleop control (wall following disabled)
 
 ### Warehouse Robot System
 - Polymorphic robot design with factory pattern
-- Frontier-based exploration algorithms
-- A* pathfinding implementation
+- Integration with autonomous SLAM
+- Factory pattern for robot creation
 
 ## Troubleshooting
 
@@ -106,6 +138,15 @@ conda deactivate
 
 # Use the build script that handles conflicts
 ./scripts/build_project.sh
+```
+
+### Stuck Processes
+```bash
+# When ROS nodes won't stop normally
+./scripts/kill_all_ros.sh
+
+# When everything is completely stuck
+./scripts/kill_ros_force.sh
 ```
 
 ### Gazebo Model Issues

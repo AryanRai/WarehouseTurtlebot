@@ -1,6 +1,6 @@
-// MTRX3760 2025 Project 2: Warehouse Robot DevKit
+// MTRX3760 2025 Project 2: Warehouse Robot 
 // File: slam_types.hpp
-// Author(s): Dylan George
+// Author(s): Aryan Rai
 //
 // SLAM data structures and types converted from Python reference
 

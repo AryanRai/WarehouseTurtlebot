@@ -1,6 +1,6 @@
-// MTRX3760 2025 Project 2: Warehouse Robot DevKit
+// MTRX3760 2025 Project 2: Warehouse Robot 
 // File: path_planner.cpp
-// Author(s): Dylan George
+// Author(s): Aryan Rai
 //
 // PathPlanner implementation converted from Python reference
 
@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <iostream>
 #include <map>
+#include <set>
 
 namespace slam {
 
@@ -154,16 +155,68 @@ nav_msgs::msg::Path PathPlanner::pathToMessage(
     return path_msg;
 }
 
-// C-space calculation (minimal implementation)
+// C-space calculation (OpenCV-based implementation)
 std::pair<nav_msgs::msg::OccupancyGrid, std::vector<GridCell>> PathPlanner::calcCspace(
     const nav_msgs::msg::OccupancyGrid& mapdata,
     bool include_cells) {
     
-    nav_msgs::msg::OccupancyGrid cspace = mapdata; // Copy original
-    std::vector<GridCell> cspace_cells;
+    const int PADDING = 5; // Number of cells around obstacles
     
-    // TODO: Implement C-space inflation using OpenCV
-    std::cout << "C-space calculation - TODO: Implement OpenCV-based inflation" << std::endl;
+    int width = mapdata.info.width;
+    int height = mapdata.info.height;
+    
+    // Create OpenCV Mat from mapdata
+    cv::Mat map(height, width, CV_8UC1);
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int idx = y * width + x;
+            int8_t value = mapdata.data[idx];
+            // Convert -1 (unknown) to 255, keep others as is
+            map.at<uint8_t>(y, x) = (value == -1) ? 255 : static_cast<uint8_t>(value);
+        }
+    }
+    
+    // Get mask of unknown areas (-1 becomes 255)
+    cv::Mat unknown_area_mask;
+    cv::inRange(map, 255, 255, unknown_area_mask);
+    
+    // Erode unknown areas
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(PADDING, PADDING));
+    cv::erode(unknown_area_mask, unknown_area_mask, kernel, cv::Point(-1, -1), 1);
+    
+    // Change unknown areas to free space for processing
+    map.setTo(0, map == 255);
+    
+    // Inflate obstacles
+    cv::Mat obstacle_mask;
+    cv::dilate(map, obstacle_mask, kernel, cv::Point(-1, -1), 1);
+    
+    // Combine obstacle mask with unknown areas
+    cv::Mat cspace_mat;
+    cv::bitwise_or(obstacle_mask, unknown_area_mask, cspace_mat);
+    
+    // Create output occupancy grid
+    nav_msgs::msg::OccupancyGrid cspace = mapdata; // Copy header and info
+    cspace.data.resize(width * height);
+    
+    // Convert back to occupancy grid format
+    std::vector<GridCell> cspace_cells;
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int idx = y * width + x;
+            uint8_t value = cspace_mat.at<uint8_t>(y, x);
+            
+            // Convert back: 255 -> -1 (unknown), others stay as is
+            cspace.data[idx] = (value == 255) ? -1 : static_cast<int8_t>(value);
+            
+            // Collect cells that were added for debugging
+            if (include_cells && obstacle_mask.at<uint8_t>(y, x) > 0) {
+                cspace_cells.push_back({x, y});
+            }
+        }
+    }
+    
+    std::cout << "C-space calculation complete. Added " << cspace_cells.size() << " inflated cells." << std::endl;
     
     return {cspace, cspace_cells};
 }
@@ -249,8 +302,76 @@ PathPlanner::aStar(
     std::cout << "A* pathfinding from (" << start.first << "," << start.second 
               << ") to (" << goal.first << "," << goal.second << ")" << std::endl;
     
-    // TODO: Implement full A* algorithm
-    // For now, return empty result
+    // Check if start and goal are valid
+    if (!isCellInBounds(mapdata, start) || !isCellInBounds(mapdata, goal)) {
+        std::cout << "Start or goal out of bounds" << std::endl;
+        return {std::nullopt, std::nullopt, start, goal};
+    }
+    
+    if (!isCellWalkable(mapdata, start) || !isCellWalkable(mapdata, goal)) {
+        std::cout << "Start or goal not walkable" << std::endl;
+        return {std::nullopt, std::nullopt, start, goal};
+    }
+    
+    // A* algorithm implementation
+    PriorityQueue open_set;
+    std::map<GridCell, double> g_score;
+    std::map<GridCell, double> f_score;
+    std::map<GridCell, GridCell> came_from;
+    std::set<GridCell> closed_set;
+    
+    // Initialize scores
+    g_score[start] = 0.0;
+    f_score[start] = euclideanDistance(start, goal);
+    open_set.put(start, f_score[start]);
+    
+    while (!open_set.empty()) {
+        GridCell current = open_set.get();
+        
+        if (current == goal) {
+            // Reconstruct path
+            std::vector<GridCell> path;
+            GridCell node = goal;
+            double total_cost = g_score[goal];
+            
+            while (came_from.find(node) != came_from.end()) {
+                path.push_back(node);
+                node = came_from[node];
+            }
+            path.push_back(start);
+            
+            std::reverse(path.begin(), path.end());
+            std::cout << "A* found path with " << path.size() << " nodes, cost: " << total_cost << std::endl;
+            return {path, total_cost, start, goal};
+        }
+        
+        closed_set.insert(current);
+        
+        // Check all neighbors
+        auto neighbors = neighborsOf8(mapdata, current, true);
+        for (const auto& neighbor : neighbors) {
+            if (closed_set.find(neighbor) != closed_set.end()) {
+                continue;
+            }
+            
+            double tentative_g = g_score[current] + euclideanDistance(current, neighbor);
+            
+            // Add cost map penalty if available
+            if (!cost_map.empty() && neighbor.second < cost_map.rows && neighbor.first < cost_map.cols) {
+                tentative_g += cost_map.at<uint8_t>(neighbor.second, neighbor.first) * 0.01;
+            }
+            
+            if (g_score.find(neighbor) == g_score.end() || tentative_g < g_score[neighbor]) {
+                came_from[neighbor] = current;
+                g_score[neighbor] = tentative_g;
+                f_score[neighbor] = tentative_g + euclideanDistance(neighbor, goal);
+                
+                open_set.put(neighbor, f_score[neighbor]);
+            }
+        }
+    }
+    
+    std::cout << "A* failed to find path" << std::endl;
     return {std::nullopt, std::nullopt, start, goal};
 }
 

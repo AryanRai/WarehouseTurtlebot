@@ -11,32 +11,33 @@ This project implements a heterogeneous warehouse robot system using polymorphic
 - **Delivery Robot** - LiDAR + Odometry for package delivery (no camera)
 
 ### Key Features
+- **Autonomous SLAM** - Fully autonomous frontier-based exploration and mapping
+- **High-Level State Machine** - MAPPING → RETURNING_HOME → OPERATIONAL modes
 - **Polymorphic Design** - Factory pattern with abstract base classes
-- **SLAM Integration** - Frontier-based exploration with A* pathfinding
-- **Autonomous Navigation** - Real-time mapping and path planning
+- **Advanced Navigation** - A* pathfinding with pure pursuit control
+- **Frontier Detection** - Expanding wavefront algorithm for unexplored areas
 - **Dynamic Robot Management** - Runtime robot type switching
 - **ROS2 Integration** - Full compatibility with TurtleBot3 ecosystem
-- **Configurable Control** - Wall following disabled for SLAM operation
 
 ## 🚀 Quick Start
 
-### ⚡ Interactive Quick Start
+### 🤖 Autonomous SLAM (Recommended)
 ```bash
-# Interactive menu with all options
-./scripts/quick_start.sh
-```
-
-### 🛠️ First Time Setup
-```bash
-# Install dependencies and build
-./scripts/setup_dependencies.sh
+# Build the project
 ./scripts/build_project.sh
+
+# Terminal 1: Generate maze and launch Gazebo
+./launch_mgen.sh
+
+# Terminal 2: Run fully autonomous SLAM
+./scripts/run_autonomous_slam.sh
+# Robot explores automatically - no manual control needed!
 ```
 
-### 🧪 Test Warehouse Robot System
+### 🛠️ Build Only
 ```bash
-# Quick test of all components
-./scripts/test_warehouse_system.sh
+# Build all packages
+./scripts/build_project.sh
 ```
 
 ### 🚀 Full SLAM Demo (Recommended)
@@ -61,14 +62,12 @@ This project implements a heterogeneous warehouse robot system using polymorphic
 
 | Script | Description |
 |--------|-------------|
-| `scripts/quick_start.sh` | Interactive menu for all project operations |
-| `scripts/setup_dependencies.sh` | Install system dependencies and configure environment |
+| `scripts/run_autonomous_slam.sh` | **Fully autonomous SLAM with frontier exploration** |
 | `scripts/build_project.sh` | Build project with Anaconda conflict resolution |
-| `scripts/test_warehouse_system.sh` | Test warehouse robot system components |
-| `scripts/run_full_slam_demo.sh` | Complete SLAM demo with maze generation |
-| `scripts/run_slam_sim.sh` | SLAM simulation with RViz visualization |
 | `scripts/run_teleop.sh` | Manual robot control via keyboard |
 | `scripts/spawn_robot.sh` | Spawn TurtleBot3 in existing Gazebo simulation |
+| `scripts/kill_all_ros.sh` | Clean shutdown of all ROS processes |
+| `scripts/diagnose_ros.sh` | Diagnostic tool for troubleshooting |
 
 See `scripts/README.md` for detailed documentation.
 | `scripts/run_full_slam_demo.sh` | Complete maze + SLAM demonstration |

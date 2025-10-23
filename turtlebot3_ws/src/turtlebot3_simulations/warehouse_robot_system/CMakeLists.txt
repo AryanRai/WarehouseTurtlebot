@@ -18,6 +18,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 
 # OpenCV for image processing and SLAM
 find_package(OpenCV REQUIRED)
@@ -48,9 +49,36 @@ ament_target_dependencies(slam_module
   nav_msgs
   tf2
   tf2_ros
+  tf2_geometry_msgs
 )
 
 target_link_libraries(slam_module
+  ${OpenCV_LIBS}
+)
+
+# -------------------- Autonomous SLAM Library --------------------
+add_library(autonomous_slam_lib
+  src/autonomous_slam_controller.cpp
+)
+
+target_include_directories(autonomous_slam_lib PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
+ament_target_dependencies(autonomous_slam_lib
+  rclcpp
+  std_msgs
+  geometry_msgs
+  sensor_msgs
+  nav_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+)
+
+target_link_libraries(autonomous_slam_lib
+  slam_module
   ${OpenCV_LIBS}
 )
 
@@ -107,12 +135,27 @@ ament_target_dependencies(slam_test
   nav_msgs
 )
 
+# Autonomous SLAM executable
+add_executable(autonomous_slam_main
+  src/autonomous_slam_main.cpp
+)
+
+target_link_libraries(autonomous_slam_main
+  autonomous_slam_lib
+)
+
+ament_target_dependencies(autonomous_slam_main
+  rclcpp
+)
+
 # -------------------- Install --------------------
 install(TARGETS
   slam_module
+  autonomous_slam_lib
   ${PROJECT_NAME}_lib
   warehouse_robot_main
   slam_test
+  autonomous_slam_main
   DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -132,6 +175,7 @@ ament_export_dependencies(
   nav_msgs
   tf2
   tf2_ros
+  tf2_geometry_msgs
   OpenCV
 )
 

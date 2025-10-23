@@ -1,6 +1,6 @@
-// MTRX3760 2025 Project 2: Warehouse Robot DevKit
+// MTRX3760 2025 Project 2: Warehouse Robot 
 // File: warehouse_robot_system.cpp
-// Author(s): Dylan George
+// Author(s): Aryan Rai
 //
 // Implementation file for polymorphic warehouse robot system
 
