@@ -467,10 +467,12 @@ bool AutonomousSlamController::planPathToGoal(const geometry_msgs::msg::Point& g
     // Calculate C-space (inflated obstacles for safe navigation)
     auto [cspace, cspace_cells] = PathPlanner::calcCspace(*current_map_, false);
     
-    // Plan path using A* with C-space (NOT original map!)
+    // Calculate cost map (prefers middle of hallways, avoids walls)
+    cv::Mat cost_map = PathPlanner::calcCostMap(*current_map_);
+    
+    // Plan path using A* with C-space AND cost map
     auto [path, cost, actual_start, actual_goal] = 
-        PathPlanner::aStar(cspace, cv::Mat(), start, goal_cell);
-                          //^^^^^ Use C-space instead of current_map_!
+        PathPlanner::aStar(cspace, cost_map, start, goal_cell);
 
     if (!path.has_value() || path->empty()) {
         return false;

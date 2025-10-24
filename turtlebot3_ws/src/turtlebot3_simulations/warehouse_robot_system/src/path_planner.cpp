@@ -160,18 +160,15 @@ std::pair<nav_msgs::msg::OccupancyGrid, std::vector<GridCell>> PathPlanner::calc
     const nav_msgs::msg::OccupancyGrid& mapdata,
     bool include_cells) {
     
-    const int PADDING = 2; // Number of cells around obstacles (conservative for tight spaces)
-    
+    // C-space padding disabled - using cost map instead for soft constraints
     int width = mapdata.info.width;
     int height = mapdata.info.height;
     
-    // For now, just return the original map as C-space
-    // The padding was causing too many path failures
-    // TODO: Implement proper C-space with dynamic padding based on environment
+    // Return original map as C-space (no inflation)
     nav_msgs::msg::OccupancyGrid cspace = mapdata;
     std::vector<GridCell> cspace_cells;
     
-    std::cout << "C-space calculation complete. Using original map (padding disabled for stability)." << std::endl;
+    std::cout << "C-space: Using original map (no padding - relying on cost map for wall avoidance)." << std::endl;
     
     return {cspace, cspace_cells};
 }
@@ -215,7 +212,7 @@ cv::Mat PathPlanner::calcCostMap(const nav_msgs::msg::OccupancyGrid& mapdata) {
         
         // Assign cost to outline cells
         cv::Mat cost_layer = cv::Mat::zeros(height, width, CV_8UC1);
-        cost_layer.setTo(iterations, difference > 0);
+        cost_layer.setTo(cv::Scalar(iterations), difference > 0);
         
         // Add to cost map
         cv::bitwise_or(cost_map, cost_layer, cost_map);
@@ -242,7 +239,7 @@ cv::Mat PathPlanner::calcCostMap(const nav_msgs::msg::OccupancyGrid& mapdata) {
         cv::subtract(next_dilated_map, dilated_map, difference);
         
         cv::Mat cost_layer = cv::Mat::zeros(height, width, CV_8UC1);
-        cost_layer.setTo(cost, difference > 0);
+        cost_layer.setTo(cv::Scalar(cost), difference > 0);
         
         cv::bitwise_or(final_cost_map, cost_layer, final_cost_map);
         dilated_map = next_dilated_map;
@@ -250,7 +247,8 @@ cv::Mat PathPlanner::calcCostMap(const nav_msgs::msg::OccupancyGrid& mapdata) {
     
     // Subtract 1 from all non-zero values
     cv::Mat mask = final_cost_map > 0;
-    final_cost_map.setTo(final_cost_map - 1, mask);
+    final_cost_map -= 1;
+    final_cost_map.setTo(0, ~mask);  // Reset zero values back to zero
     
     std::cout << "Cost map calculation complete after " << iterations << " iterations." << std::endl;
     
