@@ -103,8 +103,8 @@ private:
         double max_angular_velocity = 0.6;           ///< Maximum turn rate (reduced for smoother turns)
         double stuck_timeout_s = 30.0;               ///< Time before considering robot stuck (not used, see isRobotStuck)
         double frontier_search_rate_hz = 2.0;        ///< Rate for frontier detection
-        int max_no_frontier_count = 5;               ///< Max consecutive no-frontier detections (reduced to finish faster)
-        int max_no_path_count = 10;                  ///< Max consecutive path planning failures
+        int max_no_frontier_count = 8;               ///< Max consecutive no-frontier detections (increased for better coverage)
+        int max_no_path_count = 15;                  ///< Max consecutive path planning failures (increased to try harder)
         double a_star_cost_weight = 10.0;            ///< A* path cost weighting
         double frontier_size_weight = 1.0;           ///< Frontier size importance weighting
         int max_frontiers_to_check = 8;              ///< Limit frontiers evaluated per cycle
