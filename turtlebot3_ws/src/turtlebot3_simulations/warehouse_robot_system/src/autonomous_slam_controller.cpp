@@ -150,8 +150,16 @@ void AutonomousSlamController::handleSearchingFrontiers() {
         consecutive_no_frontiers_++;
         RCLCPP_DEBUG(this->get_logger(), "No frontiers found (count: %d)", consecutive_no_frontiers_);
         
+        // Before giving up, do a final sweep to check for hidden frontiers
+        if (consecutive_no_frontiers_ >= config_.max_no_frontier_count / 2 && 
+            consecutive_no_frontiers_ < config_.max_no_frontier_count) {
+            RCLCPP_INFO(this->get_logger(), "No frontiers visible, performing final sweep to check for hidden areas...");
+            transitionToMappingState(MappingState::EXPLORING_AREA);
+            return;
+        }
+        
         if (consecutive_no_frontiers_ >= config_.max_no_frontier_count) {
-            RCLCPP_INFO(this->get_logger(), "No more frontiers found, exploration complete!");
+            RCLCPP_INFO(this->get_logger(), "No more frontiers found after final sweep, exploration complete!");
             printExplorationStatistics();
             transitionToState(SlamState::RETURNING_HOME);
             return;
@@ -259,12 +267,12 @@ void AutonomousSlamController::handleNavigating() {
 }
 
 void AutonomousSlamController::handleExploringArea() {
-    // Quick scan: just one rotation to update map
+    // Simple but safe exploration: just rotate in place
     static rclcpp::Time rotation_start = this->now();
     static int scan_count = 0;
     
-    const double rotation_duration = 1.5; // seconds - reduced for faster exploration
-    const double rotation_speed = 0.6; // rad/s - reduced to match max angular velocity
+    const double rotation_duration = 2.0; // seconds - full 360° rotation
+    const double rotation_speed = 0.5; // rad/s - slower for better scanning
     
     if ((this->now() - rotation_start).seconds() < rotation_duration) {
         publishVelocityCommand(0.0, rotation_speed);
@@ -275,11 +283,10 @@ void AutonomousSlamController::handleExploringArea() {
     rotation_start = this->now();
     scan_count++;
     
-    RCLCPP_INFO(this->get_logger(), "Quick scan complete, searching for new frontiers");
+    RCLCPP_INFO(this->get_logger(), "Exploration scan complete, searching for new frontiers");
     
-    // If we've scanned multiple times without finding frontiers, we're likely done
-    // This prevents endless spinning in place
-    if (scan_count > 2) {
+    // If we've scanned multiple times without finding frontiers, increment counter
+    if (scan_count > 1) {
         scan_count = 0;
         consecutive_no_frontiers_++;  // Increment to help trigger completion
     }
