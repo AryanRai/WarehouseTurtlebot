@@ -1,62 +1,116 @@
 #!/usr/bin/env python3
+#
+# MTRX3760 2025 Project 2: Warehouse Robot
+# Launch file to spawn TurtleBot3 for autonomous SLAM (without wall following)
+#
 
-# Copyright 2019 Open Source Robotics Foundation, Inc.
-# Licensed under the Apache License, Version 2.0
-
-import os
-from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
+import os
+
 
 def generate_launch_description():
+    # Get the urdf file
+    TURTLEBOT3_MODEL = os.environ.get('TURTLEBOT3_MODEL', 'burger')
+    model_folder = 'turtlebot3_' + TURTLEBOT3_MODEL
+    urdf_path = os.path.join(
+        get_package_share_directory('turtlebot3_gazebo'),
+        'models',
+        model_folder,
+        'model.sdf'
+    )
+
     # Launch configuration variables
     x_pose = LaunchConfiguration('x_pose', default='0.0')
     y_pose = LaunchConfiguration('y_pose', default='0.0')
+    yaw = LaunchConfiguration('yaw', default='0.0')
+
+    # Declare the launch arguments
+    declare_x_position_cmd = DeclareLaunchArgument(
+        'x_pose', default_value='0.0',
+        description='Initial x position')
+
+    declare_y_position_cmd = DeclareLaunchArgument(
+        'y_pose', default_value='0.0',
+        description='Initial y position')
     
-    # Get package directories
-    turtlebot3_gazebo_dir = get_package_share_directory('turtlebot3_gazebo')
+    declare_yaw_cmd = DeclareLaunchArgument(
+        'yaw', default_value='0.0',
+        description='Initial yaw (rad)')
+
+    # Spawn robot into Gazebo
+    start_gazebo_ros_spawner_cmd = Node(
+        package='ros_gz_sim',
+        executable='create',
+        arguments=[
+            '-name', TURTLEBOT3_MODEL,
+            '-file', urdf_path,
+            '-x', x_pose,
+            '-y', y_pose,
+            '-z', '0.01',
+            '-Y', yaw
+        ],
+        output='screen',
+    )
+
+    # ROS <-> Gazebo bridge (twist, odom, laser, etc.)
+    bridge_params = os.path.join(
+        get_package_share_directory('turtlebot3_gazebo'),
+        'params',
+        model_folder + '_bridge.yaml'
+    )
+
+    start_gazebo_ros_bridge_cmd = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        arguments=[
+            '--ros-args',
+            '-p', f'config_file:={bridge_params}',
+        ],
+        output='screen',
+    )
+
+    # Camera image bridge (gz -> ROS /camera/image_raw) - only for non-burger models
+    start_gazebo_ros_image_bridge_cmd = Node(
+        package='ros_gz_image',
+        executable='image_bridge',
+        arguments=['/camera/image_raw'],
+        output='screen',
+    )
+
+    # Camera red detector node
+    start_red_detector_cmd = Node(
+        package='turtlebot3_gazebo',
+        executable='camera_red_detector',
+        name='camera_red_detector',
+        output='screen',
+        parameters=[{
+            'image_topic': '/camera/image_raw',
+            'min_area_frac': 0.02,
+            'publish_debug': True
+        }],
+    )
+
+    # NOTE: We do NOT start turtlebot3_drive node here
+    # The autonomous_slam_controller will handle all movement commands
+
+    ld = LaunchDescription()
+
+    # Declare the launch options
+    ld.add_action(declare_x_position_cmd)
+    ld.add_action(declare_y_position_cmd)
+    ld.add_action(declare_yaw_cmd)
+
+    # Add actions
+    ld.add_action(start_gazebo_ros_spawner_cmd)
+    ld.add_action(start_gazebo_ros_bridge_cmd)
     
-    return LaunchDescription([
-        DeclareLaunchArgument(
-            'x_pose', default_value='0.0',
-            description='x position of the robot'),
-        DeclareLaunchArgument(
-            'y_pose', default_value='0.0',
-            description='y position of the robot'),
+    # Add camera bridge and detector only for non-burger models
+    if TURTLEBOT3_MODEL != 'burger':
+        ld.add_action(start_gazebo_ros_image_bridge_cmd)
+        ld.add_action(start_red_detector_cmd)
 
-        # Spawn TurtleBot3 in Gazebo (without wall following controller)
-        Node(
-            package='ros_gz_sim',
-            executable='create',
-            arguments=['-topic', 'robot_description',
-                      '-name', 'turtlebot3_burger',
-                      '-x', x_pose,
-                      '-y', y_pose,
-                      '-z', '0.01'],
-            output='screen'),
-
-        # Bridge for Gazebo communication (without wall following)
-        Node(
-            package='ros_gz_bridge',
-            executable='parameter_bridge',
-            arguments=[
-                'clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
-                'joint_states@sensor_msgs/msg/JointState[gz.msgs.Model',
-                'odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
-                'tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',
-                'cmd_vel@geometry_msgs/msg/TwistStamped]gz.msgs.Twist',
-                'imu@sensor_msgs/msg/Imu[gz.msgs.IMU',
-                'scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
-                '--ros-args', '-r', '/tf:=/tf_gz'
-            ],
-            output='screen'),
-
-        # Camera red detector (if needed)
-        Node(
-            package='turtlebot3_gazebo',
-            executable='camera_red_detector',
-            name='camera_red_detector',
-            output='screen'),
-    ])
+    return ld

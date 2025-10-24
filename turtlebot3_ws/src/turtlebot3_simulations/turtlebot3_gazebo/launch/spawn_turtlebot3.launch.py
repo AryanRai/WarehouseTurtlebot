@@ -1,4 +1,17 @@
-# Copyright ...
+# Copyright 2019 Open Source Robotics Foundation, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 
 from ament_index_python.packages import get_package_share_directory
@@ -22,23 +35,16 @@ def generate_launch_description():
     # Launch configuration variables specific to simulation
     x_pose = LaunchConfiguration('x_pose', default='0.0')
     y_pose = LaunchConfiguration('y_pose', default='0.0')
-    yaw    = LaunchConfiguration('yaw',    default='0.0')
 
     # Declare the launch arguments
     declare_x_position_cmd = DeclareLaunchArgument(
         'x_pose', default_value='0.0',
-        description='Initial x position')
+        description='Specify namespace of the robot')
 
     declare_y_position_cmd = DeclareLaunchArgument(
         'y_pose', default_value='0.0',
-        description='Initial y position')
-    
-    declare_yaw_cmd = DeclareLaunchArgument(
-        'yaw', default_value='0.0',
-        description='Initial yaw (rad)'
-    )
+        description='Specify namespace of the robot')
 
-    # Spawn robot into Gazebo
     start_gazebo_ros_spawner_cmd = Node(
         package='ros_gz_sim',
         executable='create',
@@ -47,17 +53,15 @@ def generate_launch_description():
             '-file', urdf_path,
             '-x', x_pose,
             '-y', y_pose,
-            '-z', '0.01',
-            '-Y', yaw
+            '-z', '0.01'
         ],
         output='screen',
     )
 
-    # ROS <-> Gazebo bridge (twist, odom, laser, etc.)
     bridge_params = os.path.join(
         get_package_share_directory('turtlebot3_gazebo'),
         'params',
-        model_folder + '_bridge.yaml'
+        model_folder+'_bridge.yaml'
     )
 
     start_gazebo_ros_bridge_cmd = Node(
@@ -65,59 +69,27 @@ def generate_launch_description():
         executable='parameter_bridge',
         arguments=[
             '--ros-args',
-            '-p', f'config_file:={bridge_params}',
+            '-p',
+            f'config_file:={bridge_params}',
         ],
         output='screen',
     )
 
-    # Camera image bridge (gz -> ROS /camera/image_raw)
     start_gazebo_ros_image_bridge_cmd = Node(
         package='ros_gz_image',
         executable='image_bridge',
         arguments=['/camera/image_raw'],
         output='screen',
     )
-
-    # 🔴 Camera red detector node
-    start_red_detector_cmd = Node(
-        package='turtlebot3_gazebo',        # or your package name if different
-        executable='camera_red_detector',   # Updated executable name
-        name='camera_red_detector',
-        output='screen',
-        parameters=[{
-            'image_topic': '/camera/image_raw',
-            'min_area_frac': 0.02,          # tweak for sensitivity
-            'publish_debug': True
-        }],
-        # If your camera topic is different, add remappings here instead:
-        # remappings=[('/camera/image_raw', '/your/cam/topic')],
-    )
-
-    # 🤖 TurtleBot3 Drive/Control node (wall following + PID + loop detection)
-    start_turtlebot3_drive_cmd = Node(
-        package='turtlebot3_gazebo',
-        executable='CTurtlebot3Drive_node',
-        name='turtlebot3_drive_node',
-        output='screen',
-    )
-
     ld = LaunchDescription()
 
     # Declare the launch options
     ld.add_action(declare_x_position_cmd)
     ld.add_action(declare_y_position_cmd)
-    ld.add_action(declare_yaw_cmd)   # (fix) actually add yaw
 
-    # Add actions
+    # Add any conditioned actions
     ld.add_action(start_gazebo_ros_spawner_cmd)
     ld.add_action(start_gazebo_ros_bridge_cmd)
-    if TURTLEBOT3_MODEL != 'burger':
-        ld.add_action(start_gazebo_ros_image_bridge_cmd)
-
-    # Add your red detector
-    ld.add_action(start_red_detector_cmd)
-    
-    # Add the drive/control node
-    ld.add_action(start_turtlebot3_drive_cmd)
+    ld.add_action(start_gazebo_ros_image_bridge_cmd) if TURTLEBOT3_MODEL != 'burger' else None
 
     return ld

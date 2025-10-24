@@ -74,9 +74,14 @@ RSP_PID=$!
 sleep 2
 
 echo "2️⃣ Spawning TurtleBot3 at origin (0, 0) - autonomous mode..."
-ros2 launch warehouse_robot_system spawn_turtlebot3_autonomous.launch.py x_pose:=0.0 y_pose:=0.0 &
+ros2 launch turtlebot3_gazebo spawn_turtlebot3.launch.py x_pose:=0.0 y_pose:=0.0 &
 SPAWN_PID=$!
 sleep 4
+
+# Kill the wall-following drive node (we don't need it for autonomous SLAM)
+echo "🔧 Stopping wall-following node..."
+pkill -f turtlebot3_drive_node
+sleep 1
 
 echo "✅ Robot spawned without wall following - ready for autonomous SLAM control"
 

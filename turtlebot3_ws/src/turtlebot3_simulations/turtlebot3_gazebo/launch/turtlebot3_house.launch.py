@@ -31,14 +31,13 @@ def generate_launch_description():
     ros_gz_sim = get_package_share_directory('ros_gz_sim')
 
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
-    x_pose = LaunchConfiguration('x_pose', default='3.5')
-    y_pose = LaunchConfiguration('y_pose', default='1')
-    yaw = LaunchConfiguration('yaw', default='1.57')
+    x_pose = LaunchConfiguration('x_pose', default='-2.0')
+    y_pose = LaunchConfiguration('y_pose', default='-0.5')
 
     world = os.path.join(
         get_package_share_directory('turtlebot3_gazebo'),
         'worlds',
-        'open_maze.world'
+        'turtlebot3_house.world'
     )
 
     gzserver_cmd = IncludeLaunchDescription(
@@ -68,8 +67,7 @@ def generate_launch_description():
         ),
         launch_arguments={
             'x_pose': x_pose,
-            'y_pose': y_pose,
-            'yaw': yaw
+            'y_pose': y_pose
         }.items()
     )
 

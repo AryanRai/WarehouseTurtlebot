@@ -221,17 +221,85 @@ std::pair<nav_msgs::msg::OccupancyGrid, std::vector<GridCell>> PathPlanner::calc
     return {cspace, cspace_cells};
 }
 
-// Cost map calculation (minimal implementation)
+// Cost map calculation (iterative dilation implementation)
 cv::Mat PathPlanner::calcCostMap(const nav_msgs::msg::OccupancyGrid& mapdata) {
+    std::cout << "Calculating cost map..." << std::endl;
+    
     int width = mapdata.info.width;
     int height = mapdata.info.height;
     
+    // Create OpenCV Mat from mapdata
+    cv::Mat map(height, width, CV_8UC1);
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int idx = y * width + x;
+            int8_t value = mapdata.data[idx];
+            // Convert -1 (unknown) to 100, keep others as is
+            map.at<uint8_t>(y, x) = (value == -1) ? 100 : static_cast<uint8_t>(std::max(0, static_cast<int>(value)));
+        }
+    }
+    
+    // Iteratively dilate walls until no changes are made
     cv::Mat cost_map = cv::Mat::zeros(height, width, CV_8UC1);
+    cv::Mat dilated_map = map.clone();
+    int iterations = 0;
     
-    // TODO: Implement full cost map calculation
-    std::cout << "Cost map calculation - TODO: Implement iterative dilation" << std::endl;
+    // Cross-shaped kernel for 4-connectivity
+    cv::Mat kernel = (cv::Mat_<uint8_t>(3, 3) << 0, 1, 0, 1, 1, 1, 0, 1, 0);
     
-    return cost_map;
+    while (cv::countNonZero(dilated_map == 0) > 0 && iterations < 50) { // Limit iterations
+        iterations++;
+        
+        // Dilate the map
+        cv::Mat next_dilated_map;
+        cv::dilate(dilated_map, next_dilated_map, kernel, cv::Point(-1, -1), 1);
+        
+        // Get difference to find outline
+        cv::Mat difference;
+        cv::subtract(next_dilated_map, dilated_map, difference);
+        
+        // Assign cost to outline cells
+        cv::Mat cost_layer = cv::Mat::zeros(height, width, CV_8UC1);
+        cost_layer.setTo(iterations, difference > 0);
+        
+        // Add to cost map
+        cv::bitwise_or(cost_map, cost_layer, cost_map);
+        
+        // Update dilated map
+        dilated_map = next_dilated_map;
+    }
+    
+    // Create hallway mask (simplified version)
+    cv::Mat hallway_mask = createHallwayMask(mapdata, cost_map, iterations / 4);
+    
+    // Iteratively dilate hallway mask
+    cv::Mat final_cost_map = hallway_mask.clone();
+    dilated_map = hallway_mask.clone();
+    int cost = 1;
+    
+    for (int i = 0; i < iterations && i < 20; i++) { // Limit iterations
+        cost++;
+        
+        cv::Mat next_dilated_map;
+        cv::dilate(dilated_map, next_dilated_map, kernel, cv::Point(-1, -1), 1);
+        
+        cv::Mat difference;
+        cv::subtract(next_dilated_map, dilated_map, difference);
+        
+        cv::Mat cost_layer = cv::Mat::zeros(height, width, CV_8UC1);
+        cost_layer.setTo(cost, difference > 0);
+        
+        cv::bitwise_or(final_cost_map, cost_layer, final_cost_map);
+        dilated_map = next_dilated_map;
+    }
+    
+    // Subtract 1 from all non-zero values
+    cv::Mat mask = final_cost_map > 0;
+    final_cost_map.setTo(final_cost_map - 1, mask);
+    
+    std::cout << "Cost map calculation complete after " << iterations << " iterations." << std::endl;
+    
+    return final_cost_map;
 }
 
 int PathPlanner::getCostMapValue(const cv::Mat& cost_map, const GridCell& p) {
@@ -241,14 +309,25 @@ int PathPlanner::getCostMapValue(const cv::Mat& cost_map, const GridCell& p) {
     return 0;
 }
 
-// Hallway detection (minimal implementation)
+// Hallway detection implementation
 cv::Mat PathPlanner::createHallwayMask(
     const nav_msgs::msg::OccupancyGrid& mapdata,
     const cv::Mat& cost_map,
     int threshold) {
     
     cv::Mat mask = cv::Mat::zeros(cost_map.size(), CV_8UC1);
-    // TODO: Implement hallway detection
+    
+    // Find non-zero cells in cost map
+    for (int y = 0; y < cost_map.rows; y++) {
+        for (int x = 0; x < cost_map.cols; x++) {
+            if (cost_map.at<uint8_t>(y, x) > 0) {
+                if (isHallwayCell(mapdata, cost_map, {x, y}, threshold)) {
+                    mask.at<uint8_t>(y, x) = 1;
+                }
+            }
+        }
+    }
+    
     return mask;
 }
 
@@ -258,8 +337,18 @@ bool PathPlanner::isHallwayCell(
     const GridCell& p,
     int threshold) {
     
-    // TODO: Implement hallway cell detection
-    return false;
+    int cost_map_value = getCostMapValue(cost_map, p);
+    
+    // Check all 8-connected neighbors
+    auto neighbors = neighborsOf8(mapdata, p, false);
+    for (const auto& neighbor : neighbors) {
+        int neighbor_cost = getCostMapValue(cost_map, neighbor);
+        if (neighbor_cost < threshold || neighbor_cost > cost_map_value) {
+            return false;
+        }
+    }
+    
+    return true;
 }
 
 // A* pathfinding (minimal implementation)
@@ -308,71 +397,100 @@ PathPlanner::aStar(
         return {std::nullopt, std::nullopt, start, goal};
     }
     
-    if (!isCellWalkable(mapdata, start) || !isCellWalkable(mapdata, goal)) {
-        std::cout << "Start or goal not walkable" << std::endl;
-        return {std::nullopt, std::nullopt, start, goal};
+    // Get walkable neighbors if start/goal not walkable
+    GridCell actual_start = start;
+    GridCell actual_goal = goal;
+    
+    if (!isCellWalkable(mapdata, start)) {
+        actual_start = getFirstWalkableNeighbor(mapdata, start);
+        std::cout << "Start not walkable, using (" << actual_start.first << "," << actual_start.second << ")" << std::endl;
+    }
+    
+    if (!isCellWalkable(mapdata, goal)) {
+        actual_goal = getFirstWalkableNeighbor(mapdata, goal);
+        std::cout << "Goal not walkable, using (" << actual_goal.first << "," << actual_goal.second << ")" << std::endl;
     }
     
     // A* algorithm implementation
     PriorityQueue open_set;
     std::map<GridCell, double> g_score;
-    std::map<GridCell, double> f_score;
+    std::map<GridCell, double> distance_cost;
     std::map<GridCell, GridCell> came_from;
     std::set<GridCell> closed_set;
     
+    const double COST_MAP_WEIGHT = 1000.0;
+    
     // Initialize scores
-    g_score[start] = 0.0;
-    f_score[start] = euclideanDistance(start, goal);
-    open_set.put(start, f_score[start]);
+    g_score[actual_start] = 0.0;
+    distance_cost[actual_start] = 0.0;
+    double h_score = euclideanDistance(actual_start, actual_goal);
+    open_set.put(actual_start, h_score);
     
     while (!open_set.empty()) {
         GridCell current = open_set.get();
         
-        if (current == goal) {
+        if (current == actual_goal) {
             // Reconstruct path
             std::vector<GridCell> path;
-            GridCell node = goal;
-            double total_cost = g_score[goal];
+            GridCell node = actual_goal;
+            double total_distance = distance_cost[actual_goal];
             
             while (came_from.find(node) != came_from.end()) {
                 path.push_back(node);
                 node = came_from[node];
             }
-            path.push_back(start);
+            path.push_back(actual_start);
             
             std::reverse(path.begin(), path.end());
-            std::cout << "A* found path with " << path.size() << " nodes, cost: " << total_cost << std::endl;
-            return {path, total_cost, start, goal};
+            
+            // Check minimum path length
+            const int MIN_PATH_LENGTH = 12;
+            if (path.size() < MIN_PATH_LENGTH) {
+                std::cout << "Path too short (" << path.size() << " < " << MIN_PATH_LENGTH << ")" << std::endl;
+                return {std::nullopt, std::nullopt, actual_start, actual_goal};
+            }
+            
+            // Truncate last few poses
+            const int POSES_TO_TRUNCATE = 8;
+            if (path.size() > POSES_TO_TRUNCATE) {
+                path.erase(path.end() - POSES_TO_TRUNCATE, path.end());
+            }
+            
+            std::cout << "A* found path with " << path.size() << " nodes, distance: " << total_distance << std::endl;
+            return {path, total_distance, actual_start, actual_goal};
         }
         
         closed_set.insert(current);
         
-        // Check all neighbors
-        auto neighbors = neighborsOf8(mapdata, current, true);
-        for (const auto& neighbor : neighbors) {
+        // Check all neighbors with distances
+        auto neighbors_with_dist = neighborsAndDistancesOf8(mapdata, current, true);
+        for (const auto& [neighbor, distance] : neighbors_with_dist) {
             if (closed_set.find(neighbor) != closed_set.end()) {
                 continue;
             }
             
-            double tentative_g = g_score[current] + euclideanDistance(current, neighbor);
-            
-            // Add cost map penalty if available
+            // Calculate cost including distance and cost map
+            double added_cost = distance;
             if (!cost_map.empty() && neighbor.second < cost_map.rows && neighbor.first < cost_map.cols) {
-                tentative_g += cost_map.at<uint8_t>(neighbor.second, neighbor.first) * 0.01;
+                added_cost += COST_MAP_WEIGHT * getCostMapValue(cost_map, neighbor);
             }
+            
+            double tentative_g = g_score[current] + added_cost;
+            double tentative_distance = distance_cost[current] + distance;
             
             if (g_score.find(neighbor) == g_score.end() || tentative_g < g_score[neighbor]) {
                 came_from[neighbor] = current;
                 g_score[neighbor] = tentative_g;
-                f_score[neighbor] = tentative_g + euclideanDistance(neighbor, goal);
+                distance_cost[neighbor] = tentative_distance;
                 
-                open_set.put(neighbor, f_score[neighbor]);
+                double priority = tentative_g + euclideanDistance(neighbor, actual_goal);
+                open_set.put(neighbor, priority);
             }
         }
     }
     
     std::cout << "A* failed to find path" << std::endl;
-    return {std::nullopt, std::nullopt, start, goal};
+    return {std::nullopt, std::nullopt, actual_start, actual_goal};
 }
 
 // Helper functions

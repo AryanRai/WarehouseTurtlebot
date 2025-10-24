@@ -164,6 +164,11 @@ install(DIRECTORY
   DESTINATION include/
 )
 
+install(DIRECTORY
+  launch/
+  DESTINATION share/${PROJECT_NAME}/launch/
+)
+
 # -------------------- Ament export --------------------
 ament_export_include_directories(include)
 ament_export_libraries(${PROJECT_NAME}_lib)

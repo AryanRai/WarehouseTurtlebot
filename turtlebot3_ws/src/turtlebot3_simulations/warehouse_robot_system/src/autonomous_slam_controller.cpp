@@ -59,6 +59,9 @@ AutonomousSlamController::AutonomousSlamController()
     last_progress_time_ = this->now();
     last_movement_time_ = this->now();
     exploration_start_time_ = this->now();
+    
+    // Initialize tracking variables
+    last_distance_to_goal_ = std::numeric_limits<double>::max();
 
     RCLCPP_INFO(this->get_logger(), "Autonomous SLAM Controller initialized");
     RCLCPP_INFO(this->get_logger(), "Starting in INITIALIZING state");
@@ -192,6 +195,7 @@ void AutonomousSlamController::handlePlanningPath() {
 
     consecutive_no_paths_ = 0;
     last_distance_to_goal_ = calculateDistance(poseToPoint(current_pose_), current_goal_);
+    last_movement_time_ = this->now(); // Reset movement timer for new path
     
     // Publish goal for visualization
     geometry_msgs::msg::PoseStamped goal_pose;
@@ -420,11 +424,15 @@ bool AutonomousSlamController::planPathToGoal(const geometry_msgs::msg::Point& g
 
 bool AutonomousSlamController::followCurrentPath() {
     if (current_path_.poses.empty()) {
+        RCLCPP_WARN(this->get_logger(), "No path to follow");
         return false;
     }
 
     geometry_msgs::msg::Point lookahead = calculateLookaheadPoint();
     calculatePurePursuitControl(lookahead);
+    
+    RCLCPP_DEBUG(this->get_logger(), "Following path with %zu poses, lookahead at (%.2f, %.2f)", 
+                current_path_.poses.size(), lookahead.x, lookahead.y);
     return true;
 }
 
@@ -489,6 +497,9 @@ void AutonomousSlamController::calculatePurePursuitControl(const geometry_msgs::
     }
 
     publishVelocityCommand(linear_vel, angular_vel);
+    
+    RCLCPP_DEBUG(this->get_logger(), "Pure pursuit: yaw_error=%.3f, linear=%.3f, angular=%.3f", 
+                yaw_error, linear_vel, angular_vel);
 }
 
 void AutonomousSlamController::publishPath(const std::vector<GridCell>& path) {
@@ -566,16 +577,20 @@ bool AutonomousSlamController::isGoalReached(const geometry_msgs::msg::Point& go
 
 bool AutonomousSlamController::isRobotStuck() {
     const double stuck_distance_threshold = 0.05; // meters
+    const double stuck_timeout = 5.0; // seconds - much shorter than config timeout
     
     double current_distance = calculateDistance(poseToPoint(current_pose_), current_goal_);
     
-    if (std::abs(current_distance - last_distance_to_goal_) < stuck_distance_threshold) {
-        if ((this->now() - last_movement_time_).seconds() > config_.stuck_timeout_s) {
-            return true;
-        }
-    } else {
+    // Check if robot has made progress toward goal
+    if (std::abs(current_distance - last_distance_to_goal_) > stuck_distance_threshold) {
         last_movement_time_ = this->now();
         last_distance_to_goal_ = current_distance;
+        return false;
+    }
+    
+    // Robot hasn't made progress - check if stuck for too long
+    if ((this->now() - last_movement_time_).seconds() > stuck_timeout) {
+        return true;
     }
     
     return false;
