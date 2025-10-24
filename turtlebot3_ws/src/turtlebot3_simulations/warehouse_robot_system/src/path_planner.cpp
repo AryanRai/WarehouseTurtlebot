@@ -160,15 +160,74 @@ std::pair<nav_msgs::msg::OccupancyGrid, std::vector<GridCell>> PathPlanner::calc
     const nav_msgs::msg::OccupancyGrid& mapdata,
     bool include_cells) {
     
-    // C-space padding disabled - using cost map instead for soft constraints
+    const int PADDING = 5; // Hard-coded padding (5 cells = ~0.25m) to NEVER touch walls
+    
     int width = mapdata.info.width;
     int height = mapdata.info.height;
     
-    // Return original map as C-space (no inflation)
-    nav_msgs::msg::OccupancyGrid cspace = mapdata;
-    std::vector<GridCell> cspace_cells;
+    // Create OpenCV Mat from mapdata
+    cv::Mat map(height, width, CV_8UC1);
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int idx = y * width + x;
+            int8_t value = mapdata.data[idx];
+            // Map values: -1=unknown(255), >50=occupied(100), else=free(0)
+            if (value == -1) {
+                map.at<uint8_t>(y, x) = 255;  // Unknown
+            } else if (value > 50) {
+                map.at<uint8_t>(y, x) = 100;  // Occupied
+            } else {
+                map.at<uint8_t>(y, x) = 0;    // Free
+            }
+        }
+    }
     
-    std::cout << "C-space: Using original map (no padding - relying on cost map for wall avoidance)." << std::endl;
+    // Create binary obstacle mask (occupied cells only)
+    cv::Mat obstacle_mask;
+    cv::threshold(map, obstacle_mask, 50, 100, cv::THRESH_BINARY);
+    
+    // Inflate obstacles by PADDING cells
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(PADDING, PADDING));
+    cv::Mat inflated_obstacles;
+    cv::dilate(obstacle_mask, inflated_obstacles, kernel);
+    
+    // Get unknown area mask
+    cv::Mat unknown_mask;
+    cv::inRange(map, 255, 255, unknown_mask);
+    
+    // Combine inflated obstacles with unknown areas
+    cv::Mat cspace_mat;
+    cv::bitwise_or(inflated_obstacles, unknown_mask, cspace_mat);
+    
+    // Convert back to OccupancyGrid
+    nav_msgs::msg::OccupancyGrid cspace = mapdata;
+    cspace.data.resize(width * height);
+    
+    std::vector<GridCell> cspace_cells;
+    int inflated_count = 0;
+    
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int idx = y * width + x;
+            uint8_t cspace_value = cspace_mat.at<uint8_t>(y, x);
+            uint8_t original_value = map.at<uint8_t>(y, x);
+            
+            if (cspace_value == 255) {
+                cspace.data[idx] = -1;  // Unknown
+            } else if (cspace_value > 0) {
+                cspace.data[idx] = 100;  // Occupied (original or inflated)
+                // Count newly inflated cells
+                if (original_value == 0 && include_cells) {
+                    cspace_cells.push_back({x, y});
+                    inflated_count++;
+                }
+            } else {
+                cspace.data[idx] = 0;  // Free
+            }
+        }
+    }
+    
+    std::cout << "C-space: Added " << inflated_count << " inflated cells (PADDING=" << PADDING << " for guaranteed wall clearance)." << std::endl;
     
     return {cspace, cspace_cells};
 }
