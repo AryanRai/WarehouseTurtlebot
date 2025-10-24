@@ -160,63 +160,18 @@ std::pair<nav_msgs::msg::OccupancyGrid, std::vector<GridCell>> PathPlanner::calc
     const nav_msgs::msg::OccupancyGrid& mapdata,
     bool include_cells) {
     
-    const int PADDING = 8; // Number of cells around obstacles - increased to keep robot away from walls
+    const int PADDING = 2; // Number of cells around obstacles (conservative for tight spaces)
     
     int width = mapdata.info.width;
     int height = mapdata.info.height;
     
-    // Create OpenCV Mat from mapdata
-    cv::Mat map(height, width, CV_8UC1);
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            int idx = y * width + x;
-            int8_t value = mapdata.data[idx];
-            // Convert -1 (unknown) to 255, keep others as is
-            map.at<uint8_t>(y, x) = (value == -1) ? 255 : static_cast<uint8_t>(value);
-        }
-    }
-    
-    // Get mask of unknown areas (-1 becomes 255)
-    cv::Mat unknown_area_mask;
-    cv::inRange(map, 255, 255, unknown_area_mask);
-    
-    // Erode unknown areas
-    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(PADDING, PADDING));
-    cv::erode(unknown_area_mask, unknown_area_mask, kernel, cv::Point(-1, -1), 1);
-    
-    // Change unknown areas to free space for processing
-    map.setTo(0, map == 255);
-    
-    // Inflate obstacles
-    cv::Mat obstacle_mask;
-    cv::dilate(map, obstacle_mask, kernel, cv::Point(-1, -1), 1);
-    
-    // Combine obstacle mask with unknown areas
-    cv::Mat cspace_mat;
-    cv::bitwise_or(obstacle_mask, unknown_area_mask, cspace_mat);
-    
-    // Create output occupancy grid
-    nav_msgs::msg::OccupancyGrid cspace = mapdata; // Copy header and info
-    cspace.data.resize(width * height);
-    
-    // Convert back to occupancy grid format
+    // For now, just return the original map as C-space
+    // The padding was causing too many path failures
+    // TODO: Implement proper C-space with dynamic padding based on environment
+    nav_msgs::msg::OccupancyGrid cspace = mapdata;
     std::vector<GridCell> cspace_cells;
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            int idx = y * width + x;
-            uint8_t value = cspace_mat.at<uint8_t>(y, x);
-            
-            // Convert back: 255 -> -1 (unknown), others stay as is
-            cspace.data[idx] = (value == 255) ? -1 : static_cast<int8_t>(value);
-            
-            // Collect cells that were added for debugging
-            if (include_cells && obstacle_mask.at<uint8_t>(y, x) > 0) {
-                cspace_cells.push_back({x, y});
-            }
-        }
-    }
     
-    std::cout << "C-space calculation complete. Added " << cspace_cells.size() << " inflated cells." << std::endl;
+    std::cout << "C-space calculation complete. Using original map (padding disabled for stability)." << std::endl;
     
     return {cspace, cspace_cells};
 }

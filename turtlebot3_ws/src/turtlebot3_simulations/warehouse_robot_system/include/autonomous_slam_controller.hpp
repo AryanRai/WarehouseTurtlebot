@@ -97,13 +97,13 @@ private:
     struct Config {
         double exploration_timeout_s = 300.0;        ///< Max time for exploration (5 min)
         double frontier_min_size = 8;                ///< Minimum frontier size to consider
-        double goal_tolerance = 0.35;                ///< Distance tolerance for reaching goals
+        double goal_tolerance = 0.50;                ///< Distance tolerance for reaching goals (increased for stability)
         double origin_tolerance = 0.2;               ///< Tolerance for returning to origin
         double max_linear_velocity = 0.12;           ///< Maximum forward speed (reduced for better control)
         double max_angular_velocity = 0.6;           ///< Maximum turn rate (reduced for smoother turns)
         double stuck_timeout_s = 30.0;               ///< Time before considering robot stuck (not used, see isRobotStuck)
         double frontier_search_rate_hz = 2.0;        ///< Rate for frontier detection
-        int max_no_frontier_count = 15;              ///< Max consecutive no-frontier detections
+        int max_no_frontier_count = 5;               ///< Max consecutive no-frontier detections (reduced to finish faster)
         int max_no_path_count = 10;                  ///< Max consecutive path planning failures
         double a_star_cost_weight = 10.0;            ///< A* path cost weighting
         double frontier_size_weight = 1.0;           ///< Frontier size importance weighting

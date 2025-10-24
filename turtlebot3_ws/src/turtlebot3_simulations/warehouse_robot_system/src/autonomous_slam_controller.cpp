@@ -261,9 +261,10 @@ void AutonomousSlamController::handleNavigating() {
 void AutonomousSlamController::handleExploringArea() {
     // Quick scan: just one rotation to update map
     static rclcpp::Time rotation_start = this->now();
+    static int scan_count = 0;
     
-    const double rotation_duration = 2.0; // seconds - reduced from 3.0
-    const double rotation_speed = 0.8; // rad/s - increased for faster scan
+    const double rotation_duration = 1.5; // seconds - reduced for faster exploration
+    const double rotation_speed = 0.6; // rad/s - reduced to match max angular velocity
     
     if ((this->now() - rotation_start).seconds() < rotation_duration) {
         publishVelocityCommand(0.0, rotation_speed);
@@ -272,8 +273,17 @@ void AutonomousSlamController::handleExploringArea() {
     
     stopRobot();
     rotation_start = this->now();
+    scan_count++;
     
     RCLCPP_INFO(this->get_logger(), "Quick scan complete, searching for new frontiers");
+    
+    // If we've scanned multiple times without finding frontiers, we're likely done
+    // This prevents endless spinning in place
+    if (scan_count > 2) {
+        scan_count = 0;
+        consecutive_no_frontiers_++;  // Increment to help trigger completion
+    }
+    
     transitionToMappingState(MappingState::SEARCHING_FRONTIERS);
 }
 
@@ -447,18 +457,19 @@ bool AutonomousSlamController::planPathToGoal(const geometry_msgs::msg::Point& g
     GridCell start = PathPlanner::worldToGrid(*current_map_, poseToPoint(current_pose_));
     GridCell goal_cell = PathPlanner::worldToGrid(*current_map_, goal);
 
-    // Calculate C-space and cost map
+    // Calculate C-space (inflated obstacles for safe navigation)
     auto [cspace, cspace_cells] = PathPlanner::calcCspace(*current_map_, false);
     
-    // Plan path using A*
+    // Plan path using A* with C-space (NOT original map!)
     auto [path, cost, actual_start, actual_goal] = 
-        PathPlanner::aStar(*current_map_, cv::Mat(), start, goal_cell);
+        PathPlanner::aStar(cspace, cv::Mat(), start, goal_cell);
+                          //^^^^^ Use C-space instead of current_map_!
 
     if (!path.has_value() || path->empty()) {
         return false;
     }
 
-    // Convert path to ROS message and publish
+    // Convert path to ROS message and publish (use original map for world coordinates)
     publishPath(path.value());
     return true;
 }
