@@ -218,10 +218,22 @@ void AutonomousSlamController::handleNavigating() {
         return;
     }
 
+    // Check if path is empty (shouldn't happen, but safety check)
+    if (current_path_.poses.empty()) {
+        RCLCPP_WARN(this->get_logger(), "Path became empty during navigation");
+        transitionToMappingState(MappingState::SEARCHING_FRONTIERS);
+        return;
+    }
+
     // Check if goal reached
     if (isGoalReached(current_goal_, config_.goal_tolerance)) {
-        RCLCPP_INFO(this->get_logger(), "Reached frontier goal");
+        RCLCPP_INFO(this->get_logger(), "Reached frontier goal at (%.2f, %.2f)", 
+                    current_goal_.x, current_goal_.y);
         total_frontiers_explored_++;
+        
+        // Mark this location as visited
+        visited_frontiers_.push_back(current_goal_);
+        
         stopRobot();
         transitionToMappingState(MappingState::EXPLORING_AREA);
         return;
@@ -230,6 +242,7 @@ void AutonomousSlamController::handleNavigating() {
     // Check if stuck
     if (isRobotStuck()) {
         RCLCPP_WARN(this->get_logger(), "Robot appears stuck during navigation");
+        stopRobot();
         transitionToMappingState(MappingState::STUCK_RECOVERY);
         return;
     }
@@ -237,6 +250,7 @@ void AutonomousSlamController::handleNavigating() {
     // Follow path
     if (!followCurrentPath()) {
         RCLCPP_WARN(this->get_logger(), "Path following failed, replanning");
+        stopRobot();
         transitionToMappingState(MappingState::PLANNING_PATH);
         return;
     }
@@ -265,17 +279,27 @@ void AutonomousSlamController::handleExploringArea() {
 
 void AutonomousSlamController::handleStuckRecovery() {
     static rclcpp::Time recovery_start = this->now();
-    const double recovery_duration = 5.0; // seconds
+    static int recovery_attempt = 0;
+    const double recovery_duration = 3.0; // seconds - reduced from 5.0
     
-    // Simple recovery: back up and turn
-    if ((this->now() - recovery_start).seconds() < recovery_duration / 2) {
-        publishVelocityCommand(-0.1, 0.0); // Back up
-    } else if ((this->now() - recovery_start).seconds() < recovery_duration) {
-        publishVelocityCommand(0.0, 0.8); // Turn
+    double elapsed = (this->now() - recovery_start).seconds();
+    
+    // More aggressive recovery: back up faster and turn more
+    if (elapsed < recovery_duration * 0.4) {
+        publishVelocityCommand(-0.15, 0.0); // Back up faster
+    } else if (elapsed < recovery_duration * 0.8) {
+        publishVelocityCommand(0.0, 1.0); // Turn faster
+    } else if (elapsed < recovery_duration) {
+        publishVelocityCommand(0.1, 0.0); // Move forward briefly
     } else {
         stopRobot();
-        RCLCPP_INFO(this->get_logger(), "Recovery complete, resuming exploration");
+        recovery_attempt++;
+        RCLCPP_INFO(this->get_logger(), "Recovery complete (attempt %d), resuming exploration", recovery_attempt);
         recovery_start = this->now();
+        
+        // Clear current path to force replanning
+        current_path_.poses.clear();
+        
         transitionToMappingState(MappingState::SEARCHING_FRONTIERS);
     }
 }
@@ -359,8 +383,31 @@ Frontier AutonomousSlamController::selectBestFrontier(const std::vector<Frontier
         return Frontier{};
     }
 
+    // Filter out recently visited frontiers
+    std::vector<Frontier> unvisited_frontiers;
+    for (const auto& frontier : frontiers) {
+        bool is_visited = false;
+        for (const auto& visited : visited_frontiers_) {
+            double dist = calculateDistance(frontier.centroid, visited);
+            if (dist < config_.visited_frontier_radius) {
+                is_visited = true;
+                break;
+            }
+        }
+        if (!is_visited) {
+            unvisited_frontiers.push_back(frontier);
+        }
+    }
+    
+    // If all frontiers visited, clear history and use all
+    if (unvisited_frontiers.empty()) {
+        RCLCPP_INFO(this->get_logger(), "All frontiers visited, clearing history");
+        visited_frontiers_.clear();
+        unvisited_frontiers = frontiers;
+    }
+
     // Sort frontiers by size (larger is better)
-    std::vector<Frontier> sorted_frontiers = frontiers;
+    std::vector<Frontier> sorted_frontiers = unvisited_frontiers;
     std::sort(sorted_frontiers.begin(), sorted_frontiers.end(),
               [](const Frontier& a, const Frontier& b) {
                   return a.size > b.size;
@@ -422,16 +469,20 @@ bool AutonomousSlamController::followCurrentPath() {
         return false;
     }
 
+    geometry_msgs::msg::Point current_pos = poseToPoint(current_pose_);
     geometry_msgs::msg::Point lookahead = calculateLookaheadPoint();
+    double dist_to_goal = calculateDistance(current_pos, current_goal_);
+    
     calculatePurePursuitControl(lookahead);
     
-    RCLCPP_DEBUG(this->get_logger(), "Following path with %zu poses, lookahead at (%.2f, %.2f)", 
-                current_path_.poses.size(), lookahead.x, lookahead.y);
+    RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+                "Following path: %zu poses, lookahead=(%.2f, %.2f), goal_dist=%.2f", 
+                current_path_.poses.size(), lookahead.x, lookahead.y, dist_to_goal);
     return true;
 }
 
 geometry_msgs::msg::Point AutonomousSlamController::calculateLookaheadPoint() {
-    const double lookahead_distance = 0.3; // meters
+    const double lookahead_distance = 0.18; // meters - matching reference
     
     if (current_path_.poses.empty()) {
         return current_goal_;
@@ -439,63 +490,94 @@ geometry_msgs::msg::Point AutonomousSlamController::calculateLookaheadPoint() {
 
     geometry_msgs::msg::Point current_pos = poseToPoint(current_pose_);
     
-    // Find closest point on path
+    // Find closest point on path (nearest waypoint)
     double min_distance = std::numeric_limits<double>::max();
-    size_t closest_index = 0;
+    size_t nearest_index = 0;
     
     for (size_t i = 0; i < current_path_.poses.size(); ++i) {
         double dist = calculateDistance(current_pos, current_path_.poses[i].pose.position);
         if (dist < min_distance) {
             min_distance = dist;
-            closest_index = i;
+            nearest_index = i;
         }
     }
 
-    // Find lookahead point
-    for (size_t i = closest_index; i < current_path_.poses.size(); ++i) {
+    // Find lookahead point: first point beyond lookahead_distance from nearest
+    size_t lookahead_index = nearest_index;
+    for (size_t i = nearest_index; i < current_path_.poses.size(); ++i) {
         double dist = calculateDistance(current_pos, current_path_.poses[i].pose.position);
         if (dist >= lookahead_distance) {
-            return current_path_.poses[i].pose.position;
+            lookahead_index = i;
+            break;
         }
+        lookahead_index = i; // Keep updating to get furthest point
     }
 
-    // Return last point if no lookahead found
-    return current_path_.poses.back().pose.position;
+    // Return the lookahead point (or last point if we're near the end)
+    return current_path_.poses[lookahead_index].pose.position;
 }
 
 void AutonomousSlamController::calculatePurePursuitControl(const geometry_msgs::msg::Point& lookahead) {
     geometry_msgs::msg::Point current_pos = poseToPoint(current_pose_);
     double current_yaw = calculateYawFromPose(current_pose_);
 
-    // Calculate angle to lookahead point
+    // Calculate vector to lookahead point
     double dx = lookahead.x - current_pos.x;
     double dy = lookahead.y - current_pos.y;
+    double lookahead_dist = std::sqrt(dx*dx + dy*dy);
+    
+    // Avoid division by zero
+    if (lookahead_dist < 0.01) {
+        stopRobot();
+        return;
+    }
+    
+    // Calculate target angle and alpha (angle error in robot frame)
     double target_yaw = std::atan2(dy, dx);
+    double alpha = target_yaw - current_yaw;
     
-    // Calculate angular error
-    double yaw_error = target_yaw - current_yaw;
+    // Normalize alpha to [-pi, pi]
+    while (alpha > M_PI) alpha -= 2.0 * M_PI;
+    while (alpha < -M_PI) alpha += 2.0 * M_PI;
     
-    // Normalize angle
-    while (yaw_error > M_PI) yaw_error -= 2.0 * M_PI;
-    while (yaw_error < -M_PI) yaw_error += 2.0 * M_PI;
+    // Check if we should reverse (lookahead is behind robot)
+    bool reversed = std::abs(alpha) > M_PI / 2.0;
+    
+    // Pure pursuit formula: radius = L / (2 * sin(alpha))
+    // Then: angular_vel = linear_vel / radius
+    // Combined: angular_vel = linear_vel * 2 * sin(alpha) / L
+    double sin_alpha = std::sin(alpha);
+    
+    // Avoid singularity when alpha is very small
+    if (std::abs(sin_alpha) < 0.01) {
+        sin_alpha = (sin_alpha >= 0) ? 0.01 : -0.01;
+    }
+    
+    // Calculate linear velocity (with reversal if needed)
+    double linear_vel = reversed ? -config_.max_linear_velocity : config_.max_linear_velocity;
+    
+    // Calculate angular velocity using pure pursuit
+    double angular_vel = (2.0 * linear_vel * sin_alpha) / lookahead_dist;
+    
+    // Clamp angular velocity
+    angular_vel = std::clamp(angular_vel, 
+                            -config_.max_angular_velocity, 
+                            config_.max_angular_velocity);
 
-    // Calculate velocities with more aggressive turning
-    double linear_vel = config_.max_linear_velocity;
-    double angular_vel = std::clamp(yaw_error * 3.0,  // Increased gain from 2.0 to 3.0
-                                   -config_.max_angular_velocity, 
-                                   config_.max_angular_velocity);
-
-    // Reduce linear velocity when turning sharply
-    if (std::abs(yaw_error) > 0.5) {  // Only slow down for sharp turns
+    // Adaptive speed reduction for sharp turns
+    double abs_alpha = std::abs(alpha);
+    if (abs_alpha > 0.8) {  // Very sharp turn
         linear_vel *= 0.3;
-    } else if (std::abs(yaw_error) > 0.2) {
+    } else if (abs_alpha > 0.5) {  // Sharp turn
+        linear_vel *= 0.5;
+    } else if (abs_alpha > 0.3) {  // Moderate turn
         linear_vel *= 0.7;
     }
 
     publishVelocityCommand(linear_vel, angular_vel);
     
-    RCLCPP_DEBUG(this->get_logger(), "Pure pursuit: yaw_error=%.3f, linear=%.3f, angular=%.3f", 
-                yaw_error, linear_vel, angular_vel);
+    RCLCPP_DEBUG(this->get_logger(), "Pure pursuit: alpha=%.3f, dist=%.3f, linear=%.3f, angular=%.3f", 
+                alpha, lookahead_dist, linear_vel, angular_vel);
 }
 
 void AutonomousSlamController::publishPath(const std::vector<GridCell>& path) {
@@ -572,8 +654,8 @@ bool AutonomousSlamController::isGoalReached(const geometry_msgs::msg::Point& go
 }
 
 bool AutonomousSlamController::isRobotStuck() {
-    const double stuck_distance_threshold = 0.05; // meters
-    const double stuck_timeout = 5.0; // seconds - much shorter than config timeout
+    const double stuck_distance_threshold = 0.03; // meters - reduced for better detection
+    const double stuck_timeout = 4.0; // seconds - reduced for faster recovery
     
     double current_distance = calculateDistance(poseToPoint(current_pose_), current_goal_);
     
@@ -586,6 +668,8 @@ bool AutonomousSlamController::isRobotStuck() {
     
     // Robot hasn't made progress - check if stuck for too long
     if ((this->now() - last_movement_time_).seconds() > stuck_timeout) {
+        RCLCPP_WARN(this->get_logger(), "Stuck detected: no progress for %.1f seconds (dist: %.3f)", 
+                    stuck_timeout, current_distance);
         return true;
     }
     

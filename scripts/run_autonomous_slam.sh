@@ -85,8 +85,8 @@ sleep 1
 
 echo "✅ Robot spawned without wall following - ready for autonomous SLAM control"
 
-echo "3️⃣ Starting Cartographer SLAM..."
-ros2 launch turtlebot3_cartographer cartographer.launch.py use_sim_time:=True &
+echo "3️⃣ Starting Cartographer SLAM (output redirected to /tmp/cartographer.log)..."
+ros2 launch turtlebot3_cartographer cartographer.launch.py use_sim_time:=True > /tmp/cartographer.log 2>&1 &
 CARTOGRAPHER_PID=$!
 
 echo "⏳ Waiting for Cartographer to initialize..."
@@ -99,8 +99,8 @@ if ! ps -p $CARTOGRAPHER_PID > /dev/null 2>&1; then
     exit 1
 fi
 
-echo "4️⃣ Launching RViz2 for visualization..."
-rviz2 &
+echo "4️⃣ Launching RViz2 for visualization (output redirected to /tmp/rviz.log)..."
+rviz2 > /tmp/rviz.log 2>&1 &
 RVIZ_PID=$!
 sleep 3
 
@@ -149,6 +149,8 @@ echo "   • Watch RViz to see autonomous exploration"
 echo "   • Robot will move to frontiers automatically"
 echo "   • SLAM builds map as robot explores"
 echo "   • System logs show state transitions and progress"
+echo "   • Cartographer logs: tail -f /tmp/cartographer.log"
+echo "   • RViz logs: tail -f /tmp/rviz.log"
 echo ""
 echo "🔄 State Machine:"
 echo "   INITIALIZING → MAPPING → RETURNING_HOME → OPERATIONAL"

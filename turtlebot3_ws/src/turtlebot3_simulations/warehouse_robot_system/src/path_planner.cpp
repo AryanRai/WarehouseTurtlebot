@@ -443,16 +443,16 @@ PathPlanner::aStar(
             
             std::reverse(path.begin(), path.end());
             
-            // Check minimum path length
-            const int MIN_PATH_LENGTH = 12;
+            // Check minimum path length (reduced for nearby frontiers)
+            const int MIN_PATH_LENGTH = 3;  // Reduced from 12 to allow nearby frontiers
             if (path.size() < MIN_PATH_LENGTH) {
                 std::cout << "Path too short (" << path.size() << " < " << MIN_PATH_LENGTH << ")" << std::endl;
                 return {std::nullopt, std::nullopt, actual_start, actual_goal};
             }
             
-            // Truncate last few poses
-            const int POSES_TO_TRUNCATE = 8;
-            if (path.size() > POSES_TO_TRUNCATE) {
+            // Truncate last few poses (but not if path is already short)
+            const int POSES_TO_TRUNCATE = 5;  // Reduced from 8
+            if (path.size() > POSES_TO_TRUNCATE + 3) {  // Only truncate if we have enough poses
                 path.erase(path.end() - POSES_TO_TRUNCATE, path.end());
             }
             

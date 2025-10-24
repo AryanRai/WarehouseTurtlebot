@@ -34,6 +34,8 @@ This project implements a heterogeneous warehouse robot system using polymorphic
 # Robot explores automatically - no manual control needed!
 ```
 
+> **📝 Note:** Recent fixes have resolved circling and stuck behavior issues in autonomous navigation. See [docs/README.md](docs/README.md) for complete fix documentation.
+
 ### 🛠️ Build Only
 ```bash
 # Build all packages

@@ -97,17 +97,18 @@ private:
     struct Config {
         double exploration_timeout_s = 300.0;        ///< Max time for exploration (5 min)
         double frontier_min_size = 8;                ///< Minimum frontier size to consider
-        double goal_tolerance = 0.15;                ///< Distance tolerance for reaching goals
+        double goal_tolerance = 0.35;                ///< Distance tolerance for reaching goals
         double origin_tolerance = 0.2;               ///< Tolerance for returning to origin
         double max_linear_velocity = 0.15;           ///< Maximum forward speed
         double max_angular_velocity = 0.8;           ///< Maximum turn rate
-        double stuck_timeout_s = 30.0;               ///< Time before considering robot stuck
+        double stuck_timeout_s = 30.0;               ///< Time before considering robot stuck (not used, see isRobotStuck)
         double frontier_search_rate_hz = 2.0;        ///< Rate for frontier detection
         int max_no_frontier_count = 15;              ///< Max consecutive no-frontier detections
         int max_no_path_count = 10;                  ///< Max consecutive path planning failures
         double a_star_cost_weight = 10.0;            ///< A* path cost weighting
         double frontier_size_weight = 1.0;           ///< Frontier size importance weighting
         int max_frontiers_to_check = 8;              ///< Limit frontiers evaluated per cycle
+        double visited_frontier_radius = 0.5;        ///< Radius to mark frontiers as visited
     } config_;
 
     // ROS2 interfaces
@@ -140,6 +141,7 @@ private:
     std::unique_ptr<FrontierSearch> frontier_searcher_;
     std::unique_ptr<PathPlanner> path_planner_;
     std::vector<Frontier> detected_frontiers_;
+    std::vector<geometry_msgs::msg::Point> visited_frontiers_;  ///< Track visited frontier locations
     
     // Progress tracking
     int consecutive_no_frontiers_;
