@@ -482,7 +482,7 @@ bool AutonomousSlamController::followCurrentPath() {
 }
 
 geometry_msgs::msg::Point AutonomousSlamController::calculateLookaheadPoint() {
-    const double lookahead_distance = 0.18; // meters - matching reference
+    const double lookahead_distance = 0.30; // meters - increased to prevent cutting corners
     
     if (current_path_.poses.empty()) {
         return current_goal_;
@@ -502,7 +502,7 @@ geometry_msgs::msg::Point AutonomousSlamController::calculateLookaheadPoint() {
         }
     }
 
-    // Find lookahead point: first point beyond lookahead_distance from nearest
+    // Find lookahead point: first point beyond lookahead_distance from current position
     size_t lookahead_index = nearest_index;
     for (size_t i = nearest_index; i < current_path_.poses.size(); ++i) {
         double dist = calculateDistance(current_pos, current_path_.poses[i].pose.position);
@@ -540,21 +540,17 @@ void AutonomousSlamController::calculatePurePursuitControl(const geometry_msgs::
     while (alpha > M_PI) alpha -= 2.0 * M_PI;
     while (alpha < -M_PI) alpha += 2.0 * M_PI;
     
-    // Check if we should reverse (lookahead is behind robot)
-    bool reversed = std::abs(alpha) > M_PI / 2.0;
+    // NEVER reverse - always drive forward
+    // Reversal causes slow backward movement and is not needed for frontier exploration
+    double linear_vel = config_.max_linear_velocity;
     
-    // Pure pursuit formula: radius = L / (2 * sin(alpha))
-    // Then: angular_vel = linear_vel / radius
-    // Combined: angular_vel = linear_vel * 2 * sin(alpha) / L
+    // Pure pursuit formula: angular_vel = linear_vel * 2 * sin(alpha) / L
     double sin_alpha = std::sin(alpha);
     
     // Avoid singularity when alpha is very small
     if (std::abs(sin_alpha) < 0.01) {
         sin_alpha = (sin_alpha >= 0) ? 0.01 : -0.01;
     }
-    
-    // Calculate linear velocity (with reversal if needed)
-    double linear_vel = reversed ? -config_.max_linear_velocity : config_.max_linear_velocity;
     
     // Calculate angular velocity using pure pursuit
     double angular_vel = (2.0 * linear_vel * sin_alpha) / lookahead_dist;
@@ -564,20 +560,23 @@ void AutonomousSlamController::calculatePurePursuitControl(const geometry_msgs::
                             -config_.max_angular_velocity, 
                             config_.max_angular_velocity);
 
-    // Adaptive speed reduction for sharp turns
+    // Adaptive speed reduction for sharp turns (more conservative)
     double abs_alpha = std::abs(alpha);
-    if (abs_alpha > 0.8) {  // Very sharp turn
-        linear_vel *= 0.3;
-    } else if (abs_alpha > 0.5) {  // Sharp turn
-        linear_vel *= 0.5;
-    } else if (abs_alpha > 0.3) {  // Moderate turn
-        linear_vel *= 0.7;
+    if (abs_alpha > 1.2) {  // Very sharp turn (>68°)
+        linear_vel *= 0.25;  // Slow way down
+    } else if (abs_alpha > 0.8) {  // Sharp turn (>45°)
+        linear_vel *= 0.4;
+    } else if (abs_alpha > 0.5) {  // Moderate turn (>28°)
+        linear_vel *= 0.6;
+    } else if (abs_alpha > 0.3) {  // Gentle turn (>17°)
+        linear_vel *= 0.8;
     }
+    // else: straight ahead, full speed
 
     publishVelocityCommand(linear_vel, angular_vel);
     
-    RCLCPP_DEBUG(this->get_logger(), "Pure pursuit: alpha=%.3f, dist=%.3f, linear=%.3f, angular=%.3f", 
-                alpha, lookahead_dist, linear_vel, angular_vel);
+    RCLCPP_DEBUG(this->get_logger(), "Pure pursuit: alpha=%.3f (%.1f°), dist=%.3f, linear=%.3f, angular=%.3f", 
+                alpha, alpha * 180.0 / M_PI, lookahead_dist, linear_vel, angular_vel);
 }
 
 void AutonomousSlamController::publishPath(const std::vector<GridCell>& path) {

@@ -99,8 +99,8 @@ private:
         double frontier_min_size = 8;                ///< Minimum frontier size to consider
         double goal_tolerance = 0.35;                ///< Distance tolerance for reaching goals
         double origin_tolerance = 0.2;               ///< Tolerance for returning to origin
-        double max_linear_velocity = 0.15;           ///< Maximum forward speed
-        double max_angular_velocity = 0.8;           ///< Maximum turn rate
+        double max_linear_velocity = 0.12;           ///< Maximum forward speed (reduced for better control)
+        double max_angular_velocity = 0.6;           ///< Maximum turn rate (reduced for smoother turns)
         double stuck_timeout_s = 30.0;               ///< Time before considering robot stuck (not used, see isRobotStuck)
         double frontier_search_rate_hz = 2.0;        ///< Rate for frontier detection
         int max_no_frontier_count = 15;              ///< Max consecutive no-frontier detections

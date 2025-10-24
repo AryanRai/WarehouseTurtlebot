@@ -160,7 +160,7 @@ std::pair<nav_msgs::msg::OccupancyGrid, std::vector<GridCell>> PathPlanner::calc
     const nav_msgs::msg::OccupancyGrid& mapdata,
     bool include_cells) {
     
-    const int PADDING = 5; // Number of cells around obstacles
+    const int PADDING = 8; // Number of cells around obstacles - increased to keep robot away from walls
     
     int width = mapdata.info.width;
     int height = mapdata.info.height;

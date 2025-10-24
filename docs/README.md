@@ -14,12 +14,18 @@
    - Testing instructions
    - Troubleshooting guide
 
-2. **[STUCK_BEHAVIOR_FIX.md](STUCK_BEHAVIOR_FIX.md)**
+2. **[WALL_COLLISION_FIX.md](WALL_COLLISION_FIX.md)** 🆕 LATEST FIX
+   - Fixes wall collisions and backward movement
+   - Increased lookahead and padding
+   - Removed reversal logic
+   - Safer navigation
+
+3. **[STUCK_BEHAVIOR_FIX.md](STUCK_BEHAVIOR_FIX.md)**
    - Additional fixes for stuck behavior
    - Path planning improvements
    - Recovery enhancements
 
-3. **[COMMANDS.md](COMMANDS.md)**
+4. **[COMMANDS.md](COMMANDS.md)**
    - All useful ROS2 commands
    - Monitoring tools
    - Debugging commands
@@ -55,6 +61,11 @@ source install/setup.bash
 - **Cause:** Gentle recovery maneuvers
 - **Fix:** Faster, more aggressive recovery
 - **Result:** Quick obstacle escape ✓
+
+### Issue 4: Wall Collisions & Backward Movement
+- **Cause:** Short lookahead, reversal logic, insufficient padding
+- **Fix:** Increased lookahead (0.30m), removed reversal, more padding
+- **Result:** Safe navigation, no wall hits, forward-only ✓
 
 ## 📊 Results
 
