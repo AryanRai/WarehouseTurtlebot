@@ -245,12 +245,11 @@ void AutonomousSlamController::handleNavigating() {
 }
 
 void AutonomousSlamController::handleExploringArea() {
-    // Simple local exploration: rotate in place to scan area
-    static int rotation_count = 0;
+    // Quick scan: just one rotation to update map
     static rclcpp::Time rotation_start = this->now();
     
-    const double rotation_duration = 3.0; // seconds
-    const double rotation_speed = 0.5; // rad/s
+    const double rotation_duration = 2.0; // seconds - reduced from 3.0
+    const double rotation_speed = 0.8; // rad/s - increased for faster scan
     
     if ((this->now() - rotation_start).seconds() < rotation_duration) {
         publishVelocityCommand(0.0, rotation_speed);
@@ -258,15 +257,10 @@ void AutonomousSlamController::handleExploringArea() {
     }
     
     stopRobot();
-    rotation_count++;
+    rotation_start = this->now();
     
-    if (rotation_count >= 2) { // Two full rotations
-        rotation_count = 0;
-        RCLCPP_INFO(this->get_logger(), "Local exploration complete, searching for new frontiers");
-        transitionToMappingState(MappingState::SEARCHING_FRONTIERS);
-    } else {
-        rotation_start = this->now();
-    }
+    RCLCPP_INFO(this->get_logger(), "Quick scan complete, searching for new frontiers");
+    transitionToMappingState(MappingState::SEARCHING_FRONTIERS);
 }
 
 void AutonomousSlamController::handleStuckRecovery() {
@@ -485,15 +479,17 @@ void AutonomousSlamController::calculatePurePursuitControl(const geometry_msgs::
     while (yaw_error > M_PI) yaw_error -= 2.0 * M_PI;
     while (yaw_error < -M_PI) yaw_error += 2.0 * M_PI;
 
-    // Calculate velocities
+    // Calculate velocities with more aggressive turning
     double linear_vel = config_.max_linear_velocity;
-    double angular_vel = std::clamp(yaw_error * 2.0, 
+    double angular_vel = std::clamp(yaw_error * 3.0,  // Increased gain from 2.0 to 3.0
                                    -config_.max_angular_velocity, 
                                    config_.max_angular_velocity);
 
-    // Reduce linear velocity when turning
-    if (std::abs(angular_vel) > 0.3) {
-        linear_vel *= 0.5;
+    // Reduce linear velocity when turning sharply
+    if (std::abs(yaw_error) > 0.5) {  // Only slow down for sharp turns
+        linear_vel *= 0.3;
+    } else if (std::abs(yaw_error) > 0.2) {
+        linear_vel *= 0.7;
     }
 
     publishVelocityCommand(linear_vel, angular_vel);
