@@ -1,157 +1,175 @@
-# MTRX3760 Project 2 - Scripts
+# Scripts Directory
 
-This folder contains utility scripts for running the warehouse robot system with SLAM capabilities.
+Utility scripts for running the TurtleBot3 warehouse robot system with autonomous SLAM.
 
-## Available Scripts
+## Quick Start
 
-### 🛠️ Build
-- **`build_project.sh`** - Build the project with Anaconda conflict resolution
-  - Temporarily removes Anaconda from build environment
-  - Builds packages in correct order
-  - Handles library path conflicts
-  - Supports clean builds with `./scripts/build_project.sh clean`
-
-### 🤖 SLAM Simulation
-- **`run_autonomous_slam.sh`** - Autonomous SLAM with frontier exploration
-  - Complete autonomous mapping system
-  - Frontier detection and exploration
-  - A* path planning and navigation
-  - Returns to origin when mapping complete
-  - Transitions to operational mode
-
-- **`spawn_robot.sh`** - Spawn TurtleBot3 in existing Gazebo simulation
-  - Spawns robot at specified coordinates
-  - Starts robot_state_publisher
-  - Validates Gazebo is running
-
-### 🎮 Robot Control
-- **`run_teleop.sh`** - Manual robot control via keyboard
-  - Simple teleop interface for TurtleBot3
-  - Use w/x for linear velocity, a/d for angular velocity
-  - Space/s for emergency stop
-
-### 🛑 Cleanup & Kill Scripts
-- **`kill_all_ros.sh`** - Comprehensive ROS2 process cleanup
-  - Graceful shutdown of all ROS2 nodes
-  - Kills Gazebo, RViz, and related processes
-  - Cleans up shared memory and temporary files
-  - Shows summary of remaining processes
-
-- **`kill_ros_force.sh`** - Force kill all ROS processes
-  - Aggressive immediate termination
-  - Use when normal shutdown fails
-  - Nuclear option for stuck processes
-
-### 🔍 Diagnostics
-- **`diagnose_ros.sh`** - Comprehensive ROS2 system diagnostics
-  - Checks running nodes and topics
-  - Validates transforms and message rates
-  - Identifies common issues
-  - Provides troubleshooting recommendations
-
-## Usage Examples
-
-### Build the Project
+### Simulation Mode
 ```bash
-# Build all packages
+# 1. Build the project
 ./scripts/build_project.sh
 
-# Clean build if needed
-./scripts/build_project.sh clean
-```
-
-### Autonomous SLAM
-```bash
-# Terminal 1: Generate and launch maze
+# 2. Launch Gazebo with maze
 ./launch_mgen.sh
 
-# Terminal 2: Run autonomous SLAM
+# 3. Run autonomous SLAM (in new terminal)
 ./scripts/run_autonomous_slam.sh
-# Robot explores automatically using frontier detection
 ```
 
-### Manual Robot Control
+### Physical Robot Mode
 ```bash
-# Start teleop control (requires Gazebo + robot spawned)
-./scripts/run_teleop.sh
+# 1. Start hardware on TurtleBot
+./scripts/turtlebot_bringup.sh start
+
+# 2. Connect to TurtleBot
+source scripts/ros_link_turtlebot.sh
+
+# 3. Run autonomous SLAM
+./scripts/run_autonomous_slam.sh
+# Answer 'y' when prompted to use physical robot
 ```
 
-### Emergency Cleanup
+## All Scripts
+
+### 🛠️ Build & Setup
+- **`build_project.sh`** - Build project with Anaconda conflict resolution
+  ```bash
+  ./scripts/build_project.sh        # Normal build
+  ./scripts/build_project.sh clean  # Clean build
+  ```
+
+### 🤖 Robot Operation
+
+#### Autonomous SLAM
+- **`run_autonomous_slam.sh`** - Autonomous mapping with frontier exploration
+  - Supports both simulation and physical robot
+  - Auto-detects Gazebo or prompts for physical mode
+  - Frontier-based exploration with A* pathfinding
+  - Returns to origin when complete
+  ```bash
+  ./scripts/run_autonomous_slam.sh
+  ```
+
+#### Manual Control
+- **`run_teleop.sh`** - Keyboard teleoperation
+  - Controls: w/x (linear), a/d (angular), space/s (stop)
+  ```bash
+  ./scripts/run_teleop.sh
+  ```
+
+### 🔗 Physical Robot
+
+- **`turtlebot_bringup.sh`** - Check hardware bringup status on physical TurtleBot
+  ```bash
+  ./scripts/turtlebot_bringup.sh status  # Check if bringup is running
+  ./scripts/turtlebot_bringup.sh stop    # Stop all bringup processes
+  ```
+  - Requires `sshpass`: `sudo apt-get install sshpass`
+  - Connects to TurtleBot at 10.42.0.1 (password: turtlebot)
+  
+  **Note:** For starting bringup, SSH manually (see `scripts/turtlebot_manual_bringup.md`):
+  ```bash
+  ssh ubuntu@10.42.0.1
+  export ROS_DOMAIN_ID=29
+  ros2 launch turtlebot3_bringup robot.launch.py
+  ```
+
+- **`ros_link_turtlebot.sh`** - Configure environment for physical TurtleBot
+  ```bash
+  source scripts/ros_link_turtlebot.sh
+  ```
+  - Kills local ROS processes
+  - Sets ROS_DOMAIN_ID=29
+  - Sets RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+  - Lists available topics
+
+### 🛑 Cleanup
+
+- **`kill_all_ros.sh`** - Graceful shutdown of all ROS processes
+  ```bash
+  ./scripts/kill_all_ros.sh
+  ```
+  - Stops ROS nodes, Gazebo, RViz, Cartographer
+  - Cleans shared memory
+  - Shows process summary
+
+- **`kill_ros_force.sh`** - Force kill all ROS processes
+  ```bash
+  ./scripts/kill_ros_force.sh
+  ```
+  - Use when normal shutdown fails
+
+### 🔍 Diagnostics
+
+- **`diagnose_ros.sh`** - System diagnostics and troubleshooting
+  ```bash
+  ./scripts/diagnose_ros.sh
+  ```
+  - Checks nodes, topics, transforms
+  - Validates message rates
+  - Provides recommendations
+
+### 🎮 Simulation Utilities
+
+- **`spawn_robot.sh`** - Spawn TurtleBot3 in Gazebo
+  ```bash
+  ./scripts/spawn_robot.sh [x] [y] [yaw]
+  ```
+  - Default: origin (0, 0, 0)
+
+- **`check_slam_logs.sh`** - View SLAM system logs
+- **`test_slam_navigation.sh`** - Test navigation system
+
+## Environment Configuration
+
+All scripts automatically set:
+- `ROS_DOMAIN_ID=29` (for physical robot)
+- `TURTLEBOT3_MODEL=burger`
+- `RMW_IMPLEMENTATION=rmw_fastrtps_cpp` (for physical robot)
+
+## Common Workflows
+
+### Simulation Testing
 ```bash
-# Graceful cleanup of all ROS processes
-./scripts/kill_all_ros.sh
-
-# Force kill everything (when things are stuck)
-./scripts/kill_ros_force.sh
-
-# Diagnose issues
-./scripts/diagnose_ros.sh
+./launch_mgen.sh                    # Terminal 1
+./scripts/run_autonomous_slam.sh    # Terminal 2
 ```
 
-## System Requirements
+### Physical Robot Operation
+```bash
+./scripts/turtlebot_bringup.sh start          # Start hardware
+source scripts/ros_link_turtlebot.sh          # Connect
+./scripts/run_autonomous_slam.sh              # Run SLAM (answer 'y')
+```
 
-- ROS2 (Humble or later)
-- TurtleBot3 packages
-- Gazebo simulation
-- Python 3 (for maze generation)
-- Built warehouse_robot_system package
-
-## Features
-
-### Autonomous SLAM System
-- Fully autonomous frontier-based exploration
-- High-level state machine (MAPPING → OPERATIONAL)
-- A* pathfinding with obstacle avoidance
-- Returns to origin when mapping complete
-- Cartographer SLAM for real-time mapping
-- RViz visualization for monitoring
-
-### Warehouse Robot System
-- Polymorphic robot design with factory pattern
-- Integration with autonomous SLAM
-- Factory pattern for robot creation
+### Cleanup After Session
+```bash
+./scripts/kill_all_ros.sh           # Stop everything
+./scripts/turtlebot_bringup.sh stop # Stop robot hardware (if used)
+```
 
 ## Troubleshooting
 
-### Build Issues
+**Build fails with Anaconda conflicts:**
 ```bash
-# Use the build script for Anaconda conflicts
 ./scripts/build_project.sh clean
-
-# Or manually in workspace
-cd turtlebot3_ws
-colcon build --packages-select warehouse_robot_system
 ```
 
-### Missing Dependencies
+**Can't connect to physical robot:**
 ```bash
-# Install TurtleBot3 packages
-sudo apt install ros-humble-turtlebot3*
-sudo apt install ros-humble-cartographer*
-sudo apt install libcurl4-openssl-dev
+# Check TurtleBot is on and connected
+ping 10.42.0.1
+# Verify hardware bringup is running
+./scripts/turtlebot_bringup.sh status
 ```
 
-### Anaconda/Conda Conflicts
+**ROS processes won't stop:**
 ```bash
-# Deactivate conda environment
-conda deactivate
-
-# Use the build script that handles conflicts
-./scripts/build_project.sh
-```
-
-### Stuck Processes
-```bash
-# When ROS nodes won't stop normally
-./scripts/kill_all_ros.sh
-
-# When everything is completely stuck
 ./scripts/kill_ros_force.sh
 ```
 
-### Gazebo Model Issues
+**Segmentation fault after cleanup:**
 ```bash
-# Set environment variables
-export TURTLEBOT3_MODEL=burger
-export GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:$(pwd)/turtlebot3_ws/install/turtlebot3_gazebo/share/turtlebot3_gazebo/models
+ros2 daemon stop
+ros2 daemon start
 ```

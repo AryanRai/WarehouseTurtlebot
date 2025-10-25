@@ -1,9 +1,18 @@
 #!/bin/bash
 # Autonomous SLAM System Runner
 # Runs the complete autonomous SLAM system with frontier exploration
+# Supports both Gazebo simulation and physical TurtleBot3
+
+# Set ROS Domain ID
+export ROS_DOMAIN_ID=29
+export TURTLEBOT3_MODEL=burger
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 
 echo "🤖 Starting Autonomous SLAM System"
 echo "=================================="
+echo "   ROS_DOMAIN_ID: $ROS_DOMAIN_ID"
+echo "   TURTLEBOT3_MODEL: $TURTLEBOT3_MODEL"
+echo "   RMW_IMPLEMENTATION: $RMW_IMPLEMENTATION"
 echo ""
 
 cd "$(dirname "$0")/../turtlebot3_ws"
@@ -17,15 +26,38 @@ fi
 source install/setup.bash
 
 # Check if Gazebo is running
+USE_PHYSICAL_ROBOT=false
 if ! pgrep -f "gz sim" > /dev/null; then
-    echo "❌ Gazebo is not running!"
-    echo "Please start Gazebo first with:"
-    echo "   ./launch_mgen.sh"
-    exit 1
+    echo "⚠️  Gazebo is not running!"
+    echo ""
+    echo "Would you like to run on physical TurtleBot3 instead? (y/n)"
+    read -r response
+    
+    if [[ "$response" =~ ^[Yy]$ ]]; then
+        USE_PHYSICAL_ROBOT=true
+        echo ""
+        echo "🤖 Switching to Physical TurtleBot3 Mode"
+        echo "========================================"
+        echo ""
+        echo "Prerequisites:"
+        echo "1. TurtleBot3 must be powered on and connected"
+        echo "2. Hardware bringup must be running on TurtleBot"
+        echo ""
+        echo "💡 To start hardware bringup, run:"
+        echo "   ./scripts/turtlebot_bringup.sh start"
+        echo ""
+        echo "Press Enter to continue or Ctrl+C to cancel..."
+        read -r
+    else
+        echo ""
+        echo "❌ Please start Gazebo first with:"
+        echo "   ./launch_mgen.sh"
+        exit 1
+    fi
+else
+    echo "✅ Gazebo is running - using simulation mode"
+    echo ""
 fi
-
-echo "✅ Gazebo is running"
-echo ""
 
 # Function to cleanup processes on exit
 cleanup() {
@@ -68,25 +100,47 @@ trap cleanup SIGINT SIGTERM
 echo "🚀 Starting Autonomous SLAM Components..."
 echo ""
 
-echo "1️⃣ Starting robot_state_publisher..."
-ros2 launch turtlebot3_gazebo robot_state_publisher.launch.py use_sim_time:=True &
-RSP_PID=$!
-sleep 2
+# Different startup for physical robot vs simulation
+if [ "$USE_PHYSICAL_ROBOT" = true ]; then
+    echo "🤖 Physical TurtleBot3 Mode"
+    echo "==========================="
+    echo ""
+    echo "Skipping robot spawn (using physical robot)"
+    echo "Make sure hardware bringup is running on TurtleBot!"
+    echo ""
+    
+    # Set use_sim_time to false for physical robot
+    USE_SIM_TIME="False"
+    RSP_PID=""
+    SPAWN_PID=""
+else
+    echo "🎮 Simulation Mode"
+    echo "=================="
+    echo ""
+    
+    echo "1️⃣ Starting robot_state_publisher..."
+    ros2 launch turtlebot3_gazebo robot_state_publisher.launch.py use_sim_time:=True &
+    RSP_PID=$!
+    sleep 2
 
-echo "2️⃣ Spawning TurtleBot3 at origin (0, 0) - autonomous mode..."
-ros2 launch turtlebot3_gazebo spawn_turtlebot3.launch.py x_pose:=0.0 y_pose:=0.0 &
-SPAWN_PID=$!
-sleep 4
+    echo "2️⃣ Spawning TurtleBot3 at origin (0, 0) - autonomous mode..."
+    ros2 launch turtlebot3_gazebo spawn_turtlebot3.launch.py x_pose:=0.0 y_pose:=0.0 &
+    SPAWN_PID=$!
+    sleep 4
 
-# Kill the wall-following drive node (we don't need it for autonomous SLAM)
-echo "🔧 Stopping wall-following node..."
-pkill -f turtlebot3_drive_node
-sleep 1
+    # Kill the wall-following drive node (we don't need it for autonomous SLAM)
+    echo "🔧 Stopping wall-following node..."
+    pkill -f turtlebot3_drive_node
+    sleep 1
 
-echo "✅ Robot spawned without wall following - ready for autonomous SLAM control"
+    echo "✅ Robot spawned without wall following - ready for autonomous SLAM control"
+    
+    # Set use_sim_time to true for simulation
+    USE_SIM_TIME="True"
+fi
 
 echo "3️⃣ Starting Cartographer SLAM (output redirected to /tmp/cartographer.log)..."
-ros2 launch turtlebot3_cartographer cartographer.launch.py use_sim_time:=True > /tmp/cartographer.log 2>&1 &
+ros2 launch turtlebot3_cartographer cartographer.launch.py use_sim_time:=$USE_SIM_TIME > /tmp/cartographer.log 2>&1 &
 CARTOGRAPHER_PID=$!
 
 echo "⏳ Waiting for Cartographer to initialize..."
@@ -122,11 +176,18 @@ echo ""
 echo "✅ Autonomous SLAM System Started!"
 echo ""
 echo "📊 Running Components:"
-echo "   🔧 robot_state_publisher (PID: $RSP_PID)"
-echo "   🤖 TurtleBot3 at origin (PID: $SPAWN_PID)"
+if [ "$USE_PHYSICAL_ROBOT" = true ]; then
+    echo "   🤖 Physical TurtleBot3 (hardware bringup on robot)"
+else
+    echo "   🔧 robot_state_publisher (PID: $RSP_PID)"
+    echo "   🤖 TurtleBot3 in Gazebo (PID: $SPAWN_PID)"
+fi
 echo "   🗺️  Cartographer SLAM (PID: $CARTOGRAPHER_PID)"
 echo "   🖥️  RViz2 (PID: $RVIZ_PID)"
 echo "   🧠 Autonomous SLAM Controller (PID: $SLAM_PID)"
+echo ""
+echo "🎯 Mode: $([ "$USE_PHYSICAL_ROBOT" = true ] && echo "Physical Robot" || echo "Simulation")"
+echo "   use_sim_time: $USE_SIM_TIME"
 echo ""
 echo "🎯 System Behavior:"
 echo "   • Robot will automatically explore the environment"
@@ -173,9 +234,12 @@ while true; do
         break
     fi
     
-    if ! ps -p $RSP_PID > /dev/null 2>&1; then
-        echo "❌ robot_state_publisher process died!"
-        break
+    # Only check RSP if in simulation mode
+    if [ "$USE_PHYSICAL_ROBOT" = false ] && [ ! -z "$RSP_PID" ]; then
+        if ! ps -p $RSP_PID > /dev/null 2>&1; then
+            echo "❌ robot_state_publisher process died!"
+            break
+        fi
     fi
     
     sleep 1
