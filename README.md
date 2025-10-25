@@ -21,7 +21,8 @@ This project implements a heterogeneous warehouse robot system using polymorphic
 
 ## 🚀 Quick Start
 
-### 🤖 Autonomous SLAM (Recommended)
+### 🎮 Simulation Mode (Gazebo)
+
 ```bash
 # Build the project
 ./scripts/build_project.sh
@@ -33,6 +34,68 @@ This project implements a heterogeneous warehouse robot system using polymorphic
 ./scripts/run_autonomous_slam.sh
 # Robot explores automatically - no manual control needed!
 ```
+
+### 🤖 Physical Robot Mode (TurtleBot3)
+
+#### Step 1: Connect to TurtleBot3
+1. **Power on the TurtleBot3** and wait for it to boot (~30 seconds)
+2. **Connect to TurtleBot's WiFi AP**:
+   - Network name: Usually `TurtleBot3_XXXX` or similar
+   - Password: Check label on TurtleBot or ask instructor
+   - TurtleBot IP: `10.42.0.1` (default AP mode)
+
+#### Step 2: Start Hardware Bringup
+```bash
+# Install paramiko for Python SSH (first time only)
+pip install paramiko
+
+# Start hardware bringup on TurtleBot (syncs time automatically)
+python3 scripts/turtlebot_bringup.py start robot
+
+# Check status
+python3 scripts/turtlebot_bringup.py status
+```
+
+#### Step 3: Connect Your PC to TurtleBot's Network
+```bash
+# Configure your PC's ROS environment for TurtleBot
+source scripts/ros_link_turtlebot.sh
+
+# Verify connection - you should see TurtleBot topics
+ros2 topic list
+# Expected: /scan, /odom, /imu, /battery_state, etc.
+```
+
+#### Step 4: Run Autonomous SLAM
+```bash
+# Run autonomous SLAM (will detect no Gazebo and prompt for physical robot)
+./scripts/run_autonomous_slam.sh
+# Answer 'y' when asked about physical robot
+
+# The robot will:
+# - Automatically explore the environment
+# - Build a map using Cartographer SLAM
+# - Navigate autonomously using frontier detection
+# - Return to origin when mapping is complete
+```
+
+#### Emergency Stop
+```bash
+# If robot misbehaves, immediately stop it:
+./scripts/emergency_stop.sh
+```
+
+#### Cleanup
+```bash
+# Stop hardware bringup on TurtleBot
+python3 scripts/turtlebot_bringup.py stop
+```
+
+> **⚠️ Important Notes for Physical Robot:**
+> - RViz is disabled by default to prevent WiFi overload in AP mode 
+> - Keep emergency stop script ready: `./scripts/emergency_stop.sh`
+> - Time sync happens automatically on bringup start
+> - If WiFi disconnects, restart TurtleBot and reconnect
 
 > **📝 Note:** Recent fixes have resolved circling and stuck behavior issues in autonomous navigation. See [docs/README.md](docs/README.md) for complete fix documentation.
 
