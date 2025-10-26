@@ -1,0 +1,62 @@
+# MTRX3760 Battery Monitor Configuration
+# File: battery_params.yaml
+#
+# Configure battery monitoring parameters
+
+battery_monitor:
+  ros__parameters:
+    # Battery voltage thresholds (for 3S LiPo battery)
+    voltage_full: 12.6      # Fully charged voltage
+    voltage_nominal: 11.1   # Nominal voltage (3.7V per cell)
+    voltage_low: 11.0       # Low battery threshold (30%)
+    voltage_critical: 10.8  # Critical battery threshold (15%)
+    voltage_cutoff: 10.5    # Absolute minimum (damage threshold)
+    
+    # Publishing rate
+    publish_rate_hz: 2.0    # How often to publish battery state
+    
+    # Discharge rate calculation
+    discharge_window_s: 60.0  # Time window for discharge rate calculation
+    
+    # Simulation mode (for Gazebo)
+    use_simulation: true    # Set to false for real robot
+    initial_battery_pct: 100.0
+    drain_rate_per_meter: 0.5     # Percentage drain per meter
+    drain_rate_per_rotation: 0.1  # Percentage drain per full rotation
+    
+    # Warning settings
+    enable_low_battery_warning: true
+    warning_interval_s: 30.0  # How often to republish warnings
+    
+    # Auto return-to-home trigger
+    auto_return_home_enabled: true
+    auto_return_threshold_pct: 20.0  # Trigger return when below this percentage
+
+battery_terminal_display:
+  ros__parameters:
+    # Display update rate
+    update_rate_hz: 1.0
+    
+    # Display options
+    show_battery_bar: true
+    show_discharge_rate: true
+    show_time_remaining: true
+    clear_screen: false  # Set true to clear terminal each update
+    
+    # Color thresholds
+    color_good_pct: 30.0    # Green above this
+    color_warning_pct: 15.0 # Yellow between warning and good
+                            # Red below warning
+
+battery_gui_display:
+  ros__parameters:
+    # GUI update rate
+    update_rate_hz: 10.0
+    
+    # Plot settings
+    plot_history_seconds: 300.0  # Show last 5 minutes
+    plot_update_interval_ms: 1000
+    
+    # Alert settings
+    flash_critical_alert: true
+    alert_flash_interval_ms: 500

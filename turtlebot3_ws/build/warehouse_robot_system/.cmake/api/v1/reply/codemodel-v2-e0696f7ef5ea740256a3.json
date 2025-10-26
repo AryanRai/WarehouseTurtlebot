@@ -1,0 +1,124 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-0e4e04eef34db8bb0caa.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.20"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7
+					]
+				}
+			],
+			"name" : "",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "warehouse_robot_system",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "autonomous_slam_lib::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-autonomous_slam_lib-8df6ba9509c87f9f8ca7.json",
+					"name" : "autonomous_slam_lib",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "autonomous_slam_main::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-autonomous_slam_main-937d248a00719ca23443.json",
+					"name" : "autonomous_slam_main",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "slam_module::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-slam_module-9c1646e7e649b8d716a1.json",
+					"name" : "slam_module",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "slam_test::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-slam_test-4848c08102eb3033682b.json",
+					"name" : "slam_test",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-uninstall-402d1ce3ebd4545f5a4d.json",
+					"name" : "uninstall",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "warehouse_robot_main::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-warehouse_robot_main-be1c4368a1d9c53f710a.json",
+					"name" : "warehouse_robot_main",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "warehouse_robot_system_lib::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-warehouse_robot_system_lib-3517d7142c0faed6d5a3.json",
+					"name" : "warehouse_robot_system_lib",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "warehouse_robot_system_uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-warehouse_robot_system_uninstall-335f84383cdb95b22857.json",
+					"name" : "warehouse_robot_system_uninstall",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/warehouse_robot_system",
+		"source" : "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 6
+	}
+}

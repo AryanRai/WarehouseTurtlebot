@@ -1,0 +1,5 @@
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/autonomous_slam_controller.cpp:[m[K In member function ‘[01m[Kvoid slam::AutonomousSlamController::[01;32m[KodomCallback[m[K(nav_msgs::msg::Odometry_<std::allocator<void> >::SharedPtr)[m[K’:
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/autonomous_slam_controller.cpp:629:86:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kmsg[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  629 | mousSlamController::odomCallback([01;35m[Kconst nav_msgs::msg::Odometry::SharedPtr msg[m[K) {
+      |                                  [01;35m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~[m[K
+

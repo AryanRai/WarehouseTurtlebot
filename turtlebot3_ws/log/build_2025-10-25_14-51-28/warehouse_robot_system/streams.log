@@ -1,0 +1,15 @@
+[0.007s] Invoking command in '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/warehouse_robot_system': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/filipgus/turtlebot3_ws/install/turtlebot3_teleop:/home/filipgus/turtlebot3_ws/install/turtlebot3_example:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/warehouse_robot_system
+[0.065s] [ 28%] Built target slam_module
+[0.093s] [ 35%] [32m[1mLinking CXX static library libautonomous_slam_lib.a[0m
+[0.157s] [ 42%] Built target autonomous_slam_lib
+[0.174s] [ 57%] Built target warehouse_robot_system_lib
+[0.195s] [ 71%] Built target warehouse_robot_main
+[0.226s] [ 85%] Built target slam_test
+[0.250s] [ 92%] [32mBuilding CXX object CMakeFiles/autonomous_slam_main.dir/src/autonomous_slam_main.cpp.o[0m
+[2.705s] [100%] [32m[1mLinking CXX executable autonomous_slam_main[0m
+[2.727s] /usr/bin/ld: libautonomous_slam_lib.a: error adding symbols: archive has no index; run ranlib to add one
+[2.727s] collect2: error: ld returned 1 exit status
+[2.728s] gmake[2]: *** [CMakeFiles/autonomous_slam_main.dir/build.make:282: autonomous_slam_main] Error 1
+[2.728s] gmake[1]: *** [CMakeFiles/Makefile2:279: CMakeFiles/autonomous_slam_main.dir/all] Error 2
+[2.728s] gmake: *** [Makefile:146: all] Error 2
+[2.729s] Invoked command in '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/warehouse_robot_system' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/filipgus/turtlebot3_ws/install/turtlebot3_teleop:/home/filipgus/turtlebot3_ws/install/turtlebot3_example:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/warehouse_robot_system

@@ -1,0 +1,56 @@
+[0.026s] Invoking command in '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_navigation2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/filipgus/turtlebot3_ws/install/turtlebot3_teleop:/home/filipgus/turtlebot3_ws/install/turtlebot3_example:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3/turtlebot3_navigation2 -DCMAKE_INSTALL_PREFIX=/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2
+[0.827s] -- The C compiler identification is GNU 13.3.0
+[0.827s] -- The CXX compiler identification is GNU 13.3.0
+[0.827s] -- Detecting C compiler ABI info
+[0.827s] -- Detecting C compiler ABI info - done
+[0.827s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.827s] -- Detecting C compile features
+[0.827s] -- Detecting C compile features - done
+[0.827s] -- Detecting CXX compiler ABI info
+[0.827s] -- Detecting CXX compiler ABI info - done
+[0.827s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.827s] -- Detecting CXX compile features
+[0.827s] -- Detecting CXX compile features - done
+[0.827s] -- Found ament_cmake: 2.5.4 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.827s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[0.894s] -- Configuring done (0.9s)
+[0.896s] -- Generating done (0.0s)
+[0.897s] -- Build files have been written to: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_navigation2
+[0.901s] Invoked command in '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_navigation2' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/filipgus/turtlebot3_ws/install/turtlebot3_teleop:/home/filipgus/turtlebot3_ws/install/turtlebot3_example:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3/turtlebot3_navigation2 -DCMAKE_INSTALL_PREFIX=/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2
+[0.902s] Invoking command in '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_navigation2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/filipgus/turtlebot3_ws/install/turtlebot3_teleop:/home/filipgus/turtlebot3_ws/install/turtlebot3_example:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_navigation2 -- -j8 -l8
+[0.992s] Invoked command in '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_navigation2' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/filipgus/turtlebot3_ws/install/turtlebot3_teleop:/home/filipgus/turtlebot3_ws/install/turtlebot3_example:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_navigation2 -- -j8 -l8
+[0.993s] Invoking command in '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_navigation2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/filipgus/turtlebot3_ws/install/turtlebot3_teleop:/home/filipgus/turtlebot3_ws/install/turtlebot3_example:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_navigation2
+[1.003s] -- Install configuration: ""
+[1.003s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/launch
+[1.003s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/launch/navigation2.launch.py
+[1.007s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/map
+[1.007s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/map/map.yaml
+[1.007s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/map/map.pgm
+[1.007s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/param
+[1.007s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/param/burger_cam.yaml
+[1.007s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/param/waffle_pi.yaml
+[1.007s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/param/humble
+[1.007s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/param/humble/burger_cam.yaml
+[1.007s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/param/humble/waffle_pi.yaml
+[1.007s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/param/humble/waffle.yaml
+[1.007s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/param/humble/burger.yaml
+[1.007s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/param/waffle.yaml
+[1.007s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/param/burger.yaml
+[1.009s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/rviz
+[1.009s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/rviz/tb3_navigation2.rviz
+[1.009s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/ament_index/resource_index/package_run_dependencies/turtlebot3_navigation2
+[1.009s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/ament_index/resource_index/parent_prefix_path/turtlebot3_navigation2
+[1.009s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/environment/ament_prefix_path.sh
+[1.009s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/environment/ament_prefix_path.dsv
+[1.009s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/environment/path.sh
+[1.010s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/environment/path.dsv
+[1.010s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/local_setup.bash
+[1.010s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/local_setup.sh
+[1.010s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/local_setup.zsh
+[1.010s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/local_setup.dsv
+[1.010s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/package.dsv
+[1.010s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/ament_index/resource_index/packages/turtlebot3_navigation2
+[1.011s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/cmake/turtlebot3_navigation2Config.cmake
+[1.011s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/cmake/turtlebot3_navigation2Config-version.cmake
+[1.011s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_navigation2/share/turtlebot3_navigation2/package.xml
+[1.017s] Invoked command in '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_navigation2' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/filipgus/turtlebot3_ws/install/turtlebot3_teleop:/home/filipgus/turtlebot3_ws/install/turtlebot3_example:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_navigation2

@@ -1,0 +1,46 @@
+[0.027s] Invoking command in '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_cartographer': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/filipgus/turtlebot3_ws/install/turtlebot3_teleop:/home/filipgus/turtlebot3_ws/install/turtlebot3_example:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3/turtlebot3_cartographer -DCMAKE_INSTALL_PREFIX=/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer
+[0.127s] -- The C compiler identification is GNU 13.3.0
+[0.182s] -- The CXX compiler identification is GNU 13.3.0
+[0.201s] -- Detecting C compiler ABI info
+[0.307s] -- Detecting C compiler ABI info - done
+[0.324s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.325s] -- Detecting C compile features
+[0.325s] -- Detecting C compile features - done
+[0.342s] -- Detecting CXX compiler ABI info
+[0.440s] -- Detecting CXX compiler ABI info - done
+[0.453s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.454s] -- Detecting CXX compile features
+[0.454s] -- Detecting CXX compile features - done
+[0.459s] -- Found ament_cmake: 2.5.4 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.625s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[0.825s] -- Configuring done (0.8s)
+[0.829s] -- Generating done (0.0s)
+[0.830s] -- Build files have been written to: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_cartographer
+[0.835s] Invoked command in '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_cartographer' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/filipgus/turtlebot3_ws/install/turtlebot3_teleop:/home/filipgus/turtlebot3_ws/install/turtlebot3_example:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3/turtlebot3_cartographer -DCMAKE_INSTALL_PREFIX=/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer
+[0.836s] Invoking command in '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_cartographer': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/filipgus/turtlebot3_ws/install/turtlebot3_teleop:/home/filipgus/turtlebot3_ws/install/turtlebot3_example:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_cartographer -- -j8 -l8
+[0.909s] Invoked command in '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_cartographer' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/filipgus/turtlebot3_ws/install/turtlebot3_teleop:/home/filipgus/turtlebot3_ws/install/turtlebot3_example:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_cartographer -- -j8 -l8
+[0.923s] Invoking command in '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_cartographer': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/filipgus/turtlebot3_ws/install/turtlebot3_teleop:/home/filipgus/turtlebot3_ws/install/turtlebot3_example:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_cartographer
+[0.954s] -- Install configuration: ""
+[0.954s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/turtlebot3_cartographer/config
+[0.955s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/turtlebot3_cartographer/config/turtlebot3_lds_2d.lua
+[0.955s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/turtlebot3_cartographer/launch
+[0.955s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/turtlebot3_cartographer/launch/occupancy_grid.launch.py
+[0.955s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/turtlebot3_cartographer/launch/cartographer.launch.py
+[0.955s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/turtlebot3_cartographer/rviz
+[0.955s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/turtlebot3_cartographer/rviz/tb3_cartographer.rviz
+[0.955s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/ament_index/resource_index/package_run_dependencies/turtlebot3_cartographer
+[0.955s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/ament_index/resource_index/parent_prefix_path/turtlebot3_cartographer
+[0.955s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/turtlebot3_cartographer/environment/ament_prefix_path.sh
+[0.955s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/turtlebot3_cartographer/environment/ament_prefix_path.dsv
+[0.956s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/turtlebot3_cartographer/environment/path.sh
+[0.956s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/turtlebot3_cartographer/environment/path.dsv
+[0.956s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/turtlebot3_cartographer/local_setup.bash
+[0.956s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/turtlebot3_cartographer/local_setup.sh
+[0.956s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/turtlebot3_cartographer/local_setup.zsh
+[0.956s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/turtlebot3_cartographer/local_setup.dsv
+[0.956s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/turtlebot3_cartographer/package.dsv
+[0.956s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/ament_index/resource_index/packages/turtlebot3_cartographer
+[0.956s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/turtlebot3_cartographer/cmake/turtlebot3_cartographerConfig.cmake
+[0.956s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/turtlebot3_cartographer/cmake/turtlebot3_cartographerConfig-version.cmake
+[0.957s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/turtlebot3_cartographer/share/turtlebot3_cartographer/package.xml
+[0.959s] Invoked command in '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_cartographer' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/filipgus/turtlebot3_ws/install/turtlebot3_teleop:/home/filipgus/turtlebot3_ws/install/turtlebot3_example:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/turtlebot3_cartographer

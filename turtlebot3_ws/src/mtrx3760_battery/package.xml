@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<?xml version="1.0"?>
+<package format="3">
+  <name>mtrx3760_battery</name>
+  <version>1.0.0</version>
+  <description>Battery monitoring system for TurtleBot3 with terminal and GUI display</description>
+  <maintainer email="student@example.com">MTRX3760 Student</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- Core ROS dependencies -->
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  
+  <!-- For GUI (optional) -->
+  <depend>rqt_gui</depend>
+  <depend>rqt_gui_cpp</depend>
+  
+  <!-- Custom message dependencies -->
+  <depend>mtrx3760_interfaces</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+    <!-- Uncomment when creating RQt plugin -->
+    <!-- <rqt_gui plugin="${prefix}/plugin.xml"/> -->
+  </export>
+</package>

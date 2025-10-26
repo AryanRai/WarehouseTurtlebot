@@ -1,0 +1,279 @@
+so <?xml version="1.0"?>
+<!--
+  MTRX3760 2025 Project 2: Warehouse Environment
+  
+  Warehouse layout with shelving units based on project specifications:
+  - Total area: 2.3m x 2.3m
+  - 4 horizontal shelves (1.15m wide each)
+  - Vertical spacing: 0.46m between shelves
+  - Side aisles: 0.575m wide each
+  - Robot starts at origin (0, 0)
+  
+  This world is designed for autonomous SLAM exploration and navigation testing.
+-->
+<sdf version="1.6">
+  <world name="warehouse_shelves">
+    <!-- Physics Engine -->
+    <plugin
+      filename="gz-sim-physics-system"
+      name="gz::sim::systems::Physics">
+    </plugin>
+    <plugin
+      filename="gz-sim-user-commands-system"
+      name="gz::sim::systems::UserCommands">
+    </plugin>
+    <plugin
+      filename="gz-sim-scene-broadcaster-system"
+      name="gz::sim::systems::SceneBroadcaster">
+    </plugin>
+    <plugin
+      filename="gz-sim-sensors-system"
+      name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <plugin
+      filename="gz-sim-imu-system"
+      name="gz::sim::systems::Imu">
+    </plugin>
+
+    <!-- Ground Plane -->
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Ground Plane</uri>
+    </include>
+
+    <!-- Sun (Lighting) -->
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Sun</uri>
+    </include>
+
+    <!-- Scene Settings -->
+    <scene>
+      <shadows>true</shadows>
+      <ambient>0.8 0.8 0.8 1</ambient>
+      <background>0.7 0.7 0.7 1</background>
+    </scene>
+
+    <!-- GUI Camera View -->
+    <gui fullscreen='0'>
+      <camera name='user_camera'>
+        <pose frame=''>0.0 -3.0 3.5 0 0.6 1.57</pose>
+        <view_controller>orbit</view_controller>
+        <projection_type>perspective</projection_type>
+      </camera>
+    </gui>
+
+    <!-- Physics Configuration -->
+    <physics type="ode">
+      <real_time_update_rate>1000.0</real_time_update_rate>
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <ode>
+        <solver>
+          <type>quick</type>
+          <iters>150</iters>
+          <precon_iters>0</precon_iters>
+          <sor>1.400000</sor>
+          <use_dynamic_moi_rescaling>1</use_dynamic_moi_rescaling>
+        </solver>
+        <constraints>
+          <cfm>0.00001</cfm>
+          <erp>0.2</erp>
+          <contact_max_correcting_vel>2000.000000</contact_max_correcting_vel>
+          <contact_surface_layer>0.01000</contact_surface_layer>
+        </constraints>
+      </ode>
+    </physics>
+
+    <!-- WAREHOUSE BOUNDARY WALLS -->
+    <!-- Outer perimeter: 2.3m x 2.3m centered at origin -->
+    <!-- Wall thickness: 0.02m (2cm) for thin walls -->
+    
+    <!-- North Wall (top) -->
+    <model name="wall_north">
+      <static>true</static>
+      <pose>0 1.15 0.25 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>2.3 0.02 0.5</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>2.3 0.02 0.5</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.5 0.5 0.5 1</ambient>
+            <diffuse>0.5 0.5 0.5 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- South Wall (bottom) -->
+    <model name="wall_south">
+      <static>true</static>
+      <pose>0 -1.15 0.25 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>2.3 0.02 0.5</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>2.3 0.02 0.5</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.5 0.5 0.5 1</ambient>
+            <diffuse>0.5 0.5 0.5 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- East Wall (right) -->
+    <model name="wall_east">
+      <static>true</static>
+      <pose>1.15 0 0.25 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>0.02 2.3 0.5</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.02 2.3 0.5</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.5 0.5 0.5 1</ambient>
+            <diffuse>0.5 0.5 0.5 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- West Wall (left) -->
+    <model name="wall_west">
+      <static>true</static>
+      <pose>-1.15 0 0.25 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>0.02 2.3 0.5</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.02 2.3 0.5</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.5 0.5 0.5 1</ambient>
+            <diffuse>0.5 0.5 0.5 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- WAREHOUSE SHELVING UNITS -->
+    <!-- 3 horizontal shelves, 1.15m wide, centered, with MORE spacing for navigation -->
+    <!-- Shelf thickness: 0.02m (2cm) - same as walls -->
+    <!-- Spacing increased to ~0.7m between shelves for easier navigation -->
+    
+    <!-- Shelf 1 (Top shelf) - Y position: 0.7m -->
+    <model name="shelf_1">
+      <static>true</static>
+      <pose>0 0.7 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>1.15 0.02 0.6</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>1.15 0.02 0.6</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.8 0.6 0.4 1</ambient>
+            <diffuse>0.8 0.6 0.4 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Shelf 2 (Middle shelf) - Y position: 0.0m (center) -->
+    <model name="shelf_2">
+      <static>true</static>
+      <pose>0 0.0 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>1.15 0.02 0.6</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>1.15 0.02 0.6</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.8 0.6 0.4 1</ambient>
+            <diffuse>0.8 0.6 0.4 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Shelf 3 (Bottom shelf) - Y position: -0.7m -->
+    <model name="shelf_3">
+      <static>true</static>
+      <pose>0 -0.7 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>1.15 0.02 0.6</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>1.15 0.02 0.6</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.8 0.6 0.4 1</ambient>
+            <diffuse>0.8 0.6 0.4 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>

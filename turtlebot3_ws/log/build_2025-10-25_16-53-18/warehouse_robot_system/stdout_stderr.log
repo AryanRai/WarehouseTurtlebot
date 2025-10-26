@@ -1,0 +1,51 @@
+[ 28%] Built target slam_module
+[ 35%] [32mBuilding CXX object CMakeFiles/autonomous_slam_lib.dir/src/autonomous_slam_controller.cpp.o[0m
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/autonomous_slam_controller.cpp:[m[K In member function ‘[01m[Kvoid slam::AutonomousSlamController::[01;32m[KodomCallback[m[K(nav_msgs::msg::Odometry_<std::allocator<void> >::SharedPtr)[m[K’:
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/autonomous_slam_controller.cpp:633:86:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kmsg[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  633 | void AutonomousSlamController::odomCallback([01;35m[Kconst nav_msgs::msg::Odometry::SharedPtr msg[m[K) {
+      |                                             [01;35m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~[m[K
+[ 42%] [32m[1mLinking CXX static library libautonomous_slam_lib.a[0m
+[ 42%] Built target autonomous_slam_lib
+[ 57%] Built target warehouse_robot_system_lib
+[ 71%] Built target warehouse_robot_main
+[ 85%] Built target slam_test
+[ 92%] [32mBuilding CXX object CMakeFiles/autonomous_slam_main.dir/src/autonomous_slam_main.cpp.o[0m
+[100%] [32m[1mLinking CXX executable autonomous_slam_main[0m
+[100%] Built target autonomous_slam_main
+-- Install configuration: ""
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/lib/warehouse_robot_system/libslam_module.a
+-- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/lib/warehouse_robot_system/libautonomous_slam_lib.a
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/lib/warehouse_robot_system/libwarehouse_robot_system_lib.a
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/lib/warehouse_robot_system/warehouse_robot_main
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/lib/warehouse_robot_system/slam_test
+-- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/lib/warehouse_robot_system/autonomous_slam_main
+-- Set non-toolchain portion of runtime path of "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/lib/warehouse_robot_system/autonomous_slam_main" to ""
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/include/
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/include//slam_types.hpp
+-- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/include//autonomous_slam_controller.hpp
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/include//warehouse_robot_system.hpp
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/include//path_planner.hpp
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/include//frontier_search.hpp
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/include//priority_queue.hpp
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/warehouse_robot_system/launch/
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/warehouse_robot_system/launch//spawn_turtlebot3_autonomous.launch.py
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/warehouse_robot_system/environment/library_path.sh
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/warehouse_robot_system/environment/library_path.dsv
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/ament_index/resource_index/package_run_dependencies/warehouse_robot_system
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/ament_index/resource_index/parent_prefix_path/warehouse_robot_system
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/warehouse_robot_system/environment/ament_prefix_path.sh
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/warehouse_robot_system/environment/ament_prefix_path.dsv
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/warehouse_robot_system/environment/path.sh
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/warehouse_robot_system/environment/path.dsv
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/warehouse_robot_system/local_setup.bash
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/warehouse_robot_system/local_setup.sh
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/warehouse_robot_system/local_setup.zsh
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/warehouse_robot_system/local_setup.dsv
+-- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/warehouse_robot_system/package.dsv
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/ament_index/resource_index/packages/warehouse_robot_system
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/warehouse_robot_system/cmake/ament_cmake_export_include_directories-extras.cmake
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/warehouse_robot_system/cmake/ament_cmake_export_libraries-extras.cmake
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/warehouse_robot_system/cmake/ament_cmake_export_dependencies-extras.cmake
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/warehouse_robot_system/cmake/warehouse_robot_systemConfig.cmake
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/warehouse_robot_system/cmake/warehouse_robot_systemConfig-version.cmake
+-- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/warehouse_robot_system/share/warehouse_robot_system/package.xml

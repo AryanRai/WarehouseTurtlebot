@@ -1,0 +1,280 @@
+[0.028s] Invoking command in '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/dynamixel_sdk_custom_interfaces': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/filipgus/turtlebot3_ws/install/turtlebot3_teleop:/home/filipgus/turtlebot3_ws/install/turtlebot3_example:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/DynamixelSDK/ros/dynamixel_sdk_custom_interfaces -DCMAKE_INSTALL_PREFIX=/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces
+[0.132s] -- The C compiler identification is GNU 13.3.0
+[0.212s] -- The CXX compiler identification is GNU 13.3.0
+[0.243s] -- Detecting C compiler ABI info
+[0.373s] -- Detecting C compiler ABI info - done
+[0.400s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.400s] -- Detecting C compile features
+[0.401s] -- Detecting C compile features - done
+[0.433s] -- Detecting CXX compiler ABI info
+[0.590s] -- Detecting CXX compiler ABI info - done
+[0.598s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.598s] -- Detecting CXX compile features
+[0.598s] -- Detecting CXX compile features - done
+[0.602s] -- Found ament_cmake: 2.5.4 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.792s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[0.907s] -- Found builtin_interfaces: 2.0.3 (/opt/ros/jazzy/share/builtin_interfaces/cmake)
+[0.966s] -- Found rosidl_generator_c: 4.6.6 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)
+[1.003s] -- Found rosidl_generator_cpp: 4.6.6 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)
+[1.032s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[1.053s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[1.082s] -- Found rosidl_default_generators: 1.6.0 (/opt/ros/jazzy/share/rosidl_default_generators/cmake)
+[1.138s] -- Found rosidl_adapter: 4.6.6 (/opt/ros/jazzy/share/rosidl_adapter/cmake)
+[1.865s] -- Found ament_cmake_ros: 0.12.0 (/opt/ros/jazzy/share/ament_cmake_ros/cmake)
+[2.676s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[2.986s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[2.991s] -- Found python_cmake_module: 0.11.1 (/opt/ros/jazzy/share/python_cmake_module/cmake)
+[3.178s] -- Found PythonExtra: /usr/bin/python3  
+[4.295s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter Development NumPy Development.Module Development.Embed 
+[4.383s] -- Configuring done (4.3s)
+[4.475s] -- Generating done (0.1s)
+[4.496s] -- Build files have been written to: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/dynamixel_sdk_custom_interfaces
+[4.513s] Invoked command in '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/dynamixel_sdk_custom_interfaces' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/filipgus/turtlebot3_ws/install/turtlebot3_teleop:/home/filipgus/turtlebot3_ws/install/turtlebot3_example:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/DynamixelSDK/ros/dynamixel_sdk_custom_interfaces -DCMAKE_INSTALL_PREFIX=/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces
+[4.515s] Invoking command in '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/dynamixel_sdk_custom_interfaces': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/filipgus/turtlebot3_ws/install/turtlebot3_teleop:/home/filipgus/turtlebot3_ws/install/turtlebot3_example:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/dynamixel_sdk_custom_interfaces -- -j8 -l8
+[4.602s] [  2%] [34m[1mGenerating type hashes for ROS interfaces[0m
+[4.609s] [  2%] Built target ament_cmake_python_copy_dynamixel_sdk_custom_interfaces
+[4.916s] [  2%] Built target dynamixel_sdk_custom_interfaces__rosidl_generator_type_description
+[4.932s] [  4%] [34m[1mGenerating C code for ROS interfaces[0m
+[4.932s] running egg_info
+[4.932s] creating dynamixel_sdk_custom_interfaces.egg-info
+[4.964s] [  6%] [34m[1mGenerating C++ code for ROS interfaces[0m
+[4.965s] writing dynamixel_sdk_custom_interfaces.egg-info/PKG-INFO
+[4.965s] writing dependency_links to dynamixel_sdk_custom_interfaces.egg-info/dependency_links.txt
+[4.965s] writing top-level names to dynamixel_sdk_custom_interfaces.egg-info/top_level.txt
+[4.965s] writing manifest file 'dynamixel_sdk_custom_interfaces.egg-info/SOURCES.txt'
+[5.035s] reading manifest file 'dynamixel_sdk_custom_interfaces.egg-info/SOURCES.txt'
+[5.035s] writing manifest file 'dynamixel_sdk_custom_interfaces.egg-info/SOURCES.txt'
+[5.070s] [  6%] Built target ament_cmake_python_build_dynamixel_sdk_custom_interfaces_egg
+[5.772s] [  6%] Built target dynamixel_sdk_custom_interfaces__cpp
+[5.838s] [  9%] [32mBuilding C object CMakeFiles/dynamixel_sdk_custom_interfaces__rosidl_generator_c.dir/rosidl_generator_c/dynamixel_sdk_custom_interfaces/msg/detail/set_position__functions.c.o[0m
+[5.842s] [ 11%] [32mBuilding C object CMakeFiles/dynamixel_sdk_custom_interfaces__rosidl_generator_c.dir/rosidl_generator_c/dynamixel_sdk_custom_interfaces/msg/detail/set_position__description.c.o[0m
+[5.842s] [ 13%] [32mBuilding C object CMakeFiles/dynamixel_sdk_custom_interfaces__rosidl_generator_c.dir/rosidl_generator_c/dynamixel_sdk_custom_interfaces/msg/detail/set_position__type_support.c.o[0m
+[5.850s] [ 15%] [32mBuilding C object CMakeFiles/dynamixel_sdk_custom_interfaces__rosidl_generator_c.dir/rosidl_generator_c/dynamixel_sdk_custom_interfaces/srv/detail/get_position__functions.c.o[0m
+[5.850s] [ 18%] [32mBuilding C object CMakeFiles/dynamixel_sdk_custom_interfaces__rosidl_generator_c.dir/rosidl_generator_c/dynamixel_sdk_custom_interfaces/srv/detail/get_position__description.c.o[0m
+[5.862s] [ 20%] [32mBuilding C object CMakeFiles/dynamixel_sdk_custom_interfaces__rosidl_generator_c.dir/rosidl_generator_c/dynamixel_sdk_custom_interfaces/srv/detail/get_position__type_support.c.o[0m
+[5.961s] [ 22%] [32m[1mLinking C shared library libdynamixel_sdk_custom_interfaces__rosidl_generator_c.so[0m
+[6.027s] [ 22%] Built target dynamixel_sdk_custom_interfaces__rosidl_generator_c
+[6.043s] [ 25%] [34m[1mGenerating C++ type support for eProsima Fast-RTPS[0m
+[6.043s] [ 27%] [34m[1mGenerating C++ type support dispatch for ROS interfaces[0m
+[6.051s] [ 31%] [34m[1mGenerating C introspection for ROS interfaces[0m
+[6.051s] [ 31%] [34m[1mGenerating C type support dispatch for ROS interfaces[0m
+[6.052s] [ 34%] [34m[1mGenerating C type support for eProsima Fast-RTPS[0m
+[6.054s] [ 36%] [34m[1mGenerating C++ introspection for ROS interfaces[0m
+[6.413s] [ 38%] [32mBuilding CXX object CMakeFiles/dynamixel_sdk_custom_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/dynamixel_sdk_custom_interfaces/msg/set_position__type_support.cpp.o[0m
+[6.419s] [ 40%] [32mBuilding CXX object CMakeFiles/dynamixel_sdk_custom_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dynamixel_sdk_custom_interfaces/msg/set_position__type_support.cpp.o[0m
+[6.419s] [ 43%] [32mBuilding CXX object CMakeFiles/dynamixel_sdk_custom_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dynamixel_sdk_custom_interfaces/srv/get_position__type_support.cpp.o[0m
+[6.435s] [ 45%] [32mBuilding CXX object CMakeFiles/dynamixel_sdk_custom_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/dynamixel_sdk_custom_interfaces/srv/get_position__type_support.cpp.o[0m
+[6.446s] [ 47%] [32mBuilding CXX object CMakeFiles/dynamixel_sdk_custom_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/dynamixel_sdk_custom_interfaces/msg/detail/set_position__type_support.cpp.o[0m
+[6.480s] [ 50%] [32mBuilding CXX object CMakeFiles/dynamixel_sdk_custom_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/dynamixel_sdk_custom_interfaces/srv/detail/get_position__type_support.cpp.o[0m
+[6.538s] [ 52%] [32m[1mLinking CXX shared library libdynamixel_sdk_custom_interfaces__rosidl_typesupport_c.so[0m
+[6.544s] [ 54%] [32mBuilding CXX object CMakeFiles/dynamixel_sdk_custom_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/dynamixel_sdk_custom_interfaces/msg/detail/set_position__type_support_c.cpp.o[0m
+[6.637s] [ 54%] Built target dynamixel_sdk_custom_interfaces__rosidl_typesupport_c
+[6.654s] [ 56%] [32mBuilding CXX object CMakeFiles/dynamixel_sdk_custom_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/dynamixel_sdk_custom_interfaces/srv/detail/get_position__type_support_c.cpp.o[0m
+[6.959s] [ 59%] [32mBuilding CXX object CMakeFiles/dynamixel_sdk_custom_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/dynamixel_sdk_custom_interfaces/msg/detail/dds_fastrtps/set_position__type_support.cpp.o[0m
+[6.960s] [ 61%] [32mBuilding CXX object CMakeFiles/dynamixel_sdk_custom_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/dynamixel_sdk_custom_interfaces/srv/detail/dds_fastrtps/get_position__type_support.cpp.o[0m
+[6.986s] [ 63%] [32mBuilding C object CMakeFiles/dynamixel_sdk_custom_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/dynamixel_sdk_custom_interfaces/msg/detail/set_position__type_support.c.o[0m
+[7.065s] [ 65%] [32mBuilding C object CMakeFiles/dynamixel_sdk_custom_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/dynamixel_sdk_custom_interfaces/srv/detail/get_position__type_support.c.o[0m
+[7.158s] [ 68%] [32m[1mLinking C shared library libdynamixel_sdk_custom_interfaces__rosidl_typesupport_introspection_c.so[0m
+[7.168s] [ 70%] [32m[1mLinking CXX shared library libdynamixel_sdk_custom_interfaces__rosidl_typesupport_introspection_cpp.so[0m
+[7.205s] [ 72%] [32m[1mLinking CXX shared library libdynamixel_sdk_custom_interfaces__rosidl_typesupport_cpp.so[0m
+[7.264s] [ 72%] Built target dynamixel_sdk_custom_interfaces__rosidl_typesupport_introspection_c
+[7.285s] [ 72%] Built target dynamixel_sdk_custom_interfaces__rosidl_typesupport_introspection_cpp
+[7.326s] [ 75%] [32m[1mLinking CXX shared library libdynamixel_sdk_custom_interfaces__rosidl_typesupport_fastrtps_c.so[0m
+[7.428s] [ 75%] Built target dynamixel_sdk_custom_interfaces__rosidl_typesupport_fastrtps_c
+[7.447s] [ 75%] Built target dynamixel_sdk_custom_interfaces__rosidl_typesupport_cpp
+[7.479s] [ 77%] [32m[1mLinking CXX shared library libdynamixel_sdk_custom_interfaces__rosidl_typesupport_fastrtps_cpp.so[0m
+[7.613s] [ 77%] Built target dynamixel_sdk_custom_interfaces__rosidl_typesupport_fastrtps_cpp
+[7.643s] [ 77%] Built target dynamixel_sdk_custom_interfaces
+[7.696s] [ 79%] [34m[1mGenerating Python code for ROS interfaces[0m
+[8.312s] [ 79%] Built target dynamixel_sdk_custom_interfaces__py
+[8.361s] [ 81%] [32mBuilding C object CMakeFiles/dynamixel_sdk_custom_interfaces__rosidl_generator_py.dir/rosidl_generator_py/dynamixel_sdk_custom_interfaces/msg/_set_position_s.c.o[0m
+[8.364s] [ 84%] [32mBuilding C object CMakeFiles/dynamixel_sdk_custom_interfaces__rosidl_generator_py.dir/rosidl_generator_py/dynamixel_sdk_custom_interfaces/srv/_get_position_s.c.o[0m
+[8.761s] [ 86%] [32m[1mLinking C shared library libdynamixel_sdk_custom_interfaces__rosidl_generator_py.so[0m
+[8.818s] [ 86%] Built target dynamixel_sdk_custom_interfaces__rosidl_generator_py
+[8.842s] [ 88%] [32mBuilding C object CMakeFiles/dynamixel_sdk_custom_interfaces_s__rosidl_typesupport_c.dir/rosidl_generator_py/dynamixel_sdk_custom_interfaces/_dynamixel_sdk_custom_interfaces_s.ep.rosidl_typesupport_c.c.o[0m
+[8.851s] [ 93%] [32mBuilding C object CMakeFiles/dynamixel_sdk_custom_interfaces_s__rosidl_typesupport_introspection_c.dir/rosidl_generator_py/dynamixel_sdk_custom_interfaces/_dynamixel_sdk_custom_interfaces_s.ep.rosidl_typesupport_introspection_c.c.o[0m
+[8.852s] [ 93%] [32mBuilding C object CMakeFiles/dynamixel_sdk_custom_interfaces_s__rosidl_typesupport_fastrtps_c.dir/rosidl_generator_py/dynamixel_sdk_custom_interfaces/_dynamixel_sdk_custom_interfaces_s.ep.rosidl_typesupport_fastrtps_c.c.o[0m
+[9.020s] [ 95%] [32m[1mLinking C shared module rosidl_generator_py/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces_s__rosidl_typesupport_fastrtps_c.so[0m
+[9.041s] [ 97%] [32m[1mLinking C shared module rosidl_generator_py/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces_s__rosidl_typesupport_c.so[0m
+[9.063s] [100%] [32m[1mLinking C shared module rosidl_generator_py/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces_s__rosidl_typesupport_introspection_c.so[0m
+[9.098s] [100%] Built target dynamixel_sdk_custom_interfaces_s__rosidl_typesupport_c
+[9.099s] [100%] Built target dynamixel_sdk_custom_interfaces_s__rosidl_typesupport_fastrtps_c
+[9.117s] [100%] Built target dynamixel_sdk_custom_interfaces_s__rosidl_typesupport_introspection_c
+[9.136s] Invoked command in '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/dynamixel_sdk_custom_interfaces' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/filipgus/turtlebot3_ws/install/turtlebot3_teleop:/home/filipgus/turtlebot3_ws/install/turtlebot3_example:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/dynamixel_sdk_custom_interfaces -- -j8 -l8
+[9.136s] Invoking command in '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/dynamixel_sdk_custom_interfaces': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/filipgus/turtlebot3_ws/install/turtlebot3_teleop:/home/filipgus/turtlebot3_ws/install/turtlebot3_example:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/dynamixel_sdk_custom_interfaces
+[9.147s] -- Install configuration: ""
+[9.147s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/ament_index/resource_index/rosidl_interfaces/dynamixel_sdk_custom_interfaces
+[9.147s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/msg/SetPosition.json
+[9.147s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/srv/GetPosition.json
+[9.147s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces
+[9.147s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv
+[9.148s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/get_position.h
+[9.148s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail
+[9.148s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail/get_position__type_support.c
+[9.148s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail/get_position__description.c
+[9.152s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail/get_position__type_support.h
+[9.152s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail/get_position__struct.h
+[9.152s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail/get_position__functions.c
+[9.152s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail/get_position__functions.h
+[9.152s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg
+[9.152s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail
+[9.152s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail/set_position__type_support.c
+[9.152s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail/set_position__struct.h
+[9.152s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail/set_position__functions.h
+[9.152s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail/set_position__type_support.h
+[9.152s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail/set_position__functions.c
+[9.152s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail/set_position__description.c
+[9.152s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/rosidl_generator_c__visibility_control.h
+[9.152s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/set_position.h
+[9.152s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/environment/library_path.sh
+[9.154s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/environment/library_path.dsv
+[9.154s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/libdynamixel_sdk_custom_interfaces__rosidl_generator_c.so
+[9.154s] -- Set non-toolchain portion of runtime path of "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/libdynamixel_sdk_custom_interfaces__rosidl_generator_c.so" to ""
+[9.155s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces
+[9.155s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv
+[9.155s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail
+[9.155s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail/get_position__rosidl_typesupport_fastrtps_c.h
+[9.155s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg
+[9.155s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail
+[9.155s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail/set_position__rosidl_typesupport_fastrtps_c.h
+[9.155s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/rosidl_typesupport_fastrtps_c__visibility_control.h
+[9.155s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/libdynamixel_sdk_custom_interfaces__rosidl_typesupport_fastrtps_c.so
+[9.155s] -- Set non-toolchain portion of runtime path of "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/libdynamixel_sdk_custom_interfaces__rosidl_typesupport_fastrtps_c.so" to ""
+[9.155s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces
+[9.155s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv
+[9.155s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/get_position.hpp
+[9.155s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail
+[9.155s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail/get_position__builder.hpp
+[9.155s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail/get_position__struct.hpp
+[9.155s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail/get_position__traits.hpp
+[9.155s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail/get_position__type_support.hpp
+[9.155s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg
+[9.155s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail
+[9.155s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail/set_position__struct.hpp
+[9.155s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail/set_position__traits.hpp
+[9.155s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail/set_position__type_support.hpp
+[9.155s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail/set_position__builder.hpp
+[9.155s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/set_position.hpp
+[9.155s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/rosidl_generator_cpp__visibility_control.hpp
+[9.155s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces
+[9.155s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv
+[9.155s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail
+[9.155s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail/dds_fastrtps
+[9.155s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail/get_position__rosidl_typesupport_fastrtps_cpp.hpp
+[9.156s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg
+[9.156s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail
+[9.156s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail/dds_fastrtps
+[9.156s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail/set_position__rosidl_typesupport_fastrtps_cpp.hpp
+[9.156s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h
+[9.156s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/libdynamixel_sdk_custom_interfaces__rosidl_typesupport_fastrtps_cpp.so
+[9.156s] -- Set non-toolchain portion of runtime path of "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/libdynamixel_sdk_custom_interfaces__rosidl_typesupport_fastrtps_cpp.so" to ""
+[9.156s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces
+[9.156s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv
+[9.156s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail
+[9.156s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail/get_position__type_support.c
+[9.156s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail/get_position__rosidl_typesupport_introspection_c.h
+[9.156s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg
+[9.156s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail
+[9.156s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail/set_position__type_support.c
+[9.156s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail/set_position__rosidl_typesupport_introspection_c.h
+[9.156s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/rosidl_typesupport_introspection_c__visibility_control.h
+[9.156s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/libdynamixel_sdk_custom_interfaces__rosidl_typesupport_introspection_c.so
+[9.156s] -- Set non-toolchain portion of runtime path of "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/libdynamixel_sdk_custom_interfaces__rosidl_typesupport_introspection_c.so" to ""
+[9.157s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/libdynamixel_sdk_custom_interfaces__rosidl_typesupport_c.so
+[9.157s] -- Set non-toolchain portion of runtime path of "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/libdynamixel_sdk_custom_interfaces__rosidl_typesupport_c.so" to ""
+[9.157s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces
+[9.157s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv
+[9.157s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail
+[9.157s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail/get_position__rosidl_typesupport_introspection_cpp.hpp
+[9.157s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/srv/detail/get_position__type_support.cpp
+[9.157s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg
+[9.157s] -- Up-to-date: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail
+[9.160s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail/set_position__type_support.cpp
+[9.160s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/include/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces/msg/detail/set_position__rosidl_typesupport_introspection_cpp.hpp
+[9.160s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/libdynamixel_sdk_custom_interfaces__rosidl_typesupport_introspection_cpp.so
+[9.160s] -- Set non-toolchain portion of runtime path of "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/libdynamixel_sdk_custom_interfaces__rosidl_typesupport_introspection_cpp.so" to ""
+[9.160s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/libdynamixel_sdk_custom_interfaces__rosidl_typesupport_cpp.so
+[9.161s] -- Set non-toolchain portion of runtime path of "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/libdynamixel_sdk_custom_interfaces__rosidl_typesupport_cpp.so" to ""
+[9.161s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/environment/pythonpath.sh
+[9.161s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/environment/pythonpath.dsv
+[9.161s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces-3.8.4-py3.12.egg-info
+[9.161s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces-3.8.4-py3.12.egg-info/PKG-INFO
+[9.161s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces-3.8.4-py3.12.egg-info/dependency_links.txt
+[9.161s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces-3.8.4-py3.12.egg-info/SOURCES.txt
+[9.161s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces-3.8.4-py3.12.egg-info/top_level.txt
+[9.162s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces
+[9.162s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/__init__.py
+[9.162s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/_dynamixel_sdk_custom_interfaces_s.ep.rosidl_typesupport_fastrtps_c.c
+[9.162s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/srv
+[9.162s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/srv/_get_position_s.c
+[9.162s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/srv/_get_position.py
+[9.162s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/srv/__init__.py
+[9.162s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/_dynamixel_sdk_custom_interfaces_s.ep.rosidl_typesupport_c.c
+[9.162s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/_dynamixel_sdk_custom_interfaces_s.ep.rosidl_typesupport_introspection_c.c
+[9.162s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces_s__rosidl_typesupport_fastrtps_c.so
+[9.162s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/msg
+[9.162s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/msg/__init__.py
+[9.162s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/msg/_set_position_s.c
+[9.163s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/msg/_set_position.py
+[9.163s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces_s__rosidl_typesupport_introspection_c.so
+[9.163s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces_s__rosidl_typesupport_c.so
+[9.227s] Listing '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces'...
+[9.228s] Compiling '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/__init__.py'...
+[9.228s] Listing '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/msg'...
+[9.228s] Compiling '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/msg/__init__.py'...
+[9.228s] Compiling '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/msg/_set_position.py'...
+[9.228s] Listing '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/srv'...
+[9.228s] Compiling '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/srv/__init__.py'...
+[9.228s] Compiling '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/srv/_get_position.py'...
+[9.232s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces_s__rosidl_typesupport_fastrtps_c.so
+[9.232s] -- Set non-toolchain portion of runtime path of "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces_s__rosidl_typesupport_fastrtps_c.so" to ""
+[9.232s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces_s__rosidl_typesupport_introspection_c.so
+[9.232s] -- Set non-toolchain portion of runtime path of "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces_s__rosidl_typesupport_introspection_c.so" to ""
+[9.232s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces_s__rosidl_typesupport_c.so
+[9.233s] -- Set non-toolchain portion of runtime path of "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/python3.12/site-packages/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces_s__rosidl_typesupport_c.so" to ""
+[9.233s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/libdynamixel_sdk_custom_interfaces__rosidl_generator_py.so
+[9.238s] -- Set non-toolchain portion of runtime path of "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/lib/libdynamixel_sdk_custom_interfaces__rosidl_generator_py.so" to ""
+[9.238s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/msg/SetPosition.idl
+[9.238s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/srv/GetPosition.idl
+[9.238s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/msg/SetPosition.msg
+[9.238s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/srv/GetPosition.srv
+[9.238s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/ament_index/resource_index/package_run_dependencies/dynamixel_sdk_custom_interfaces
+[9.238s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/ament_index/resource_index/parent_prefix_path/dynamixel_sdk_custom_interfaces
+[9.238s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/environment/ament_prefix_path.sh
+[9.238s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/environment/ament_prefix_path.dsv
+[9.238s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/environment/path.sh
+[9.238s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/environment/path.dsv
+[9.238s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/local_setup.bash
+[9.238s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/local_setup.sh
+[9.238s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/local_setup.zsh
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/local_setup.dsv
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/package.dsv
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/ament_index/resource_index/packages/dynamixel_sdk_custom_interfaces
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/export_dynamixel_sdk_custom_interfaces__rosidl_generator_cExport.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/export_dynamixel_sdk_custom_interfaces__rosidl_generator_cExport-noconfig.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/export_dynamixel_sdk_custom_interfaces__rosidl_typesupport_fastrtps_cExport.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/export_dynamixel_sdk_custom_interfaces__rosidl_typesupport_fastrtps_cExport-noconfig.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/export_dynamixel_sdk_custom_interfaces__rosidl_generator_cppExport.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/export_dynamixel_sdk_custom_interfaces__rosidl_typesupport_fastrtps_cppExport.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/export_dynamixel_sdk_custom_interfaces__rosidl_typesupport_fastrtps_cppExport-noconfig.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/dynamixel_sdk_custom_interfaces__rosidl_typesupport_introspection_cExport.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/dynamixel_sdk_custom_interfaces__rosidl_typesupport_introspection_cExport-noconfig.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/dynamixel_sdk_custom_interfaces__rosidl_typesupport_cExport.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/dynamixel_sdk_custom_interfaces__rosidl_typesupport_cExport-noconfig.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/dynamixel_sdk_custom_interfaces__rosidl_typesupport_introspection_cppExport.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/dynamixel_sdk_custom_interfaces__rosidl_typesupport_introspection_cppExport-noconfig.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/dynamixel_sdk_custom_interfaces__rosidl_typesupport_cppExport.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/dynamixel_sdk_custom_interfaces__rosidl_typesupport_cppExport-noconfig.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/export_dynamixel_sdk_custom_interfaces__rosidl_generator_pyExport.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/export_dynamixel_sdk_custom_interfaces__rosidl_generator_pyExport-noconfig.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/rosidl_cmake-extras.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/ament_cmake_export_dependencies-extras.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/ament_cmake_export_include_directories-extras.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/ament_cmake_export_libraries-extras.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/ament_cmake_export_targets-extras.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/rosidl_cmake_export_typesupport_targets-extras.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake
+[9.239s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/dynamixel_sdk_custom_interfacesConfig.cmake
+[9.240s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/cmake/dynamixel_sdk_custom_interfacesConfig-version.cmake
+[9.240s] -- Installing: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/install/dynamixel_sdk_custom_interfaces/share/dynamixel_sdk_custom_interfaces/package.xml
+[9.241s] Invoked command in '/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/dynamixel_sdk_custom_interfaces' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/filipgus/turtlebot3_ws/install/turtlebot3_teleop:/home/filipgus/turtlebot3_ws/install/turtlebot3_example:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/dynamixel_sdk_custom_interfaces

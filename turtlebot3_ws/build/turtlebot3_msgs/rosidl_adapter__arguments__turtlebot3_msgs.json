@@ -1,0 +1,12 @@
+{
+  "package_name": "turtlebot3_msgs",
+  "non_idl_tuples": [
+    "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_msgs:msg/SensorState.msg",
+    "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_msgs:msg/Sound.msg",
+    "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_msgs:msg/VersionInfo.msg",
+    "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_msgs:srv/Sound.srv",
+    "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_msgs:srv/Dqn.srv",
+    "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_msgs:srv/Goal.srv",
+    "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_msgs:action/Patrol.action"
+  ]
+}

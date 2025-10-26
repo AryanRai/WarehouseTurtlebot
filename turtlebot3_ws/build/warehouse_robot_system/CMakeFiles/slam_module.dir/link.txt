@@ -1,0 +1,2 @@
+/usr/bin/ar qc libslam_module.a CMakeFiles/slam_module.dir/src/path_planner.cpp.o CMakeFiles/slam_module.dir/src/frontier_search.cpp.o CMakeFiles/slam_module.dir/src/priority_queue.cpp.o
+/usr/bin/ranlib libslam_module.a

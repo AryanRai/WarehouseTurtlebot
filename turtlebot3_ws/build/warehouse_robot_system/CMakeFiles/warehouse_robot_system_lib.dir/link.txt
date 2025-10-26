@@ -1,0 +1,2 @@
+/usr/bin/ar qc libwarehouse_robot_system_lib.a CMakeFiles/warehouse_robot_system_lib.dir/src/warehouse_robot_system.cpp.o
+/usr/bin/ranlib libwarehouse_robot_system_lib.a

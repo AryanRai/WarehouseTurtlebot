@@ -1,0 +1,112 @@
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found ament_cmake: 2.5.4 (/opt/ros/jazzy/share/ament_cmake/cmake)
+-- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+-- Found rclcpp: 28.1.12 (/opt/ros/jazzy/share/rclcpp/cmake)
+-- Found rosidl_generator_c: 4.6.6 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)
+-- Found rosidl_generator_cpp: 4.6.6 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)
+-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+-- Found rmw_implementation_cmake: 7.3.2 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)
+-- Found rmw_cyclonedds_cpp: 2.2.3 (/opt/ros/jazzy/share/rmw_cyclonedds_cpp/cmake)
+-- Using RMW implementation 'rmw_cyclonedds_cpp' as default
+-- Found std_msgs: 5.3.6 (/opt/ros/jazzy/share/std_msgs/cmake)
+-- Found geometry_msgs: 5.3.6 (/opt/ros/jazzy/share/geometry_msgs/cmake)
+-- Found sensor_msgs: 5.3.6 (/opt/ros/jazzy/share/sensor_msgs/cmake)
+-- Found nav_msgs: 5.3.6 (/opt/ros/jazzy/share/nav_msgs/cmake)
+-- Found tf2: 0.36.14 (/opt/ros/jazzy/share/tf2/cmake)
+-- Found tf2_ros: 0.36.14 (/opt/ros/jazzy/share/tf2_ros/cmake)
+-- Found tf2_geometry_msgs: 0.36.14 (/opt/ros/jazzy/share/tf2_geometry_msgs/cmake)
+-- Found eigen3_cmake_module: 0.3.0 (/opt/ros/jazzy/share/eigen3_cmake_module/cmake)
+-- Found Eigen3: TRUE (found version "3.4.0") 
+-- Ensuring Eigen3 include directory is part of orocos-kdl CMake target
+-- Found OpenCV: /usr (found version "4.6.0") 
+-- Configuring done (1.4s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/build/warehouse_robot_system
+[ 21%] [32mBuilding CXX object CMakeFiles/slam_module.dir/src/frontier_search.cpp.o[0m
+[ 21%] [32mBuilding CXX object CMakeFiles/slam_module.dir/src/path_planner.cpp.o[0m
+[ 21%] [32mBuilding CXX object CMakeFiles/slam_module.dir/src/priority_queue.cpp.o[0m
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/path_planner.cpp:[m[K In static member function ‘[01m[Kstatic std::vector<geometry_msgs::msg::PoseStamped_<std::allocator<void> >, std::allocator<geometry_msgs::msg::PoseStamped_<std::allocator<void> > > > slam::PathPlanner::[01;32m[KpathToPoses[m[K(const nav_msgs::msg::OccupancyGrid&, const std::vector<std::pair<int, int> >&)[m[K’:
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/path_planner.cpp:140:41:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kmapdata[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  140 |     [01;35m[Kconst nav_msgs::msg::OccupancyGrid& mapdata[m[K,
+      |     [01;35m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~[m[K
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/path_planner.cpp:141:34:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kpath[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  141 |     [01;35m[Kconst std::vector<GridCell>& path[m[K) {
+      |     [01;35m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~[m[K
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/path_planner.cpp:[m[K In static member function ‘[01m[Kstatic nav_msgs::msg::Path slam::PathPlanner::[01;32m[KpathToMessage[m[K(const nav_msgs::msg::OccupancyGrid&, const std::vector<std::pair<int, int> >&)[m[K’:
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/path_planner.cpp:149:41:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kmapdata[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  149 |     [01;35m[Kconst nav_msgs::msg::OccupancyGrid& mapdata[m[K,
+      |     [01;35m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~[m[K
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/path_planner.cpp:150:34:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kpath[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  150 |     [01;35m[Kconst std::vector<GridCell>& path[m[K) {
+      |     [01;35m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~[m[K
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/path_planner.cpp:[m[K In static member function ‘[01m[Kstatic void slam::PathPlanner::[01;32m[KshowMap[m[K(const std::string&, const cv::Mat&)[m[K’:
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/path_planner.cpp:509:67:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kmap[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  509 | r::showMap(const std::string& name, [01;35m[Kconst cv::Mat& map[m[K) {
+      |                                     [01;35m[K~~~~~~~~~~~~~~~^~~[m[K
+
+[ 28%] [32m[1mLinking CXX static library libslam_module.a[0m
+[ 28%] Built target slam_module
+[ 35%] [32mBuilding CXX object CMakeFiles/autonomous_slam_lib.dir/src/autonomous_slam_controller.cpp.o[0m
+[ 42%] [32mBuilding CXX object CMakeFiles/warehouse_robot_system_lib.dir/src/warehouse_robot_system.cpp.o[0m
+[ 50%] [32mBuilding CXX object CMakeFiles/slam_test.dir/src/slam_test.cpp.o[0m
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/warehouse_robot_system.cpp:[m[K In member function ‘[01m[Kvoid Robot::[01;32m[KpublishVelocityCommand[m[K(double, double)[m[K’:
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/warehouse_robot_system.cpp:63:43:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Klinear_x[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+   63 | void Robot::publishVelocityCommand([01;35m[Kdouble linear_x[m[K, double angular_z) {
+      |                                    [01;35m[K~~~~~~~^~~~~~~~[m[K
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/warehouse_robot_system.cpp:63:60:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kangular_z[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+   63 | void Robot::publishVelocityCommand(double linear_x, [01;35m[Kdouble angular_z[m[K) {
+      |                                                     [01;35m[K~~~~~~~^~~~~~~~~[m[K
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/warehouse_robot_system.cpp:[m[K In member function ‘[01m[Kvoid InspectionRobot::[01;32m[KcaptureImage[m[K(const std::string&)[m[K’:
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/warehouse_robot_system.cpp:138:55:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kfilename[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  138 | void InspectionRobot::captureImage([01;35m[Kconst std::string& filename[m[K) {}
+      |                                    [01;35m[K~~~~~~~~~~~~~~~~~~~^~~~~~~~[m[K
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/warehouse_robot_system.cpp:[m[K In member function ‘[01m[Kvoid FactoryManager::[01;32m[KassignDeliveryTask[m[K(int, const DeliveryRequest&)[m[K’:
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/warehouse_robot_system.cpp:249:78:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Krequest[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  249 | void FactoryManager::assignDeliveryTask(int robot_id, [01;35m[Kconst DeliveryRequest& request[m[K) {
+      |                                                       [01;35m[K~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~[m[K
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/warehouse_robot_system.cpp:[m[K In member function ‘[01m[Kbool FactoryManager::[01;32m[KchangeRobotType[m[K(int, RobotType)[m[K’:
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/warehouse_robot_system.cpp:284:42:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Krobot_id[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  284 | bool FactoryManager::changeRobotType([01;35m[Kint robot_id[m[K, RobotType new_type) {
+      |                                      [01;35m[K~~~~^~~~~~~~[m[K
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/warehouse_robot_system.cpp:284:62:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Knew_type[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  284 | bool FactoryManager::changeRobotType(int robot_id, [01;35m[KRobotType new_type[m[K) {
+      |                                                    [01;35m[K~~~~~~~~~~^~~~~~~~[m[K
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/warehouse_robot_system.cpp:[m[K In member function ‘[01m[Kvoid FactoryManager::[01;32m[KassignChargingStation[m[K(int)[m[K’:
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/warehouse_robot_system.cpp:306:48:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Krobot_id[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  306 | void FactoryManager::assignChargingStation([01;35m[Kint robot_id[m[K) {
+      |                                            [01;35m[K~~~~^~~~~~~~[m[K
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/warehouse_robot_system.cpp:[m[K In member function ‘[01m[Kvoid WarehouseRobotSystem::[01;32m[KrequestPackageDelivery[m[K(const DeliveryRequest&)[m[K’:
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/warehouse_robot_system.cpp:354:74:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Krequest[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  354 | void WarehouseRobotSystem::requestPackageDelivery([01;35m[Kconst DeliveryRequest& request[m[K) {
+      |                                                   [01;35m[K~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~[m[K
+[ 57%] [32m[1mLinking CXX static library libwarehouse_robot_system_lib.a[0m
+[ 57%] Built target warehouse_robot_system_lib
+[ 64%] [32mBuilding CXX object CMakeFiles/warehouse_robot_main.dir/src/warehouse_robot_main.cpp.o[0m
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/warehouse_robot_main.cpp:[m[K In function ‘[01m[Kint[01;32m[K main[m[K(int, char**)[m[K’:
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/warehouse_robot_main.cpp:11:14:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kargc[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+   11 | int main([01;35m[Kint argc[m[K, char** argv) {
+      |          [01;35m[K~~~~^~~~[m[K
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/warehouse_robot_main.cpp:11:27:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kargv[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+   11 | int main(int argc, [01;35m[Kchar** argv[m[K) {
+      |                    [01;35m[K~~~~~~~^~~~[m[K
+[ 71%] [32m[1mLinking CXX executable warehouse_robot_main[0m
+[ 71%] Built target warehouse_robot_main
+[ 78%] [32m[1mLinking CXX executable slam_test[0m
+[ 78%] Built target slam_test
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/autonomous_slam_controller.cpp:[m[K In member function ‘[01m[Kvoid slam::AutonomousSlamController::[01;32m[KodomCallback[m[K(nav_msgs::msg::Odometry_<std::allocator<void> >::SharedPtr)[m[K’:
+[01m[K/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/turtlebot3_simulations/warehouse_robot_system/src/autonomous_slam_controller.cpp:629:86:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kmsg[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  629 | mCallback([01;35m[Kconst nav_msgs::msg::Odometry::SharedPtr msg[m[K) {
+      |           [01;35m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~[m[K
+
