@@ -34,6 +34,9 @@ add_library(slam_module
   src/path_planner.cpp
   src/frontier_search.cpp
   src/priority_queue.cpp
+  src/exploration_manager.cpp
+  src/navigation_controller.cpp
+  src/slam_state_manager.cpp
 )
 
 target_include_directories(slam_module PUBLIC
