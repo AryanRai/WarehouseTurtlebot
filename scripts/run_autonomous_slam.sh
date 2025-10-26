@@ -75,6 +75,16 @@ cleanup() {
         kill $CARTOGRAPHER_PID 2>/dev/null
     fi
     
+    if [ ! -z "$BATTERY_PID" ] && ps -p $BATTERY_PID > /dev/null 2>&1; then
+        echo "   Stopping Battery Monitor..."
+        kill $BATTERY_PID 2>/dev/null
+    fi
+    
+    if [ ! -z "$BATTERY_DISPLAY_PID" ] && ps -p $BATTERY_DISPLAY_PID > /dev/null 2>&1; then
+        echo "   Stopping Battery Display..."
+        kill $BATTERY_DISPLAY_PID 2>/dev/null
+    fi
+    
     if [ ! -z "$RVIZ_PID" ] && ps -p $RVIZ_PID > /dev/null 2>&1; then
         echo "   Stopping RViz..."
         kill $RVIZ_PID 2>/dev/null
@@ -153,12 +163,32 @@ if ! ps -p $CARTOGRAPHER_PID > /dev/null 2>&1; then
     exit 1
 fi
 
-echo "4️⃣ Launching RViz2 for visualization (output redirected to /tmp/rviz.log)..."
+echo "4️⃣ Starting Battery Monitoring System..."
+
+# Get absolute path to config file
+BATTERY_CONFIG="$(pwd)/src/mtrx3760_battery/config/battery_params.yaml"
+
+if [ "$USE_PHYSICAL_ROBOT" = true ]; then
+    echo "   Using real battery data from /battery_state"
+    ros2 run mtrx3760_battery battery_monitor_node --ros-args --params-file "$BATTERY_CONFIG" -p use_simulation:=false > /tmp/battery_monitor.log 2>&1 &
+    BATTERY_PID=$!
+else
+    echo "   Using battery simulator for Gazebo"
+    ros2 run mtrx3760_battery battery_simulator_node --ros-args --params-file "$BATTERY_CONFIG" > /tmp/battery_simulator.log 2>&1 &
+    BATTERY_PID=$!
+fi
+
+echo "   Starting battery terminal display..."
+ros2 run mtrx3760_battery battery_terminal_display --ros-args --params-file "$BATTERY_CONFIG" > /tmp/battery_display.log 2>&1 &
+BATTERY_DISPLAY_PID=$!
+sleep 2
+
+echo "5️⃣ Launching RViz2 for visualization (output redirected to /tmp/rviz.log)..."
 rviz2 > /tmp/rviz.log 2>&1 &
 RVIZ_PID=$!
 sleep 3
 
-echo "5️⃣ Starting Autonomous SLAM Controller..."
+echo "6️⃣ Starting Autonomous SLAM Controller..."
 echo "⏳ Waiting for SLAM to be ready..."
 sleep 3
 
@@ -183,6 +213,8 @@ else
     echo "   🤖 TurtleBot3 in Gazebo (PID: $SPAWN_PID)"
 fi
 echo "   🗺️  Cartographer SLAM (PID: $CARTOGRAPHER_PID)"
+echo "   🔋 Battery Monitor (PID: $BATTERY_PID)"
+echo "   📊 Battery Display (PID: $BATTERY_DISPLAY_PID)"
 echo "   🖥️  RViz2 (PID: $RVIZ_PID)"
 echo "   🧠 Autonomous SLAM Controller (PID: $SLAM_PID)"
 echo ""
@@ -209,8 +241,10 @@ echo "📈 Monitoring:"
 echo "   • Watch RViz to see autonomous exploration"
 echo "   • Robot will move to frontiers automatically"
 echo "   • SLAM builds map as robot explores"
+echo "   • Battery status displayed in terminal"
 echo "   • System logs show state transitions and progress"
 echo "   • Cartographer logs: tail -f /tmp/cartographer.log"
+echo "   • Battery logs: tail -f /tmp/battery_display.log"
 echo "   • RViz logs: tail -f /tmp/rviz.log"
 echo ""
 echo "🔄 State Machine:"
@@ -232,6 +266,10 @@ while true; do
     if ! ps -p $CARTOGRAPHER_PID > /dev/null 2>&1; then
         echo "❌ Cartographer SLAM process died!"
         break
+    fi
+    
+    if ! ps -p $BATTERY_PID > /dev/null 2>&1; then
+        echo "⚠️  Battery Monitor process died (non-critical)"
     fi
     
     # Only check RSP if in simulation mode

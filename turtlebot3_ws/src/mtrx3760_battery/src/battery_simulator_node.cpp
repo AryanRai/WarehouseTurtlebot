@@ -15,7 +15,7 @@ public:
     declare_parameter<double>("idle_drain_per_sec", 0.01); // percent per second
     declare_parameter<double>("move_drain_per_mps", 0.1); // percent per meter/sec per second
   // default to the project's main topic name
-  declare_parameter<std::string>("battery_topic", "/battery/status");
+  declare_parameter<std::string>("battery_topic", "/battery_state");
 
     this->get_parameter("update_rate", update_rate_);
     this->get_parameter("initial_percentage", percentage_);
@@ -75,7 +75,7 @@ private:
   double percentage_ = 100.0;
   double idle_drain_per_sec_ = 0.01;
   double move_drain_per_mps_ = 0.1;
-  std::string battery_topic_ = "/battery/status";
+  std::string battery_topic_ = "/battery_state";
 
   // state
   double last_speed_ = 0.0;

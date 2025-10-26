@@ -34,8 +34,8 @@ public:
     BatteryMonitorNode()
     : Node("battery_monitor")
     {
-    // Default to the project's main topic name '/battery/status'
-    this->declare_parameter<std::string>("battery_topic", "/battery/status");
+    // Default to the project's main topic name '/battery_state'
+    this->declare_parameter<std::string>("battery_topic", "/battery_state");
         this->declare_parameter<double>("print_interval", 1.0);
 
         this->get_parameter("battery_topic", battery_topic_);
