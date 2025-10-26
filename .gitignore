@@ -1,0 +1,17 @@
+# Ignore colcon/ament build artifacts
+turtlebot3_ws/build/
+turtlebot3_ws/install/
+turtlebot3_ws/log/
+
+# Generic build/install/log
+build/
+install/
+log/
+*.log
+
+# Common editor / python artefacts
+.vscode/
+__pycache__/
+*.pyc
+*.swp
+
