@@ -1,2 +1,0 @@
-/usr/bin/ar qc libautonomous_slam_lib.a CMakeFiles/autonomous_slam_lib.dir/src/autonomous_slam_controller.cpp.o
-/usr/bin/ranlib libautonomous_slam_lib.a

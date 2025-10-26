@@ -1,0 +1,58 @@
+# Ignore workspace build artifacts, install folders and logs
+/turtlebot3_ws/build/
+/turtlebot3_ws/install/
+/turtlebot3_ws/log/
+
+# Generic build folders (catch other nested workspaces)
+build/
+install/
+log/
+*/build/
+*/install/
+*/log/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Byte-compiled / optimized / DLL files
+*.so
+*.dylib
+*.dll
+
+# C/C++ objects and archives
+*.o
+*.a
+*.la
+*.lo
+*.obj
+
+# CMake files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# IDE and editor files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+*~
+
+# ROS / Python cache
+__pycache__/
+*.pyc
+
+# Ignore install artifacts from other machines
+/turtlebot3_ws/install/*

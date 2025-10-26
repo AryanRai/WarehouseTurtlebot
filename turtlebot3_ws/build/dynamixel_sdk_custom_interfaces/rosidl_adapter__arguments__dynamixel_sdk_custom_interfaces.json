@@ -1,7 +1,0 @@
-{
-  "package_name": "dynamixel_sdk_custom_interfaces",
-  "non_idl_tuples": [
-    "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/DynamixelSDK/ros/dynamixel_sdk_custom_interfaces:msg/SetPosition.msg",
-    "/home/filipgus/Desktop/MTRX3760_Project_2/turtlebot3_ws/src/DynamixelSDK/ros/dynamixel_sdk_custom_interfaces:srv/GetPosition.srv"
-  ]
-}
