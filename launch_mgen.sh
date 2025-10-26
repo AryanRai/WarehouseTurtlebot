@@ -16,8 +16,9 @@ echo "  6) Custom size"
 echo "  7) Floating maze (disconnected rooms - unsolvable)"
 echo "  8) Maze with finish line (exit opening)"
 echo "  9) Advanced configuration"
+echo " 10) Warehouse with Shelves (2.3m x 2.3m, 4 shelf units)"
 echo ""
-read -p "Select option (1-9): " choice
+read -p "Select option (1-10): " choice
 
 case $choice in
     1)
@@ -146,11 +147,91 @@ case $choice in
         fi
         echo "🔨 Generating Custom ${SIZE}x${SIZE} Maze with advanced settings..."
         ;;
+    10)
+        # Warehouse with shelves - use pre-built world file
+        echo "📦 Loading Warehouse with Shelves environment..."
+        WAREHOUSE_MODE=true
+        ;;
     *)
         echo "❌ Invalid choice. Exiting..."
         exit 1
         ;;
 esac
+
+# Check if warehouse mode selected
+if [ "$WAREHOUSE_MODE" = "true" ]; then
+    echo ""
+    echo "=========================================="
+    echo "  Warehouse Shelves Environment"
+    echo "=========================================="
+    echo "  - Dimensions: 2.3m x 2.3m"
+    echo "  - Shelves: 4 horizontal units (1.15m wide)"
+    echo "  - Spacing: 0.46m between shelves"
+    echo "  - Side aisles: 0.575m wide"
+    echo "=========================================="
+    echo ""
+    
+    WORLD_FILE="turtlebot3_ws/src/turtlebot3_simulations/turtlebot3_gazebo/worlds/warehouse_shelves.world"
+    
+    if [ ! -f "$WORLD_FILE" ]; then
+        echo "❌ ERROR: Warehouse world file not found at:"
+        echo "   $WORLD_FILE"
+        exit 1
+    fi
+    
+    # Set up environment
+    export TURTLEBOT3_MODEL=burger
+    cd turtlebot3_ws
+    source install/setup.bash
+    export GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:$(pwd)/install/turtlebot3_gazebo/share/turtlebot3_gazebo/models
+    cd ..
+    
+    echo "🚀 Launching Gazebo with warehouse environment..."
+    echo ""
+    
+    # Launch Gazebo with warehouse world
+    gz sim -r -v2 "$WORLD_FILE" &
+    GZ_PID=$!
+    
+    echo "⏳ Waiting for Gazebo to initialize..."
+    sleep 6
+    
+    # Check if Gazebo is still running
+    if ! ps -p $GZ_PID > /dev/null; then
+        echo "❌ Gazebo failed to start!"
+        exit 1
+    fi
+    
+    echo "🤖 Spawning TurtleBot3 at origin..."
+    cd turtlebot3_ws
+    ros2 launch turtlebot3_gazebo spawn_turtlebot3.launch.py x_pose:=0.0 y_pose:=0.0 &
+    SPAWN_PID=$!
+    
+    # Wait for spawn to complete
+    sleep 3
+    
+    cd ..
+    
+    echo ""
+    echo "=========================================="
+    echo "✅ Warehouse environment ready!"
+    echo "=========================================="
+    echo ""
+    echo "TurtleBot3 spawned at origin (0, 0)"
+    echo ""
+    echo "Next steps:"
+    echo "  1. Run SLAM: ./scripts/run_slam.sh"
+    echo "  2. View in RViz: ./scripts/run_rviz.sh"
+    echo "  3. Run autonomous exploration: ./scripts/run_autonomous_slam.sh"
+    echo ""
+    echo "Press Ctrl+C to stop (will keep Gazebo and robot running)"
+    echo "Or run ./kill_all.sh to stop everything"
+    echo "=========================================="
+    echo ""
+    
+    # Keep script running so spawn process doesn't terminate
+    wait
+fi
 
 # Initialize flags for options 1-5 if not set
 FLOATING=${FLOATING:-""}
