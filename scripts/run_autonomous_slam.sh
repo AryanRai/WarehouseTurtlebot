@@ -60,6 +60,25 @@ cleanup() {
         echo "   Stopping TurtleBot3 spawn..."
         kill $SPAWN_PID 2>/dev/null
     fi
+
+    # Stop battery monitor processes (either terminal-launched or backgrounded)
+    if [ ! -z "$BATTERY_MONITOR_TERM_PID" ] && ps -p $BATTERY_MONITOR_TERM_PID > /dev/null 2>&1; then
+        echo "   Stopping battery_monitor (terminal)..."
+        kill $BATTERY_MONITOR_TERM_PID 2>/dev/null
+    fi
+    if [ ! -z "$BATTERY_MONITOR_PID" ] && ps -p $BATTERY_MONITOR_PID > /dev/null 2>&1; then
+        echo "   Stopping battery_monitor (background)..."
+        kill $BATTERY_MONITOR_PID 2>/dev/null
+    fi
+
+    if [ ! -z "$BATTERY_TERMINAL_TERM_PID" ] && ps -p $BATTERY_TERMINAL_TERM_PID > /dev/null 2>&1; then
+        echo "   Stopping battery_terminal_display (terminal)..."
+        kill $BATTERY_TERMINAL_TERM_PID 2>/dev/null
+    fi
+    if [ ! -z "$BATTERY_TERMINAL_PID" ] && ps -p $BATTERY_TERMINAL_PID > /dev/null 2>&1; then
+        echo "   Stopping battery_terminal_display (background)..."
+        kill $BATTERY_TERMINAL_PID 2>/dev/null
+    fi
     
     echo "✅ Autonomous SLAM system stopped."
     exit 0
@@ -67,6 +86,33 @@ cleanup() {
 
 # Set up signal handlers
 trap cleanup SIGINT SIGTERM
+
+# Helper: open a command in a new terminal window if available, otherwise run in background and log to /tmp
+open_in_terminal() {
+    local title="$1"
+    shift
+    local cmd="$*"
+    # working dir is turtlebot3_ws (script cd'd earlier)
+    local setup_cmd="source $(pwd)/install/setup.bash"
+    if command -v gnome-terminal >/dev/null 2>&1; then
+        gnome-terminal -- bash -lc "$setup_cmd; $cmd; exec bash" &
+        echo $!
+    elif command -v konsole >/dev/null 2>&1; then
+        konsole --hold -p tabtitle="$title" -e bash -lc "$setup_cmd; $cmd; exec bash" &
+        echo $!
+    elif command -v xfce4-terminal >/dev/null 2>&1; then
+        xfce4-terminal --hold -T "$title" -e "bash -lc '$setup_cmd; $cmd; exec bash'" &
+        echo $!
+    elif command -v xterm >/dev/null 2>&1; then
+        xterm -T "$title" -e "bash -lc '$setup_cmd; $cmd; exec bash'" &
+        echo $!
+    else
+        # Fallback: background the command and write to /tmp/title.log
+        local logfile="/tmp/${title// /_}.log"
+        bash -lc "$setup_cmd; $cmd" > "$logfile" 2>&1 &
+        echo $!
+    fi
+}
 
 echo "🚀 Starting Autonomous SLAM Components..."
 echo ""
@@ -106,6 +152,13 @@ echo "4️⃣ Launching RViz2 for visualization (output redirected to /tmp/rviz.
 rviz2 > /tmp/rviz.log 2>&1 &
 RVIZ_PID=$!
 sleep 3
+
+# Start battery monitor nodes so battery state is observed and printed
+echo "⚡ Opening battery monitor terminals (if available)..."
+BATTERY_MONITOR_TERM_PID=$(open_in_terminal "Battery Monitor" "ros2 run mtrx3760_battery battery_monitor_node")
+sleep 0.5
+BATTERY_TERMINAL_TERM_PID=$(open_in_terminal "Battery Terminal" "ros2 run mtrx3760_battery battery_terminal_display")
+sleep 0.5
 
 echo "5️⃣ Starting Autonomous SLAM Controller..."
 echo "⏳ Waiting for SLAM to be ready..."

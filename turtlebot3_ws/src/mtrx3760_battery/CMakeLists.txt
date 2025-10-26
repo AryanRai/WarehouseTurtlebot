@@ -10,7 +10,10 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(mtrx3760_interfaces REQUIRED)
+find_package(geometry_msgs REQUIRED)
+# mtrx3760_interfaces is optional for the simple monitor utilities. If you have
+# a custom interface package, install it and re-enable this line.
+# find_package(mtrx3760_interfaces REQUIRED)
 
 # Uncomment for GUI support
 # find_package(rqt_gui REQUIRED)
@@ -28,7 +31,6 @@ ament_target_dependencies(battery_monitor_node
   rclcpp
   sensor_msgs
   std_msgs
-  mtrx3760_interfaces
 )
 
 # Terminal Display Node
@@ -39,7 +41,16 @@ ament_target_dependencies(battery_terminal_display
   rclcpp
   sensor_msgs
   std_msgs
-  mtrx3760_interfaces
+)
+
+# Battery simulator (for testing without hardware)
+add_executable(battery_simulator_node
+  src/battery_simulator_node.cpp
+)
+ament_target_dependencies(battery_simulator_node
+  rclcpp
+  sensor_msgs
+  geometry_msgs
 )
 
 # GUI Display Node (uncomment when ready to implement)
@@ -61,6 +72,7 @@ ament_target_dependencies(battery_terminal_display
 install(TARGETS
   battery_monitor_node
   battery_terminal_display
+  battery_simulator_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

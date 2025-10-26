@@ -1,5 +1,4 @@
 <?xml version="1.0"?>
-<?xml version="1.0"?>
 <package format="3">
   <name>mtrx3760_battery</name>
   <version>1.0.0</version>
@@ -13,13 +12,15 @@
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
   
   <!-- For GUI (optional) -->
   <depend>rqt_gui</depend>
   <depend>rqt_gui_cpp</depend>
   
   <!-- Custom message dependencies -->
-  <depend>mtrx3760_interfaces</depend>
+  <!-- Custom message dependencies (optional) -->
+  <!-- <depend>mtrx3760_interfaces</depend> -->
 
   <export>
     <build_type>ament_cmake</build_type>
