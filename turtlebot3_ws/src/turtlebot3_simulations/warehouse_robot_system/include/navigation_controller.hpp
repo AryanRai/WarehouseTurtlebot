@@ -33,13 +33,13 @@ public:
         double stuck_timeout;
         
         Config() 
-            : goal_tolerance(0.50),
+            : goal_tolerance(0.30),
               origin_tolerance(0.2),
               max_linear_velocity(0.12),
               max_angular_velocity(0.6),
               lookahead_distance(0.30),
-              stuck_distance_threshold(0.03),
-              stuck_timeout(4.0) {}
+              stuck_distance_threshold(0.1),
+              stuck_timeout(6.0) {}
     };
 
     NavigationController(rclcpp::Node* node, const Config& config = Config());
