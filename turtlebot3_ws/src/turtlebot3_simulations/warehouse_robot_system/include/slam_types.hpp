@@ -51,7 +51,7 @@ const std::vector<GridCell> DIRECTIONS_OF_8 = {
 const int WALKABLE_THRESHOLD = 50;
 const int MIN_FRONTIER_SIZE = 8;
 const double COST_MAP_WEIGHT = 1000.0;
-const int PADDING = 5; // C-space padding
+const int PADDING = 8; // C-space padding
 
 } // namespace slam
 

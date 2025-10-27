@@ -403,6 +403,8 @@ PathPlanner::aStar(
     std::cout << "A* pathfinding from (" << start.first << "," << start.second 
               << ") to (" << goal.first << "," << goal.second << ")" << std::endl;
     
+    const double COST_MAP_WEIGHT = 5000.0;
+
     // Check if start and goal are valid
     if (!isCellInBounds(mapdata, start) || !isCellInBounds(mapdata, goal)) {
         std::cout << "Start or goal out of bounds" << std::endl;
@@ -429,9 +431,7 @@ PathPlanner::aStar(
     std::map<GridCell, double> distance_cost;
     std::map<GridCell, GridCell> came_from;
     std::set<GridCell> closed_set;
-    
-    const double COST_MAP_WEIGHT = 1000.0;
-    
+        
     // Initialize scores
     g_score[actual_start] = 0.0;
     distance_cost[actual_start] = 0.0;

@@ -113,6 +113,7 @@ public:
 private:
     // Helper functions
     static void showMap(const std::string& name, const cv::Mat& map);
+
 };
 
 } // namespace slam
