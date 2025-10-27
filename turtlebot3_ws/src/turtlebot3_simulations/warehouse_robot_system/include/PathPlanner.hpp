@@ -1,26 +1,25 @@
-// MTRX3760 2025 Project 2: Warehouse Robot 
-// File: path_planner.hpp
+// MTRX3760 2025 Project 2: Warehouse Robot
+// File: PathPlanner.cpp
 // Author(s): Aryan Rai
 //
-// PathPlanner class converted from Python reference for A* pathfinding
+// Path Planner Node - Plans paths using A* algorithm
 
 #ifndef PATH_PLANNER_HPP
 #define PATH_PLANNER_HPP
 
-#include "slam_types.hpp"
+#include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav_msgs/msg/path.hpp>
-#include <geometry_msgs/msg/point.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <opencv2/opencv.hpp>
-#include <vector>
-#include <tuple>
-#include <optional>
+#include "slam_types.hpp"
 
 namespace slam {
 
-class PathPlanner {
+class PathPlanner : public rclcpp::Node {
 public:
+    PathPlanner();
+
     // Grid utility functions
     static int gridToIndex(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p);
     static int getCellValue(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p);
@@ -111,8 +110,27 @@ public:
         const GridCell& goal);
 
 private:
-    // Helper functions
+    void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
+    
+    void poseCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
+    
+    void goalCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
+    
+    // ROS2 interfaces
+    rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
+    rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr pose_sub_;
+    rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr goal_sub_;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_viz_pub_;
+    
+    // Data
+    nav_msgs::msg::OccupancyGrid::SharedPtr current_map_;
+    nav_msgs::msg::OccupancyGrid::SharedPtr cspace_map_;
+    geometry_msgs::msg::PoseStamped::SharedPtr current_pose_;
+    cv::Mat cost_map_;
+
     static void showMap(const std::string& name, const cv::Mat& map);
+
 };
 
 } // namespace slam

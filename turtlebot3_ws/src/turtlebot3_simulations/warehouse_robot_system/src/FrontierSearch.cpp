@@ -4,7 +4,7 @@
 //
 // FrontierSearch implementation converted from Python reference
 
-#include "frontier_search.hpp"
+#include "FrontierSearch.hpp"
 #include <queue>
 #include <iostream>
 

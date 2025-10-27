@@ -1,5 +1,5 @@
 // MTRX3760 2025 Project 2: Warehouse Robot 
-// File: frontier_search.hpp
+// File: FrontierSearch.hpp
 // Author(s): Aryan Rai
 //
 // FrontierSearch class converted from Python reference for frontier detection
@@ -8,7 +8,7 @@
 #define FRONTIER_SEARCH_HPP
 
 #include "slam_types.hpp"
-#include "path_planner.hpp"
+#include "PathPlanner.hpp"
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <map>
 #include <queue>

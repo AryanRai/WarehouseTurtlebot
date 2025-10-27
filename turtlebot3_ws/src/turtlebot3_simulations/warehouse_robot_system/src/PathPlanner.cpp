@@ -1,18 +1,111 @@
-// MTRX3760 2025 Project 2: Warehouse Robot 
-// File: path_planner.cpp
+// MTRX3760 2025 Project 2: Warehouse Robot
+// File: PathPlanner.cpp
 // Author(s): Aryan Rai
 //
-// PathPlanner implementation converted from Python reference
+// Path Planner Node - Plans paths using A* algorithm
 
-#include "path_planner.hpp"
+#include <rclcpp/rclcpp.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+#include <nav_msgs/msg/path.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <opencv2/opencv.hpp>
+#include "PathPlanner.hpp"
 #include "priority_queue.hpp"
-#include <cmath>
-#include <algorithm>
-#include <iostream>
-#include <map>
-#include <set>
+#include "slam_types.hpp"
 
 namespace slam {
+
+PathPlanner::PathPlanner() : Node("path_planner_node") 
+{
+    RCLCPP_INFO(this->get_logger(), "Path Planner Node starting...");
+    
+    // Subscribers - receive map, pose from SlamController and goal from ExplorationPlanner
+    map_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
+        "/map", 10,
+        std::bind(&PathPlanner::mapCallback, this, std::placeholders::_1));
+    
+    pose_sub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
+        "/robot_pose", 10,
+        std::bind(&PathPlanner::poseCallback, this, std::placeholders::_1));
+    
+    goal_sub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
+        "/exploration_goal", 10,
+        std::bind(&PathPlanner::goalCallback, this, std::placeholders::_1));
+    
+    // Publisher - send planned path to MotionController
+    path_pub_ = this->create_publisher<nav_msgs::msg::Path>("/planned_path", 10);
+    
+    // For visualization
+    path_viz_pub_ = this->create_publisher<nav_msgs::msg::Path>("/path_visualization", 10);
+    
+    RCLCPP_INFO(this->get_logger(), "Path Planner Node initialized");
+}
+
+void PathPlanner::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) 
+{
+    current_map_ = msg;
+    
+    // Pre-compute C-space and cost map when map updates
+    if (current_map_) {
+        RCLCPP_DEBUG(this->get_logger(), "Computing C-space and cost map...");
+        auto [cspace, cspace_cells] = calcCspace(*current_map_, false);
+        cspace_map_ = std::make_shared<nav_msgs::msg::OccupancyGrid>(cspace);
+        cost_map_ = calcCostMap(*current_map_);
+        RCLCPP_DEBUG(this->get_logger(), "C-space and cost map ready");
+    }
+}
+
+void PathPlanner::poseCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg) 
+{
+    current_pose_ = msg;
+}
+
+void PathPlanner::goalCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg) 
+{
+    if (!current_map_ || !current_pose_ || !cspace_map_) {
+        RCLCPP_WARN(this->get_logger(), "Cannot plan path: missing map or pose data");
+        return;
+    }
+    
+    RCLCPP_INFO(this->get_logger(), "Received goal at (%.2f, %.2f), planning path...",
+                msg->pose.position.x, msg->pose.position.y);
+    
+    // Convert start and goal to grid coordinates
+    GridCell start = worldToGrid(*current_map_, current_pose_->pose.position);
+    GridCell goal = worldToGrid(*current_map_, msg->pose.position);
+    
+    // Plan path using A* with C-space and cost map
+    auto [path, cost, actual_start, actual_goal] = 
+        aStar(*cspace_map_, cost_map_, start, goal);
+    
+    if (!path.has_value() || path->empty()) {
+        RCLCPP_WARN(this->get_logger(), "Failed to find path to goal");
+        return;
+    }
+    
+    // Convert path to ROS message
+    nav_msgs::msg::Path path_msg;
+    path_msg.header.frame_id = "map";
+    path_msg.header.stamp = this->now();
+    
+    for (const auto& cell : path.value()) {
+        geometry_msgs::msg::PoseStamped pose;
+        pose.header = path_msg.header;
+        
+        geometry_msgs::msg::Point world_point = gridToWorld(*current_map_, cell);
+        pose.pose.position = world_point;
+        pose.pose.orientation.w = 1.0;
+        
+        path_msg.poses.push_back(pose);
+    }
+    
+    // Publish path to MotionController
+    path_pub_->publish(path_msg);
+    path_viz_pub_->publish(path_msg);
+    
+    RCLCPP_INFO(this->get_logger(), "Published path with %zu waypoints, total cost: %.2f",
+                path_msg.poses.size(), cost.value_or(0.0));
+}
 
 // Grid utility functions
 int PathPlanner::gridToIndex(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p) {
