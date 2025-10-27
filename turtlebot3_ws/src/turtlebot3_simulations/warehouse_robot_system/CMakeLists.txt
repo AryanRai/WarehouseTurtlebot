@@ -23,6 +23,11 @@ find_package(tf2_geometry_msgs REQUIRED)
 # OpenCV for image processing and SLAM
 find_package(OpenCV REQUIRED)
 
+# Camera detection dependencies
+find_package(cv_bridge REQUIRED)
+find_package(apriltag_msgs REQUIRED)
+find_package(image_transport REQUIRED)
+
 # -------------------- Include directories --------------------
 include_directories(
   include
@@ -110,7 +115,72 @@ target_link_libraries(${PROJECT_NAME}_lib
   ${OpenCV_LIBS}
 )
 
-# -------------------- Executables --------------------
+# -------------------- Camera Detection Module --------------------
+# Image Processor Base Library
+add_library(image_processor_base
+  src/camera_detection/CImageProcessorNode.cpp
+)
+
+target_include_directories(image_processor_base PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
+ament_target_dependencies(image_processor_base
+  rclcpp
+  sensor_msgs
+  cv_bridge
+  OpenCV
+)
+
+# Camera Node (runs on TurtleBot)
+add_executable(camera_node 
+  src/camera_detection/CCameraNode.cpp
+)
+
+ament_target_dependencies(camera_node
+  rclcpp
+  sensor_msgs
+)
+
+# AprilTag Detector Node (runs on laptop)
+add_executable(apriltag_detector_node
+  src/camera_detection/CAprilTagDetector.cpp
+)
+
+target_link_libraries(apriltag_detector_node
+  image_processor_base
+)
+
+ament_target_dependencies(apriltag_detector_node
+  rclcpp
+  sensor_msgs
+  apriltag_msgs
+  geometry_msgs
+  cv_bridge
+  OpenCV
+)
+
+# Colour Detector Node (runs on laptop)
+add_executable(colour_detector_node
+  src/camera_detection/CColourDetector.cpp
+)
+
+target_link_libraries(colour_detector_node
+  image_processor_base
+)
+
+ament_target_dependencies(colour_detector_node
+  rclcpp
+  sensor_msgs
+  apriltag_msgs
+  geometry_msgs
+  std_msgs
+  cv_bridge
+  OpenCV
+)
+
+# -------------------- Existing Executables --------------------
 # Main warehouse robot system executable
 add_executable(warehouse_robot_main
   src/warehouse_robot_main.cpp
@@ -156,9 +226,13 @@ install(TARGETS
   slam_module
   autonomous_slam_lib
   ${PROJECT_NAME}_lib
+  image_processor_base
   warehouse_robot_main
   slam_test
   autonomous_slam_main
+  camera_node
+  apriltag_detector_node
+  colour_detector_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -185,6 +259,9 @@ ament_export_dependencies(
   tf2_ros
   tf2_geometry_msgs
   OpenCV
+  cv_bridge
+  apriltag_msgs
+  image_transport
 )
 
 ament_package()
