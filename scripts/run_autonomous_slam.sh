@@ -2,6 +2,34 @@
 # Autonomous SLAM System Runner
 # Runs the complete autonomous SLAM system with frontier exploration
 # Supports both Gazebo simulation and physical TurtleBot3
+#
+# Usage:
+#   ./scripts/run_autonomous_slam.sh          # Normal mode
+#   ./scripts/run_autonomous_slam.sh -web     # With web dashboard
+
+# Parse command line arguments
+START_WEB_DASHBOARD=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -web|--web)
+            START_WEB_DASHBOARD=true
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: $0 [-web]"
+            echo ""
+            echo "Options:"
+            echo "  -web, --web    Start web dashboard (opens browser at http://localhost:3000)"
+            echo "  -h, --help     Show this help message"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use -h or --help for usage information"
+            exit 1
+            ;;
+    esac
+done
 
 # Set ROS Domain ID
 export ROS_DOMAIN_ID=29
@@ -13,7 +41,13 @@ echo "=================================="
 echo "   ROS_DOMAIN_ID: $ROS_DOMAIN_ID"
 echo "   TURTLEBOT3_MODEL: $TURTLEBOT3_MODEL"
 echo "   RMW_IMPLEMENTATION: $RMW_IMPLEMENTATION"
+if [ "$START_WEB_DASHBOARD" = true ]; then
+    echo "   Web Dashboard: ENABLED"
+fi
 echo ""
+
+# Save script directory before changing to workspace
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 cd "$(dirname "$0")/../turtlebot3_ws"
 
@@ -83,6 +117,16 @@ cleanup() {
     if [ ! -z "$BATTERY_DISPLAY_PID" ] && ps -p $BATTERY_DISPLAY_PID > /dev/null 2>&1; then
         echo "   Stopping Battery Display..."
         kill $BATTERY_DISPLAY_PID 2>/dev/null
+    fi
+    
+    if [ ! -z "$ROSBRIDGE_PID" ] && ps -p $ROSBRIDGE_PID > /dev/null 2>&1; then
+        echo "   Stopping rosbridge..."
+        kill $ROSBRIDGE_PID 2>/dev/null
+    fi
+    
+    if [ ! -z "$WEB_SERVER_PID" ] && ps -p $WEB_SERVER_PID > /dev/null 2>&1; then
+        echo "   Stopping web server..."
+        kill $WEB_SERVER_PID 2>/dev/null
     fi
     
     if [ ! -z "$RVIZ_PID" ] && ps -p $RVIZ_PID > /dev/null 2>&1; then
@@ -163,32 +207,120 @@ if ! ps -p $CARTOGRAPHER_PID > /dev/null 2>&1; then
     exit 1
 fi
 
-echo "4️⃣ Starting Battery Monitoring System..."
+echo "4️⃣ Starting rosbridge for web dashboard..."
+# Check if rosbridge is available (suppress broken pipe errors)
+if ros2 pkg list 2>/dev/null | grep -q "rosbridge_server" 2>/dev/null; then
+    # Use clean launcher script to avoid conda library conflicts
+    "$SCRIPT_DIR/start_rosbridge_clean.sh" "$(pwd)" > /tmp/rosbridge.log 2>&1 &
+    ROSBRIDGE_PID=$!
+    sleep 3
+    
+    if ps -p $ROSBRIDGE_PID > /dev/null 2>&1; then
+        echo "   ✅ rosbridge started (PID: $ROSBRIDGE_PID)"
+        
+        # Start web server if -web flag was provided
+        if [ "$START_WEB_DASHBOARD" = true ]; then
+            echo "   Starting web server..."
+            WEB_DIR="$(pwd)/src/mtrx3760_battery/web"
+            
+            # Check if node_modules exists
+            if [ ! -d "$WEB_DIR/node_modules" ]; then
+                echo "   📦 Installing web dependencies (first time only)..."
+                cd "$WEB_DIR"
+                npm install --silent > /tmp/npm_install.log 2>&1
+                if [ $? -ne 0 ]; then
+                    echo "   ⚠️  Failed to install web dependencies"
+                    echo "   Check logs: tail -f /tmp/npm_install.log"
+                    WEB_SERVER_PID=""
+                    cd - > /dev/null
+                else
+                    cd - > /dev/null
+                    # Start web server
+                    cd "$WEB_DIR"
+                    npm run dev > /tmp/battery_web.log 2>&1 &
+                    WEB_SERVER_PID=$!
+                    cd - > /dev/null
+                    sleep 3
+                    
+                    if ps -p $WEB_SERVER_PID > /dev/null 2>&1; then
+                        echo "   ✅ Web server started (PID: $WEB_SERVER_PID)"
+                        echo "   🌐 Open browser: http://localhost:3000"
+                    else
+                        echo "   ⚠️  Web server failed to start"
+                        WEB_SERVER_PID=""
+                    fi
+                fi
+            else
+                # Start web server
+                cd "$WEB_DIR"
+                npm run dev > /tmp/battery_web.log 2>&1 &
+                WEB_SERVER_PID=$!
+                cd - > /dev/null
+                sleep 3
+                
+                if ps -p $WEB_SERVER_PID > /dev/null 2>&1; then
+                    echo "   ✅ Web server started (PID: $WEB_SERVER_PID)"
+                    echo "   🌐 Open browser: http://localhost:3000"
+                else
+                    echo "   ⚠️  Web server failed to start"
+                    WEB_SERVER_PID=""
+                fi
+            fi
+        else
+            echo "   🌐 Web dashboard available at: http://localhost:3000"
+            echo "   💡 To auto-start web server, use: $0 -web"
+            WEB_SERVER_PID=""
+        fi
+    else
+        echo "   ⚠️  rosbridge failed to start (check /tmp/rosbridge.log)"
+        echo "   Web dashboard won't work without rosbridge"
+        ROSBRIDGE_PID=""
+        WEB_SERVER_PID=""
+    fi
+else
+    echo "   ⚠️  rosbridge_server not installed"
+    echo "   Install with: sudo apt install ros-jazzy-rosbridge-server"
+    echo "   (Web dashboard will not be available)"
+    ROSBRIDGE_PID=""
+    WEB_SERVER_PID=""
+fi
+
+echo "5️⃣ Starting Battery Monitoring System..."
 
 # Get absolute path to config file
 BATTERY_CONFIG="$(pwd)/src/mtrx3760_battery/config/battery_params.yaml"
 
 if [ "$USE_PHYSICAL_ROBOT" = true ]; then
     echo "   Using real battery data from /battery_state"
-    ros2 run mtrx3760_battery battery_monitor_node --ros-args --params-file "$BATTERY_CONFIG" -p use_simulation:=false > /tmp/battery_monitor.log 2>&1 &
+    "$SCRIPT_DIR/start_battery_clean.sh" "$(pwd)" "battery_monitor_node" "$BATTERY_CONFIG" > /tmp/battery_monitor.log 2>&1 &
     BATTERY_PID=$!
 else
     echo "   Using battery simulator for Gazebo"
-    ros2 run mtrx3760_battery battery_simulator_node --ros-args --params-file "$BATTERY_CONFIG" > /tmp/battery_simulator.log 2>&1 &
+    "$SCRIPT_DIR/start_battery_clean.sh" "$(pwd)" "battery_simulator_node" "$BATTERY_CONFIG" > /tmp/battery_simulator.log 2>&1 &
     BATTERY_PID=$!
 fi
 
-echo "   Starting battery terminal display..."
-ros2 run mtrx3760_battery battery_terminal_display --ros-args --params-file "$BATTERY_CONFIG" > /tmp/battery_display.log 2>&1 &
-BATTERY_DISPLAY_PID=$!
+echo "   Starting battery terminal display in new window..."
+# Try to open in a new terminal window
+if command -v gnome-terminal &> /dev/null; then
+    gnome-terminal -- bash -c "source $(pwd)/install/setup.bash && ros2 run mtrx3760_battery battery_terminal_display --ros-args --params-file '$BATTERY_CONFIG'; exec bash" &
+    BATTERY_DISPLAY_PID=$!
+elif command -v xterm &> /dev/null; then
+    xterm -e "source $(pwd)/install/setup.bash && ros2 run mtrx3760_battery battery_terminal_display --ros-args --params-file '$BATTERY_CONFIG'; bash" &
+    BATTERY_DISPLAY_PID=$!
+else
+    echo "   ⚠️  No terminal emulator found, running in background"
+    ros2 run mtrx3760_battery battery_terminal_display --ros-args --params-file "$BATTERY_CONFIG" > /tmp/battery_display.log 2>&1 &
+    BATTERY_DISPLAY_PID=$!
+fi
 sleep 2
 
-echo "5️⃣ Launching RViz2 for visualization (output redirected to /tmp/rviz.log)..."
+echo "6️⃣ Launching RViz2 for visualization (output redirected to /tmp/rviz.log)..."
 rviz2 > /tmp/rviz.log 2>&1 &
 RVIZ_PID=$!
 sleep 3
 
-echo "6️⃣ Starting Autonomous SLAM Controller..."
+echo "7️⃣ Starting Autonomous SLAM Controller..."
 echo "⏳ Waiting for SLAM to be ready..."
 sleep 3
 
@@ -213,6 +345,12 @@ else
     echo "   🤖 TurtleBot3 in Gazebo (PID: $SPAWN_PID)"
 fi
 echo "   🗺️  Cartographer SLAM (PID: $CARTOGRAPHER_PID)"
+if [ ! -z "$ROSBRIDGE_PID" ]; then
+    echo "   🌐 rosbridge WebSocket (PID: $ROSBRIDGE_PID)"
+fi
+if [ ! -z "$WEB_SERVER_PID" ]; then
+    echo "   🌐 Web Server (PID: $WEB_SERVER_PID)"
+fi
 echo "   🔋 Battery Monitor (PID: $BATTERY_PID)"
 echo "   📊 Battery Display (PID: $BATTERY_DISPLAY_PID)"
 echo "   🖥️  RViz2 (PID: $RVIZ_PID)"
@@ -241,10 +379,24 @@ echo "📈 Monitoring:"
 echo "   • Watch RViz to see autonomous exploration"
 echo "   • Robot will move to frontiers automatically"
 echo "   • SLAM builds map as robot explores"
-echo "   • Battery status displayed in terminal"
+echo "   • Battery status shown in separate terminal window"
+if [ ! -z "$WEB_SERVER_PID" ]; then
+    echo "   • 🌐 Web dashboard: http://localhost:3000 (RUNNING)"
+elif [ ! -z "$ROSBRIDGE_PID" ]; then
+    echo "   • Web dashboard: Open browser to http://localhost:3000"
+    echo "     (or run: cd turtlebot3_ws/src/mtrx3760_battery/web && npm run dev)"
+else
+    echo "   • Web dashboard: Install rosbridge to enable"
+fi
 echo "   • System logs show state transitions and progress"
 echo "   • Cartographer logs: tail -f /tmp/cartographer.log"
-echo "   • Battery logs: tail -f /tmp/battery_display.log"
+echo "   • Battery logs: tail -f /tmp/battery_monitor.log (or battery_simulator.log)"
+if [ ! -z "$ROSBRIDGE_PID" ]; then
+    echo "   • rosbridge logs: tail -f /tmp/rosbridge.log"
+fi
+if [ ! -z "$WEB_SERVER_PID" ]; then
+    echo "   • Web server logs: tail -f /tmp/battery_web.log"
+fi
 echo "   • RViz logs: tail -f /tmp/rviz.log"
 echo ""
 echo "🔄 State Machine:"

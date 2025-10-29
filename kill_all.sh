@@ -24,6 +24,20 @@ pkill -9 -f "cartographer.launch"
 # Kill RViz
 pkill -9 -f rviz2
 
+# Kill Battery Monitoring
+pkill -9 -f battery_simulator_node
+pkill -9 -f battery_monitor_node
+pkill -9 -f battery_terminal_display
+pkill -9 -f battery_gui_display
+
+# Kill rosbridge
+pkill -9 -f rosbridge_websocket
+pkill -9 -f rosapi_node
+
+# Kill web server (npm/vite)
+pkill -9 -f "vite.*battery"
+pkill -9 -f "node.*battery.*web"
+
 # Wait a moment
 sleep 1
 
