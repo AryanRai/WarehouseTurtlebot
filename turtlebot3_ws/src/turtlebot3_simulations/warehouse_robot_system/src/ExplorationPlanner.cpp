@@ -211,12 +211,18 @@ nav_msgs::msg::Path ExplorationPlanner::planExplorationPath(
         no_path_found_counter_ = 0;
         return PathPlanner::pathToMessage(map, best_path);
     } else {
-        RCLCPP_INFO(node_->get_logger(), "No paths found");
-        no_path_found_counter_++;
-        
-        if (no_path_found_counter_ >= NUM_EXPLORE_FAILS_BEFORE_FINISH) {
-            RCLCPP_INFO(node_->get_logger(), "Exploration complete - no valid paths");
-            is_finished_exploring_ = true;
+        // Don't count "all frontiers too close" as a failure - just wait for map to update
+        if (frontiers_checked == 0 && frontiers_too_close > 0) {
+            RCLCPP_DEBUG(node_->get_logger(), "Waiting for new frontiers (all current ones too close)");
+            // Don't increment no_path_found_counter_ - this is temporary
+        } else {
+            RCLCPP_INFO(node_->get_logger(), "No paths found");
+            no_path_found_counter_++;
+            
+            if (no_path_found_counter_ >= NUM_EXPLORE_FAILS_BEFORE_FINISH) {
+                RCLCPP_INFO(node_->get_logger(), "Exploration complete - no valid paths");
+                is_finished_exploring_ = true;
+            }
         }
         
         return empty_path;
