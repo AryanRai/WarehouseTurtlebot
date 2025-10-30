@@ -241,6 +241,13 @@ offer_mode_selection() {
                 done
             fi
             
+            # Read the saved robot pose if available
+            POSE_FILE="${MAP_FILE_BASE}_pose.txt"
+            if [ -f "$POSE_FILE" ]; then
+                echo "   Found saved robot pose: $POSE_FILE"
+                # The pose file will be used to set initial pose via ROS 2 service after launch
+            fi
+            
             # Create temporary params file with the correct map path
             TEMP_PARAMS="/tmp/slam_localization_params_$$.yaml"
             cat > "$TEMP_PARAMS" << EOF
@@ -293,6 +300,39 @@ EOF
             fi
             
             echo "   ✅ SLAM Toolbox running in localization mode"
+            
+            # Set initial pose if pose file exists
+            if [ -f "$POSE_FILE" ]; then
+                echo "   Setting initial robot pose from saved data..."
+                sleep 2  # Give SLAM Toolbox time to fully initialize
+                
+                # Read pose from file (format: x y z roll pitch yaw_qz yaw_qw)
+                read X Y Z ROLL PITCH QZ QW < "$POSE_FILE"
+                
+                echo "   Initial pose: x=$X, y=$Y, qz=$QZ, qw=$QW"
+                
+                # Publish initial pose to /initialpose topic
+                ros2 topic pub --once /initialpose geometry_msgs/msg/PoseWithCovarianceStamped "{
+                  header: {
+                    stamp: {sec: 0, nanosec: 0},
+                    frame_id: 'map'
+                  },
+                  pose: {
+                    pose: {
+                      position: {x: $X, y: $Y, z: 0.0},
+                      orientation: {x: 0.0, y: 0.0, z: $QZ, w: $QW}
+                    },
+                    covariance: [0.25, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                 0.0, 0.25, 0.0, 0.0, 0.0, 0.0,
+                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.06853891909122467]
+                  }
+                }" > /dev/null 2>&1 &
+                
+                echo "   ✅ Initial pose set"
+            fi
         fi
         
         # Start delivery robot node
