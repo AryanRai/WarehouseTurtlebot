@@ -59,15 +59,20 @@ private:
     static constexpr double MIN_REPLAN_INTERVAL = 2.0;  // seconds - minimum time between replans
     static constexpr int MAX_NO_PATH_BEFORE_RECOVERY = 5;  // attempts before recovery
     static constexpr double RECOVERY_DURATION = 3.0;  // seconds to rotate during recovery
-    static constexpr int MAX_RECOVERY_ATTEMPTS = 3;  // max recovery attempts before giving up
+    static constexpr int MAX_RECOVERY_ATTEMPTS = 15;  // max recovery attempts before giving up (increased from 3)
     
     // Home position
     geometry_msgs::msg::Point home_position_;
     bool returning_home_;
     
+    // Laser scan for obstacle detection
+    sensor_msgs::msg::LaserScan::SharedPtr current_scan_;
+    rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
+    
     // Recovery behavior
     void performRecovery();
     void returnToHome();
+    bool isObstacleAhead(double min_distance = 0.3);  // Check if obstacle within distance
 };
 
 #endif // AUTONOMOUS_EXPLORATION_ROBOT_HPP

@@ -21,6 +21,13 @@ AutonomousExplorationRobot::AutonomousExplorationRobot(rclcpp::Node::SharedPtr n
     path_pub_ = node_->create_publisher<nav_msgs::msg::Path>("/exploration/path", 10);
     recovery_cmd_vel_pub_ = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
     
+    // Create subscribers for obstacle detection
+    scan_sub_ = node_->create_subscription<sensor_msgs::msg::LaserScan>(
+        "/scan", 10,
+        [this](sensor_msgs::msg::LaserScan::SharedPtr msg) {
+            current_scan_ = msg;
+        });
+    
     // Initialize home position (0, 0)
     home_position_.x = 0.0;
     home_position_.y = 0.0;
@@ -36,9 +43,33 @@ AutonomousExplorationRobot::AutonomousExplorationRobot(rclcpp::Node::SharedPtr n
                home_position_.x, home_position_.y);
 }
 
+bool AutonomousExplorationRobot::isObstacleAhead(double min_distance) {
+    if (!current_scan_ || current_scan_->ranges.empty()) {
+        return false;  // No scan data, assume clear
+    }
+    
+    // Check front 60 degrees (30 degrees on each side)
+    int num_ranges = current_scan_->ranges.size();
+    int front_range = num_ranges / 6;  // 60 degrees out of 360
+    
+    // Check front center ranges
+    for (int i = -front_range/2; i < front_range/2; i++) {
+        int idx = (num_ranges / 2 + i + num_ranges) % num_ranges;
+        float range = current_scan_->ranges[idx];
+        
+        // Check if valid range and too close
+        if (std::isfinite(range) && range > 0.0 && range < min_distance) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
 void AutonomousExplorationRobot::performRecovery() {
     // Recovery behavior: forward, backward, then forward+rotate pattern
     // This helps discover new frontiers and break oscillation loops
+    // Now with obstacle avoidance!
     
     if (!in_recovery_) {
         int pattern = recovery_attempt_ % 3;
@@ -61,17 +92,31 @@ void AutonomousExplorationRobot::performRecovery() {
         double angular_speed = 0.0;
         
         if (pattern == 0) {
-            // Forward
-            linear_speed = 0.1;
-            angular_speed = 0.0;
+            // Forward - but stop if obstacle ahead
+            if (!isObstacleAhead(0.3)) {
+                linear_speed = 0.1;
+                angular_speed = 0.0;
+            } else {
+                // Obstacle ahead, just rotate in place
+                linear_speed = 0.0;
+                angular_speed = 0.5;
+                RCLCPP_DEBUG(node_->get_logger(), "Obstacle detected during forward recovery, rotating instead");
+            }
         } else if (pattern == 1) {
-            // Backward
+            // Backward - always safe
             linear_speed = -0.1;
             angular_speed = 0.0;
         } else {
             // Forward + rotate (to break oscillation)
-            linear_speed = 0.1;
-            angular_speed = 0.5;  // Rotate while moving forward
+            if (!isObstacleAhead(0.3)) {
+                linear_speed = 0.1;
+                angular_speed = 0.5;
+            } else {
+                // Obstacle ahead, just rotate in place
+                linear_speed = 0.0;
+                angular_speed = 0.5;
+                RCLCPP_DEBUG(node_->get_logger(), "Obstacle detected during forward+rotate recovery, rotating only");
+            }
         }
         
         geometry_msgs::msg::TwistStamped cmd_vel;
@@ -127,18 +172,24 @@ void AutonomousExplorationRobot::returnToHome() {
     double dy = home_position_.y - current_pose.position.y;
     double distance_to_home = std::sqrt(dx * dx + dy * dy);
     
-    if (distance_to_home < 0.2) {  // Within 20cm of home
-        RCLCPP_INFO(node_->get_logger(), "Arrived at home position!");
-        RCLCPP_INFO(node_->get_logger(), "Exploration complete - saving map");
+    if (distance_to_home < 0.3) {  // Within 30cm of home
+        RCLCPP_INFO(node_->get_logger(), "Successfully returned to home position!");
+        RCLCPP_INFO(node_->get_logger(), "Exploration complete - saving final map");
         saveMap("warehouse_map_final");
         stopExploration();
         return;
     }
     
-    // Plan path to home if we don't have one
-    if (!motion_controller_->hasPath()) {
-        RCLCPP_INFO(node_->get_logger(), "Planning path to home (%.2f, %.2f), distance: %.2fm",
-                   home_position_.x, home_position_.y, distance_to_home);
+    // Plan path to home if we don't have one or if goal doesn't match home
+    if (!motion_controller_->hasPath() || 
+        std::abs(last_goal_position_.x - home_position_.x) > 0.1 ||
+        std::abs(last_goal_position_.y - home_position_.y) > 0.1) {
+        
+        last_goal_position_ = home_position_;
+        
+        RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 3000,
+                            "Planning path to home (%.2f, %.2f), distance: %.2fm",
+                            home_position_.x, home_position_.y, distance_to_home);
         
         // Use the path planner to plan a path to home
         GridCell start = PathPlanner::worldToGrid(*current_map, current_pose.position);
@@ -157,16 +208,23 @@ void AutonomousExplorationRobot::returnToHome() {
             RCLCPP_INFO(node_->get_logger(), "Path to home planned with %zu waypoints", 
                        path_msg.poses.size());
         } else {
-            RCLCPP_WARN(node_->get_logger(), "Failed to plan path to home - will retry");
+            RCLCPP_WARN_THROTTLE(node_->get_logger(), *node_->get_clock(), 3000,
+                                "Failed to plan path home, trying again...");
+            return;
         }
     }
     
-    // Execute motion control
+    // Follow path home
     if (motion_controller_->hasPath()) {
         auto cmd_vel = motion_controller_->computeVelocityCommand(current_pose, *current_map);
-        RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 2000,
-                            "Returning home: distance=%.2fm, linear=%.3f, angular=%.3f", 
-                            distance_to_home, cmd_vel.linear.x, cmd_vel.angular.z);
+        RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 3000,
+                            "Returning home: %.2fm remaining", distance_to_home);
+        
+        // If path following fails (returns zero velocity unexpectedly), clear path to force replan
+        if (cmd_vel.linear.x == 0.0 && cmd_vel.angular.z == 0.0 && distance_to_home > 0.5) {
+            RCLCPP_WARN(node_->get_logger(), "Path following failed while returning home, replanning...");
+            motion_controller_->clearPath();
+        }
     }
 }
 
