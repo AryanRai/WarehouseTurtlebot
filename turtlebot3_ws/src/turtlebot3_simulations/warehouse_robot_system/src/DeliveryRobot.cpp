@@ -268,8 +268,55 @@ void DeliveryRobot::update() {
     
     // Check if we've completed all deliveries
     if (current_delivery_index_ >= optimized_route_.size()) {
-        RCLCPP_INFO(node_->get_logger(), "All deliveries completed!");
-        stopDeliveries();
+        // Return to home position (0, 0)
+        auto current_pose = slam_controller_->getCurrentPose();
+        double dx = -current_pose.position.x;  // Home is at (0, 0)
+        double dy = -current_pose.position.y;
+        double distance_to_home = std::sqrt(dx*dx + dy*dy);
+        
+        // Check if already at home
+        if (distance_to_home < ZONE_REACHED_THRESHOLD) {
+            RCLCPP_INFO(node_->get_logger(), "All deliveries completed! Robot at home.");
+            stopDeliveries();
+            return;
+        }
+        
+        // Plan path home if we don't have one
+        if (!motion_controller_->hasPath()) {
+            RCLCPP_INFO(node_->get_logger(), "All deliveries completed! Returning home...");
+            
+            auto current_map = slam_controller_->getCurrentMap();
+            geometry_msgs::msg::Point home_position;
+            home_position.x = 0.0;
+            home_position.y = 0.0;
+            home_position.z = 0.0;
+            
+            GridCell start = PathPlanner::worldToGrid(*current_map, current_pose.position);
+            GridCell goal = PathPlanner::worldToGrid(*current_map, home_position);
+            
+            auto [cspace, cspace_cells] = PathPlanner::calcCSpace(*current_map, false);
+            cv::Mat cost_map = PathPlanner::calcCostMap(*current_map);
+            
+            auto [path, cost, actual_start, actual_goal] = 
+                PathPlanner::aStar(cspace, cost_map, start, goal);
+            
+            if (!path.empty()) {
+                auto path_msg = PathPlanner::pathToMessage(*current_map, path);
+                motion_controller_->setPath(path_msg);
+                RCLCPP_INFO(node_->get_logger(), "Navigating home (%.2fm)", distance_to_home);
+                publishStatus("Returning home");
+            } else {
+                RCLCPP_ERROR(node_->get_logger(), "Failed to plan path home!");
+                stopDeliveries();
+            }
+        }
+        
+        // Continue navigating home
+        if (motion_controller_->hasPath()) {
+            auto current_map = slam_controller_->getCurrentMap();
+            motion_controller_->computeVelocityCommand(current_pose, *current_map);
+        }
+        
         return;
     }
     
