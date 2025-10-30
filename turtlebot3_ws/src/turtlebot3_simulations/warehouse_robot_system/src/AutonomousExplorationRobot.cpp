@@ -10,7 +10,11 @@ AutonomousExplorationRobot::AutonomousExplorationRobot(rclcpp::Node::SharedPtr n
       recovery_start_time_(node->now()),
       in_recovery_(false),
       recovery_attempt_(0),
-      returning_home_(false) {
+      returning_home_(false),
+      consecutive_no_frontiers_count_(0),
+      return_home_failures_(0),
+      last_return_home_progress_(node->now()),
+      last_distance_to_home_(std::numeric_limits<double>::max()) {
     
     // Initialize SLAM components
     slam_controller_ = std::make_unique<SlamController>(node);
@@ -145,15 +149,6 @@ void AutonomousExplorationRobot::performRecovery() {
         consecutive_no_path_count_ = 0;
         recovery_attempt_++;  // Increment for next time
         last_replan_time_ = node_->now() - rclcpp::Duration::from_seconds(MIN_REPLAN_INTERVAL);  // Allow immediate replan
-        
-        // Check if we've tried too many recoveries - exploration might be complete
-        if (recovery_attempt_ >= MAX_RECOVERY_ATTEMPTS) {
-            RCLCPP_WARN(node_->get_logger(), 
-                       "Max recovery attempts reached - exploration appears complete");
-            RCLCPP_INFO(node_->get_logger(), "Initiating return to home");
-            returning_home_ = true;
-            recovery_attempt_ = 0;  // Reset for future use
-        }
     }
 }
 
@@ -193,13 +188,59 @@ void AutonomousExplorationRobot::returnToHome() {
         
         // Use the path planner to plan a path to home
         GridCell start = PathPlanner::worldToGrid(*current_map, current_pose.position);
-        GridCell goal = PathPlanner::worldToGrid(*current_map, home_position_);
+        GridCell goal_cell = PathPlanner::worldToGrid(*current_map, home_position_);
         
         auto [cspace, cspace_cells] = PathPlanner::calcCSpace(*current_map, false);
         cv::Mat cost_map = PathPlanner::calcCostMap(*current_map);
         
+        // First try: plan to exact home position
         auto [path, cost, actual_start, actual_goal] = 
-            PathPlanner::aStar(cspace, cost_map, start, goal);
+            PathPlanner::aStar(cspace, cost_map, start, goal_cell);
+        
+        // If that fails, try to find nearest walkable cell to home
+        if (path.empty()) {
+            static rclcpp::Time last_search_warn = node_->now();
+            if ((node_->now() - last_search_warn).seconds() > 5.0) {
+                RCLCPP_WARN(node_->get_logger(), "Cannot reach exact home position, searching for nearest accessible point...");
+                last_search_warn = node_->now();
+            }
+            
+            // Search in expanding radius around home (check only 8 directions per radius for speed)
+            bool found_goal = false;
+            std::vector<std::pair<int,int>> directions = {
+                {1,0}, {-1,0}, {0,1}, {0,-1},  // Cardinal
+                {1,1}, {1,-1}, {-1,1}, {-1,-1}  // Diagonal
+            };
+            
+            for (int radius = 1; radius <= 30 && !found_goal; radius++) {
+                for (const auto& [dx_unit, dy_unit] : directions) {
+                    GridCell candidate = {
+                        goal_cell.first + dx_unit * radius, 
+                        goal_cell.second + dy_unit * radius
+                    };
+                    
+                    // Check if this cell is walkable
+                    if (PathPlanner::isCellInBounds(*current_map, candidate) &&
+                        PathPlanner::isCellWalkable(*current_map, candidate)) {
+                        
+                        // Try to plan to this cell
+                        auto [alt_path, alt_cost, alt_start, alt_goal] = 
+                            PathPlanner::aStar(cspace, cost_map, start, candidate);
+                        
+                        if (!alt_path.empty()) {
+                            path = alt_path;
+                            found_goal = true;
+                            geometry_msgs::msg::Point alt_home = PathPlanner::gridToWorld(*current_map, candidate);
+                            RCLCPP_INFO(node_->get_logger(), 
+                                       "Found accessible point near home at (%.2f, %.2f), %.2fm from origin",
+                                       alt_home.x, alt_home.y, 
+                                       std::sqrt(alt_home.x*alt_home.x + alt_home.y*alt_home.y));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
         
         if (!path.empty()) {
             auto path_msg = PathPlanner::pathToMessage(*current_map, path);
@@ -208,8 +249,44 @@ void AutonomousExplorationRobot::returnToHome() {
             RCLCPP_INFO(node_->get_logger(), "Path to home planned with %zu waypoints", 
                        path_msg.poses.size());
         } else {
-            RCLCPP_WARN_THROTTLE(node_->get_logger(), *node_->get_clock(), 3000,
-                                "Failed to plan path home, trying again...");
+            RCLCPP_ERROR_THROTTLE(node_->get_logger(), *node_->get_clock(), 5000,
+                                 "Cannot find any path home! Robot may be trapped.");
+            return;
+        }
+    }
+    
+    // Check if making progress toward home
+    if (std::abs(distance_to_home - last_distance_to_home_) > 0.05) {
+        // Made progress
+        last_return_home_progress_ = node_->now();
+        last_distance_to_home_ = distance_to_home;
+        return_home_failures_ = 0;
+    } else if ((node_->now() - last_return_home_progress_).seconds() > 5.0) {
+        // Stuck for 5 seconds
+        return_home_failures_++;
+        last_return_home_progress_ = node_->now();
+        
+        if (return_home_failures_ >= 3) {
+            RCLCPP_WARN(node_->get_logger(), "Stuck while returning home, performing recovery...");
+            motion_controller_->clearPath();
+            
+            // Do a simple recovery: back up and rotate
+            geometry_msgs::msg::TwistStamped cmd_vel;
+            cmd_vel.header.stamp = node_->now();
+            cmd_vel.header.frame_id = "base_footprint";
+            cmd_vel.twist.linear.x = -0.1;
+            cmd_vel.twist.angular.z = 0.5;
+            recovery_cmd_vel_pub_->publish(cmd_vel);
+            
+            // Wait a bit
+            rclcpp::sleep_for(std::chrono::seconds(2));
+            
+            // Stop
+            cmd_vel.twist.linear.x = 0.0;
+            cmd_vel.twist.angular.z = 0.0;
+            recovery_cmd_vel_pub_->publish(cmd_vel);
+            
+            return_home_failures_ = 0;
             return;
         }
     }
@@ -222,7 +299,7 @@ void AutonomousExplorationRobot::returnToHome() {
         
         // If path following fails (returns zero velocity unexpectedly), clear path to force replan
         if (cmd_vel.linear.x == 0.0 && cmd_vel.angular.z == 0.0 && distance_to_home > 0.5) {
-            RCLCPP_WARN(node_->get_logger(), "Path following failed while returning home, replanning...");
+            RCLCPP_DEBUG(node_->get_logger(), "Path following returned zero velocity, clearing path");
             motion_controller_->clearPath();
         }
     }
@@ -338,19 +415,42 @@ void AutonomousExplorationRobot::update() {
             last_goal_position_ = new_path.poses.back().pose.position;
             last_replan_time_ = current_time;
             consecutive_no_path_count_ = 0;  // Reset counter on success
+            consecutive_no_frontiers_count_ = 0;  // Reset no-frontiers counter
             
             motion_controller_->setPath(new_path);
             path_pub_->publish(new_path);
             RCLCPP_INFO(node_->get_logger(), "New path planned with %zu waypoints", 
                        new_path.poses.size());
         } else {
+            // Track if this is due to no frontiers
+            if (exploration_planner_->getNoFrontiersCounter() > 0) {
+                consecutive_no_frontiers_count_++;
+            }
+            
             RCLCPP_WARN_THROTTLE(node_->get_logger(), *node_->get_clock(), 2000,
-                                "No valid exploration path found (%d/%d attempts)", 
-                                consecutive_no_path_count_ + 1, MAX_NO_PATH_BEFORE_RECOVERY);
+                                "No valid exploration path found (%d/%d attempts, %d no-frontiers)", 
+                                consecutive_no_path_count_ + 1, MAX_NO_PATH_BEFORE_RECOVERY,
+                                consecutive_no_frontiers_count_);
             consecutive_no_path_count_++;
+            
+            // If we've had many "no frontiers" results, reduce recovery attempts
+            int max_recovery = MAX_RECOVERY_ATTEMPTS;
+            if (consecutive_no_frontiers_count_ >= 10) {
+                max_recovery = 5;  // Reduce to 5 attempts when map seems complete
+                RCLCPP_DEBUG(node_->get_logger(), "Map appears complete, reducing recovery attempts to %d", max_recovery);
+            }
             
             // If we've failed too many times, enter recovery mode
             if (consecutive_no_path_count_ >= MAX_NO_PATH_BEFORE_RECOVERY) {
+                // Check if we should give up
+                if (recovery_attempt_ >= max_recovery) {
+                    RCLCPP_WARN(node_->get_logger(), 
+                               "Max recovery attempts reached - exploration appears complete");
+                    RCLCPP_INFO(node_->get_logger(), "Initiating return to home");
+                    returning_home_ = true;
+                    recovery_attempt_ = 0;
+                    return;
+                }
                 performRecovery();
                 return;
             }

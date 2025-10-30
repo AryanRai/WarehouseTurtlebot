@@ -53,6 +53,7 @@ private:
     rclcpp::Time recovery_start_time_;
     bool in_recovery_;
     int recovery_attempt_;  // Track which recovery attempt (0=forward, 1=backward, etc.)
+    int consecutive_no_frontiers_count_;  // Track how many times we found no frontiers
     
     // Configuration
     static constexpr double UPDATE_RATE = 20.0;  // Hz
@@ -64,6 +65,9 @@ private:
     // Home position
     geometry_msgs::msg::Point home_position_;
     bool returning_home_;
+    int return_home_failures_;
+    rclcpp::Time last_return_home_progress_;
+    double last_distance_to_home_;
     
     // Laser scan for obstacle detection
     sensor_msgs::msg::LaserScan::SharedPtr current_scan_;
