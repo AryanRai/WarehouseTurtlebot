@@ -50,6 +50,7 @@ ament_target_dependencies(path_planner_lib
   rclcpp
   nav_msgs
   geometry_msgs
+  tf2_geometry_msgs
 )
 target_link_libraries(path_planner_lib
   priority_queue
@@ -84,6 +85,7 @@ ament_target_dependencies(slam_controller_lib
   geometry_msgs
   tf2
   tf2_ros
+  tf2_geometry_msgs
 )
 
 # ExplorationPlanner Library
@@ -109,8 +111,29 @@ ament_target_dependencies(motion_controller_lib
   rclcpp
   nav_msgs
   geometry_msgs
+  sensor_msgs
   std_msgs
   tf2
+  tf2_geometry_msgs
+)
+target_link_libraries(motion_controller_lib
+  path_planner_lib
+)
+
+# AutonomousExplorationRobot Library
+add_library(autonomous_exploration_lib
+  src/AutonomousExplorationRobot.cpp
+)
+ament_target_dependencies(autonomous_exploration_lib
+  rclcpp
+  nav_msgs
+  geometry_msgs
+  std_msgs
+)
+target_link_libraries(autonomous_exploration_lib
+  slam_controller_lib
+  exploration_planner_lib
+  motion_controller_lib
 )
 
 # ============================================================================
@@ -136,7 +159,7 @@ target_link_libraries(warehouse_robot_lib
   path_planner_lib
 )
 
-# Main Warehouse Robot System Executable (ONLY executable with main)
+# Main Warehouse Robot System Executable
 add_executable(warehouse_robot_system
   src/warehouse_robot_main.cpp
 )
@@ -153,13 +176,41 @@ target_link_libraries(warehouse_robot_system
   warehouse_robot_lib
 )
 
+# Autonomous SLAM Exploration Executable
+add_executable(autonomous_slam_node
+  src/autonomous_slam_node.cpp
+)
+ament_target_dependencies(autonomous_slam_node
+  rclcpp
+  geometry_msgs
+  nav_msgs
+  std_msgs
+  sensor_msgs
+  tf2
+  tf2_ros
+)
+target_link_libraries(autonomous_slam_node
+  autonomous_exploration_lib
+)
+
+# Twist to TwistStamped Bridge
+add_executable(twist_stamped_bridge
+  src/twist_stamped_bridge.cpp
+)
+ament_target_dependencies(twist_stamped_bridge
+  rclcpp
+  geometry_msgs
+)
+
 # ============================================================================
 # INSTALL
 # ============================================================================
 
-# Install the single executable
+# Install executables
 install(TARGETS
   warehouse_robot_system
+  autonomous_slam_node
+  twist_stamped_bridge
   DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -171,6 +222,7 @@ install(TARGETS
   slam_controller_lib
   exploration_planner_lib
   motion_controller_lib
+  autonomous_exploration_lib
   warehouse_robot_lib
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib

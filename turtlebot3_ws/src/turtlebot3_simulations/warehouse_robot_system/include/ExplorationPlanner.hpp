@@ -1,81 +1,60 @@
-// MTRX3760 2025 Project 2: Warehouse Robot
-// File: ExplorationPlanner.cpp
-// Author(s): Aryan Rai
-//
-// Exploration Planner - Selects exploration goals using frontier detection
+// Exploration Planner - Frontier-based exploration
+// Adapted from SLAM_Reference.md frontier_exploration.py
 
 #ifndef EXPLORATION_PLANNER_HPP
 #define EXPLORATION_PLANNER_HPP
 
 #include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
-#include <geometry_msgs/msg/pose_stamped.hpp>
-#include <std_msgs/msg/string.hpp>
-#include <geometry_msgs/msg/point.hpp>
+#include <nav_msgs/msg/path.hpp>
+#include <nav_msgs/msg/grid_cells.hpp>
+#include <geometry_msgs/msg/pose.hpp>
+#include <std_msgs/msg/bool.hpp>
 #include "FrontierSearch.hpp"
 #include "PathPlanner.hpp"
-#include "slam_types.hpp"
+#include <memory>
 
-namespace slam {
-
-class ExplorationPlanner : public rclcpp::Node {
+class ExplorationPlanner {
 public:
-    ExplorationPlanner();
-
-    enum ExplorationState {
-        WAITING_FOR_DATA,
-        SEARCHING_FRONTIERS,
-        GOAL_PUBLISHED,
-        EXPLORATION_COMPLETE,
-        RETURNING_HOME
-    };
-
+    ExplorationPlanner(rclcpp::Node::SharedPtr node);
+    ~ExplorationPlanner() = default;
+    
+    // Main exploration function
+    nav_msgs::msg::Path planExplorationPath(
+        const nav_msgs::msg::OccupancyGrid& map,
+        const geometry_msgs::msg::Pose& current_pose
+    );
+    
+    // Status
+    bool isExplorationComplete() const;
+    int getNoFrontiersCounter() const;
+    int getNoPathCounter() const;
+    
 private:
-    struct Config {
-        double frontier_min_size;
-        int max_no_frontier_count;
-        double visited_frontier_radius;
-        double exploration_timeout_s;
-    } config_;
+    rclcpp::Node::SharedPtr node_;
     
-    void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
+    // Publishers for visualization
+    rclcpp::Publisher<nav_msgs::msg::GridCells>::SharedPtr frontier_cells_pub_;
+    rclcpp::Publisher<nav_msgs::msg::GridCells>::SharedPtr start_pub_;
+    rclcpp::Publisher<nav_msgs::msg::GridCells>::SharedPtr goal_pub_;
+    rclcpp::Publisher<nav_msgs::msg::GridCells>::SharedPtr cspace_pub_;
+    rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr cost_map_pub_;
     
-    void poseCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
-    
-    void motionStatusCallback(const std_msgs::msg::String::SharedPtr msg);
-    
-    void planningLoop();
-    
-    void searchAndPublishFrontier();
-    
-    Frontier selectBestFrontier(const std::vector<Frontier>& frontiers);
-    
-    void returnHome();
-    
-    double calculateDistance(const geometry_msgs::msg::Point& p1, 
-                           const geometry_msgs::msg::Point& p2);
-    
-    // ROS2 interfaces
-    rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
-    rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr pose_sub_;
-    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr motion_status_sub_;
-    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr goal_pub_;
-    rclcpp::TimerBase::SharedPtr planning_timer_;
+    // Configuration
+    static constexpr double A_STAR_COST_WEIGHT = 10.0;
+    static constexpr double FRONTIER_SIZE_COST_WEIGHT = 1.0;
+    static constexpr int MAX_NUM_FRONTIERS_TO_CHECK = 8;
+    static constexpr int NUM_EXPLORE_FAILS_BEFORE_FINISH = 100;  // Increased to allow more time for SLAM to build map
     
     // State
-    ExplorationState state_;
-    nav_msgs::msg::OccupancyGrid::SharedPtr current_map_;
-    geometry_msgs::msg::PoseStamped::SharedPtr current_pose_;
+    int no_frontiers_found_counter_;
+    int no_path_found_counter_;
+    bool is_finished_exploring_;
+    bool debug_mode_;
     
-    // Exploration data
-    std::unique_ptr<FrontierSearch> frontier_searcher_;
-    std::vector<geometry_msgs::msg::Point> visited_frontiers_;
-    geometry_msgs::msg::Point origin_point_;
-    int consecutive_no_frontiers_;
-    int total_frontiers_explored_;
-    rclcpp::Time exploration_start_time_;
+    // Helper functions
+    std::vector<Frontier> getTopFrontiers(const std::vector<Frontier>& frontiers, int n);
+    void publishCostMap(const nav_msgs::msg::OccupancyGrid& mapdata, const cv::Mat& cost_map);
 };
-
-} // namespace slam
 
 #endif // EXPLORATION_PLANNER_HPP

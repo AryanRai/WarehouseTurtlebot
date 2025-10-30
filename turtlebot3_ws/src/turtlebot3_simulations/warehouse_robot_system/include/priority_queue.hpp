@@ -1,43 +1,41 @@
-// MTRX3760 2025 Project 2: Warehouse Robot 
-// File: priority_queue.hpp
-// Author(s): Aryan Rai
-//
-// Priority queue implementation for A* pathfinding
+// Priority Queue for A* pathfinding
+// Based on Python implementation from SLAM_Reference.md
 
 #ifndef PRIORITY_QUEUE_HPP
 #define PRIORITY_QUEUE_HPP
 
-#include "slam_types.hpp"
 #include <queue>
 #include <vector>
+#include <utility>
+#include <functional>
 
-namespace slam {
-
+template<typename T>
 class PriorityQueue {
 public:
-    PriorityQueue() = default;
-    
-    void put(const GridCell& item, double priority);
-    GridCell get();
-    bool empty() const;
-    size_t size() const;
+    void put(const T& item, double priority) {
+        pq_.push(std::make_pair(priority, item));
+    }
+
+    T get() {
+        T item = pq_.top().second;
+        pq_.pop();
+        return item;
+    }
+
+    bool empty() const {
+        return pq_.empty();
+    }
+
+    size_t size() const {
+        return pq_.size();
+    }
 
 private:
-    struct QueueItem {
-        GridCell cell;
-        double priority;
-        
-        QueueItem(const GridCell& c, double p) : cell(c), priority(p) {}
-        
-        // For min-heap (lower priority values have higher precedence)
-        bool operator>(const QueueItem& other) const {
-            return priority > other.priority;
-        }
-    };
-    
-    std::priority_queue<QueueItem, std::vector<QueueItem>, std::greater<QueueItem>> queue_;
+    std::priority_queue<
+        std::pair<double, T>,
+        std::vector<std::pair<double, T>>,
+        std::greater<std::pair<double, T>>
+    > pq_;
 };
-
-} // namespace slam
 
 #endif // PRIORITY_QUEUE_HPP

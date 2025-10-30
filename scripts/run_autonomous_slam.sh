@@ -332,7 +332,7 @@ fi
 RVIZ_PID=$!
 sleep 3
 
-echo "7️⃣ Starting Autonomous SLAM Controller..."
+echo "7️⃣ Starting Autonomous SLAM Exploration Controller..."
 echo "⏳ Waiting for SLAM to be ready..."
 sleep 3
 
@@ -342,7 +342,8 @@ timeout 10s bash -c 'until ros2 topic list | grep -q "^/map$"; do sleep 1; done'
     echo "⚠️  Map topic not available yet, but starting controller anyway..."
 }
 
-ros2 run warehouse_robot_system autonomous_slam_main &
+# Start the new autonomous exploration node
+ros2 run warehouse_robot_system autonomous_slam_node &
 SLAM_PID=$!
 sleep 3
 
@@ -373,10 +374,11 @@ echo "   use_sim_time: $USE_SIM_TIME"
 echo ""
 echo "🎯 System Behavior:"
 echo "   • Robot will automatically explore the environment"
-echo "   • Uses frontier detection to find unexplored areas"
-echo "   • Plans optimal paths using A* algorithm"
-echo "   • Returns to origin (0,0) when mapping is complete"
-echo "   • Transitions to operational mode for warehouse tasks"
+echo "   • Uses Expanding Wavefront Frontier Detection"
+echo "   • Plans optimal paths using A* with cost map"
+echo "   • Follows paths using Pure Pursuit algorithm"
+echo "   • Avoids obstacles dynamically using local costmap"
+echo "   • Saves map automatically when exploration is complete"
 echo ""
 echo "🖥️  RViz2 Setup:"
 echo "   • RViz2 opened with SLAM Toolbox configuration"
@@ -408,11 +410,21 @@ if [ ! -z "$WEB_SERVER_PID" ]; then
 fi
 echo "   • RViz logs: tail -f /tmp/rviz.log"
 echo ""
-echo "🔄 State Machine:"
-echo "   INITIALIZING → MAPPING → RETURNING_HOME → OPERATIONAL"
+echo "🔄 Exploration Process:"
+echo "   1. Detect frontiers (unexplored areas)"
+echo "   2. Select best frontier (size + distance)"
+echo "   3. Plan path using A* pathfinding"
+echo "   4. Follow path with Pure Pursuit"
+echo "   5. Repeat until no frontiers remain"
 echo ""
 echo "💡 The robot is now fully autonomous!"
 echo "   No manual control needed - it will explore and map automatically."
+echo ""
+echo "📊 Visualization Topics (add in RViz):"
+echo "   • /map - SLAM-generated map"
+echo "   • /scan - Laser scan data"
+echo "   • /exploration/path - Planned exploration path"
+echo "   • /exploration/frontier_cells - Detected frontiers (debug mode)"
 echo ""
 echo "Press Ctrl+C to stop all components"
 

@@ -1,347 +1,353 @@
-// MTRX3760 2025 Project 2: Warehouse Robot
-// File: MotionController.cpp
-// Author(s): Aryan Rai
-//
-// Motion Controller - Follows planned paths using pure pursuit control
-
-#include <rclcpp/rclcpp.hpp>
-#include <nav_msgs/msg/path.hpp>
-#include <geometry_msgs/msg/pose_stamped.hpp>
-#include <geometry_msgs/msg/twist_stamped.hpp>
-#include <std_msgs/msg/string.hpp>
+#include "MotionController.hpp"
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
-#include "MotionController.hpp"
 #include <cmath>
+#include <algorithm>
 
-namespace slam {
-
-MotionController::MotionController() : Node("motion_controller"),
-                        has_path_(false),
-                        goal_reached_(false) 
-{
-    RCLCPP_INFO(this->get_logger(), "Motion Controller starting...");
+MotionController::MotionController(rclcpp::Node::SharedPtr node)
+    : node_(node),
+      has_path_(false),
+      enabled_(true),
+      reversed_(false),
+      alpha_(0.0),
+      closest_distance_(std::numeric_limits<double>::infinity()),
+      debug_mode_(false) {
     
-    // Configuration
-    config_.max_linear_velocity = 0.12;
-    config_.max_angular_velocity = 0.6;
-    config_.lookahead_distance = 0.30;
-    config_.goal_tolerance = 0.50;
-    config_.stuck_distance_threshold = 0.03;
-    config_.stuck_timeout = 4.0;
+    // Check if debug mode is enabled
+    if (!node_->has_parameter("debug")) {
+        node_->declare_parameter("debug", false);
+    }
+    debug_mode_ = node_->get_parameter("debug").as_bool();
     
-    // Subscribers - receive path and pose
-    path_sub_ = this->create_subscription<nav_msgs::msg::Path>(
-        "/planned_path", 10,
-        std::bind(&MotionController::pathCallback, this, std::placeholders::_1));
+    // Create publishers (publish TwistStamped to /cmd_vel for Gazebo bridge)
+    cmd_vel_pub_ = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
+    lookahead_pub_ = node_->create_publisher<geometry_msgs::msg::PointStamped>(
+        "/motion/lookahead", 10
+    );
     
-    pose_sub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
-        "/robot_pose", 10,
-        std::bind(&MotionController::poseCallback, this, std::placeholders::_1));
+    if (debug_mode_) {
+        fov_cells_pub_ = node_->create_publisher<nav_msgs::msg::GridCells>(
+            "/motion/fov_cells", 10
+        );
+        close_wall_cells_pub_ = node_->create_publisher<nav_msgs::msg::GridCells>(
+            "/motion/close_wall_cells", 10
+        );
+    }
     
-    // Publishers - send velocity commands and status
-    cmd_vel_pub_ = this->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
-    status_pub_ = this->create_publisher<std_msgs::msg::String>("/motion_status", 10);
-    
-    // Control timer
-    control_timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(50),
-        std::bind(&MotionController::controlLoop, this));
-    
-    last_movement_time_ = this->now();
-    
-    RCLCPP_INFO(this->get_logger(), "Motion Controller initialized");
+    RCLCPP_INFO(node_->get_logger(), "Motion Controller initialized");
 }
 
-
-void MotionController::pathCallback(const nav_msgs::msg::Path::SharedPtr msg) 
-{
-    if (msg->poses.empty()) {
-        RCLCPP_WARN(this->get_logger(), "Received empty path");
-        return;
+void MotionController::setPath(const nav_msgs::msg::Path& path) {
+    current_path_ = path;
+    has_path_ = !path.poses.empty();
+    
+    if (has_path_) {
+        auto goal = path.poses.back().pose.position;
+        RCLCPP_INFO(node_->get_logger(), "Path set with %zu waypoints, goal at (%.2f, %.2f)", 
+                   path.poses.size(), goal.x, goal.y);
     }
-    
-    current_path_ = msg;
-    has_path_ = true;
-    goal_reached_ = false;
-    
-    // Extract goal from last pose
-    current_goal_ = msg->poses.back().pose.position;
-    last_distance_to_goal_ = std::numeric_limits<double>::max();
-    last_movement_time_ = this->now();
-    
-    RCLCPP_INFO(this->get_logger(), "Received new path with %zu waypoints", msg->poses.size());
 }
 
-void MotionController::poseCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg) 
-{
-    current_pose_ = msg;
+void MotionController::clearPath() {
+    current_path_.poses.clear();
+    has_path_ = false;
 }
 
-void MotionController::controlLoop() 
-{
-    if (!has_path_ || !current_pose_ || goal_reached_) {
-        stopRobot();
-        return;
-    }
-    
-    // Check if goal reached
-    if (isGoalReached()) {
-        stopRobot();
-        goal_reached_ = true;
-        has_path_ = false;
-        publishStatus("goal_reached");
-        RCLCPP_INFO(this->get_logger(), "Goal reached!");
-        return;
-    }
-    
-    // Check if stuck
-    if (isRobotStuck()) {
-        stopRobot();
-        publishStatus("stuck");
-        RCLCPP_WARN(this->get_logger(), "Robot stuck, attempting recovery");
-        performRecovery();
-        return;
-    }
-    
-    // Follow path using pure pursuit
-    followPath();
+bool MotionController::hasPath() const {
+    return has_path_ && !current_path_.poses.empty();
 }
 
-void MotionController::followPath() 
-{
-    if (!current_path_ || current_path_->poses.empty()) {
-        return;
-    }
-    
-    // Calculate lookahead point
-    geometry_msgs::msg::Point lookahead = calculateLookaheadPoint();
-    
-    // Calculate pure pursuit control
-    calculatePurePursuitControl(lookahead);
-    
-    // Update progress tracking
-    updateProgressTracking();
+void MotionController::setEnabled(bool enabled) {
+    enabled_ = enabled;
 }
 
-geometry_msgs::msg::Point MotionController::calculateLookaheadPoint() 
-{
-    if (current_path_->poses.empty()) {
-        return current_goal_;
+bool MotionController::isEnabled() const {
+    return enabled_;
+}
+
+double MotionController::distance(double x0, double y0, double x1, double y1) {
+    return std::sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0));
+}
+
+double MotionController::getDistanceToWaypoint(const geometry_msgs::msg::Pose& pose, int index) const {
+    if (index < 0 || index >= static_cast<int>(current_path_.poses.size())) {
+        return -1.0;
     }
     
-    geometry_msgs::msg::Point current_pos = current_pose_->pose.position;
+    const auto& waypoint = current_path_.poses[index].pose.position;
+    return distance(pose.position.x, pose.position.y, waypoint.x, waypoint.y);
+}
+
+int MotionController::findNearestWaypointIndex(const geometry_msgs::msg::Pose& pose) const {
+    int nearest_index = -1;
+    double closest_dist = std::numeric_limits<double>::infinity();
     
-    // Find closest point on path
-    double min_distance = std::numeric_limits<double>::max();
-    size_t nearest_index = 0;
-    
-    for (size_t i = 0; i < current_path_->poses.size(); ++i) {
-        double dist = calculateDistance(current_pos, current_path_->poses[i].pose.position);
-        if (dist < min_distance) {
-            min_distance = dist;
+    for (size_t i = 0; i < current_path_.poses.size(); i++) {
+        double dist = getDistanceToWaypoint(pose, i);
+        if (dist >= 0 && dist < closest_dist) {
+            closest_dist = dist;
             nearest_index = i;
         }
     }
     
-    // Find lookahead point: first point beyond lookahead_distance
-    size_t lookahead_index = nearest_index;
-    for (size_t i = nearest_index; i < current_path_->poses.size(); ++i) {
-        double dist = calculateDistance(current_pos, current_path_->poses[i].pose.position);
-        if (dist >= config_.lookahead_distance) {
-            lookahead_index = i;
-            break;
-        }
-        lookahead_index = i;
-    }
-    
-    return current_path_->poses[lookahead_index].pose.position;
+    return nearest_index;
 }
 
-void MotionController::calculatePurePursuitControl(const geometry_msgs::msg::Point& lookahead) 
-{
-    geometry_msgs::msg::Point current_pos = current_pose_->pose.position;
-    double current_yaw = calculateYawFromPose(current_pose_);
+geometry_msgs::msg::Point MotionController::findLookahead(
+    const geometry_msgs::msg::Pose& pose, int nearest_waypoint_index) const {
     
-    // Calculate vector to lookahead point
-    double dx = lookahead.x - current_pos.x;
-    double dy = lookahead.y - current_pos.y;
-    double lookahead_dist = std::sqrt(dx*dx + dy*dy);
-    
-    if (lookahead_dist < 0.01) {
-        stopRobot();
-        return;
+    int i = nearest_waypoint_index;
+    while (i < static_cast<int>(current_path_.poses.size()) &&
+           getDistanceToWaypoint(pose, i) < LOOKAHEAD_DISTANCE) {
+        i++;
     }
     
-    // Calculate target angle and alpha (angle error)
-    double target_yaw = std::atan2(dy, dx);
-    double alpha = target_yaw - current_yaw;
+    if (i > 0 && i <= static_cast<int>(current_path_.poses.size())) {
+        return current_path_.poses[i - 1].pose.position;
+    }
     
-    // Normalize alpha to [-pi, pi]
-    while (alpha > M_PI) alpha -= 2.0 * M_PI;
-    while (alpha < -M_PI) alpha += 2.0 * M_PI;
+    return geometry_msgs::msg::Point();
+}
+
+geometry_msgs::msg::Point MotionController::getGoal() const {
+    if (current_path_.poses.empty()) {
+        return geometry_msgs::msg::Point();
+    }
+    return current_path_.poses.back().pose.position;
+}
+
+bool MotionController::isAtGoal() const {
+    return !has_path_;
+}
+
+double MotionController::calculateSteeringAdjustment(
+    const geometry_msgs::msg::Pose& pose,
+    const nav_msgs::msg::OccupancyGrid& map) {
     
-    // Always drive forward
-    double linear_vel = config_.max_linear_velocity;
+    // Get robot yaw
+    tf2::Quaternion q(
+        pose.orientation.x,
+        pose.orientation.y,
+        pose.orientation.z,
+        pose.orientation.w
+    );
+    tf2::Matrix3x3 m(q);
+    double roll, pitch, yaw;
+    m.getRPY(roll, pitch, yaw);
+    double yaw_deg = yaw * 180.0 / M_PI;
     
-    // Pure pursuit formula
-    double sin_alpha = std::sin(alpha);
+    // Get robot grid cell
+    GridCell robot_cell = PathPlanner::worldToGrid(map, pose.position);
+    
+    double weighted_sum_of_angles = 0.0;
+    double total_weight = 0.0;
+    closest_distance_ = std::numeric_limits<double>::infinity();
+    
+    std::vector<GridCell> fov_cells, wall_cells;
+    int wall_cell_count = 0;
+    
+    // Scan area around robot
+    for (int dx = -FOV_DISTANCE; dx <= FOV_DISTANCE; dx++) {
+        for (int dy = -FOV_DISTANCE; dy <= FOV_DISTANCE; dy++) {
+            GridCell cell = {robot_cell.first + dx, robot_cell.second + dy};
+            double dist = PathPlanner::euclideanDistance(robot_cell, cell);
+            
+            if (!PathPlanner::isCellInBounds(map, cell)) {
+                continue;
+            }
+            
+            bool is_wall = !PathPlanner::isCellWalkable(map, cell);
+            if (is_wall && dist < closest_distance_) {
+                closest_distance_ = dist;
+            }
+            
+            // Calculate angle relative to robot
+            double angle = std::atan2(dy, dx) * 180.0 / M_PI - yaw_deg;
+            if (reversed_) {
+                angle += 180.0;
+            }
+            
+            // Normalize angle to [-180, 180]
+            while (angle < -180.0) angle += 360.0;
+            while (angle > 180.0) angle -= 360.0;
+            
+            // Check if in FOV
+            bool is_in_fov = (dist <= FOV_DISTANCE &&
+                             angle >= -FOV / 2.0 && angle <= FOV / 2.0 &&
+                             std::abs(angle) >= FOV_DEADZONE / 2.0);
+            bool is_in_small_fov = (dist <= SMALL_FOV_DISTANCE &&
+                                   angle >= -SMALL_FOV / 2.0 && angle <= SMALL_FOV / 2.0);
+            
+            if (!is_in_fov && !is_in_small_fov) {
+                continue;
+            }
+            
+            if (debug_mode_) {
+                fov_cells.push_back(cell);
+            }
+            
+            if (!is_wall) {
+                continue;
+            }
+            
+            double weight = (dist != 0) ? 1.0 / (dist * dist) : 0.0;
+            weighted_sum_of_angles += weight * angle;
+            total_weight += weight;
+            wall_cell_count++;
+            
+            if (debug_mode_) {
+                wall_cells.push_back(cell);
+            }
+        }
+    }
+    
+    // Publish debug visualization
+    if (debug_mode_) {
+        if (fov_cells_pub_) {
+            auto grid_cells = PathPlanner::getGridCells(map, fov_cells);
+            grid_cells.header.stamp = node_->now();
+            fov_cells_pub_->publish(grid_cells);
+        }
+        if (close_wall_cells_pub_) {
+            auto grid_cells = PathPlanner::getGridCells(map, wall_cells);
+            grid_cells.header.stamp = node_->now();
+            close_wall_cells_pub_->publish(grid_cells);
+        }
+    }
+    
+    if (total_weight == 0.0 || wall_cell_count == 0) {
+        return 0.0;
+    }
+    
+    double average_angle = weighted_sum_of_angles / total_weight;
+    return -OBSTACLE_AVOIDANCE_GAIN * average_angle / wall_cell_count;
+}
+
+geometry_msgs::msg::Twist MotionController::computeVelocityCommand(
+    const geometry_msgs::msg::Pose& current_pose,
+    const nav_msgs::msg::OccupancyGrid& map) {
+    
+    geometry_msgs::msg::Twist cmd_vel;
+    
+    if (!enabled_ || !hasPath()) {
+        // Publish zero velocity as TwistStamped
+        geometry_msgs::msg::TwistStamped cmd_vel_stamped;
+        cmd_vel_stamped.header.stamp = node_->now();
+        cmd_vel_stamped.header.frame_id = "base_footprint";
+        cmd_vel_stamped.twist = cmd_vel;
+        cmd_vel_pub_->publish(cmd_vel_stamped);
+        return cmd_vel;
+    }
+    
+    // Find nearest waypoint and lookahead point
+    int nearest_idx = findNearestWaypointIndex(current_pose);
+    if (nearest_idx < 0) {
+        // Publish zero velocity as TwistStamped
+        geometry_msgs::msg::TwistStamped cmd_vel_stamped;
+        cmd_vel_stamped.header.stamp = node_->now();
+        cmd_vel_stamped.header.frame_id = "base_footprint";
+        cmd_vel_stamped.twist = cmd_vel;
+        cmd_vel_pub_->publish(cmd_vel_stamped);
+        return cmd_vel;
+    }
+    
+    geometry_msgs::msg::Point lookahead = findLookahead(current_pose, nearest_idx);
+    geometry_msgs::msg::Point goal = getGoal();
+    
+    // If lookahead is empty (all waypoints too close), use the goal directly
+    if (lookahead.x == 0.0 && lookahead.y == 0.0 && lookahead.z == 0.0) {
+        lookahead = goal;
+        RCLCPP_DEBUG(node_->get_logger(), "Using goal as lookahead (all waypoints within lookahead distance)");
+    }
+    
+    // Publish lookahead for visualization
+    if (lookahead_pub_) {
+        geometry_msgs::msg::PointStamped lookahead_msg;
+        lookahead_msg.header.frame_id = "map";
+        lookahead_msg.header.stamp = node_->now();
+        lookahead_msg.point = lookahead;
+        lookahead_pub_->publish(lookahead_msg);
+    }
+    
+    // Calculate alpha (angle to lookahead)
+    tf2::Quaternion q(
+        current_pose.orientation.x,
+        current_pose.orientation.y,
+        current_pose.orientation.z,
+        current_pose.orientation.w
+    );
+    tf2::Matrix3x3 m(q);
+    double roll, pitch, yaw;
+    m.getRPY(roll, pitch, yaw);
+    
+    double dx = lookahead.x - current_pose.position.x;
+    double dy = lookahead.y - current_pose.position.y;
+    alpha_ = std::atan2(dy, dx) - yaw;
+    
+    // Normalize alpha
+    while (alpha_ > M_PI) alpha_ -= 2.0 * M_PI;
+    while (alpha_ < -M_PI) alpha_ += 2.0 * M_PI;
+    
+    // Check if reversed
+    reversed_ = std::abs(alpha_) > M_PI / 2.0;
+    
+    // Calculate drive speed
+    double lookahead_distance = distance(current_pose.position.x, current_pose.position.y,
+                                        lookahead.x, lookahead.y);
+    
+    // Prevent division by zero or very small values
+    double sin_alpha = std::sin(alpha_);
     if (std::abs(sin_alpha) < 0.01) {
         sin_alpha = (sin_alpha >= 0) ? 0.01 : -0.01;
     }
     
-    double angular_vel = (2.0 * linear_vel * sin_alpha) / lookahead_dist;
+    double radius_of_curvature = lookahead_distance / (2.0 * sin_alpha);
     
-    // Clamp angular velocity
-    angular_vel = std::clamp(angular_vel, 
-                            -config_.max_angular_velocity, 
-                            config_.max_angular_velocity);
+    double drive_speed = (reversed_ ? -1.0 : 1.0) * MAX_DRIVE_SPEED;
     
-    // Adaptive speed reduction for sharp turns
-    double abs_alpha = std::abs(alpha);
-    if (abs_alpha > 1.2) {
-        linear_vel *= 0.25;
-    } else if (abs_alpha > 0.8) {
-        linear_vel *= 0.4;
-    } else if (abs_alpha > 0.5) {
-        linear_vel *= 0.6;
-    } else if (abs_alpha > 0.3) {
-        linear_vel *= 0.8;
+    // Check if at goal
+    double distance_to_goal = distance(current_pose.position.x, current_pose.position.y,
+                                      goal.x, goal.y);
+    if (distance_to_goal < DISTANCE_TOLERANCE) {
+        RCLCPP_INFO(node_->get_logger(), "Reached goal! Distance: %.3fm", distance_to_goal);
+        clearPath();
+        // Publish zero velocity as TwistStamped
+        geometry_msgs::msg::TwistStamped cmd_vel_stamped;
+        cmd_vel_stamped.header.stamp = node_->now();
+        cmd_vel_stamped.header.frame_id = "base_footprint";
+        cmd_vel_stamped.twist = cmd_vel;
+        cmd_vel_pub_->publish(cmd_vel_stamped);
+        return cmd_vel;
     }
     
-    publishVelocityCommand(linear_vel, angular_vel);
+    // Calculate turn speed
+    double turn_speed = TURN_SPEED_KP * drive_speed / radius_of_curvature;
     
-    RCLCPP_DEBUG(this->get_logger(), "Pure pursuit: alpha=%.3f, linear=%.3f, angular=%.3f",
-                alpha, linear_vel, angular_vel);
-}
-
-bool MotionController::isGoalReached() 
-{
-    if (!current_pose_) return false;
+    // Add obstacle avoidance
+    turn_speed += calculateSteeringAdjustment(current_pose, map);
     
-    double distance = calculateDistance(current_pose_->pose.position, current_goal_);
-    return distance < config_.goal_tolerance;
-}
-
-bool MotionController::isRobotStuck() 
-{
-    if (!current_pose_) return false;
+    // Clamp turn speed
+    turn_speed = std::clamp(turn_speed, -MAX_TURN_SPEED, MAX_TURN_SPEED);
     
-    double current_distance = calculateDistance(current_pose_->pose.position, current_goal_);
-    
-    // Check if robot has made progress
-    if (std::abs(current_distance - last_distance_to_goal_) > config_.stuck_distance_threshold) {
-        last_movement_time_ = this->now();
-        last_distance_to_goal_ = current_distance;
-        return false;
+    // Slow down if close to obstacle
+    if (closest_distance_ < OBSTACLE_AVOIDANCE_MAX_SLOW_DOWN_DISTANCE) {
+        double slow_factor = std::clamp(
+            (closest_distance_ - OBSTACLE_AVOIDANCE_MIN_SLOW_DOWN_DISTANCE) /
+            (OBSTACLE_AVOIDANCE_MAX_SLOW_DOWN_DISTANCE - OBSTACLE_AVOIDANCE_MIN_SLOW_DOWN_DISTANCE),
+            OBSTACLE_AVOIDANCE_MIN_SLOW_DOWN_FACTOR, 1.0
+        );
+        drive_speed *= slow_factor;
     }
     
-    // Check if stuck for too long
-    if ((this->now() - last_movement_time_).seconds() > config_.stuck_timeout) {
-        RCLCPP_WARN(this->get_logger(), "Stuck detected: no progress for %.1f seconds",
-                    config_.stuck_timeout);
-        return true;
-    }
+    cmd_vel.linear.x = drive_speed;
+    cmd_vel.angular.z = turn_speed;
     
-    return false;
-}
-
-void MotionController::updateProgressTracking() 
-{
-    if (!current_pose_) return;
+    // Publish the velocity command as TwistStamped
+    geometry_msgs::msg::TwistStamped cmd_vel_stamped;
+    cmd_vel_stamped.header.stamp = node_->now();
+    cmd_vel_stamped.header.frame_id = "base_footprint";
+    cmd_vel_stamped.twist = cmd_vel;
+    cmd_vel_pub_->publish(cmd_vel_stamped);
     
-    double current_distance = calculateDistance(current_pose_->pose.position, current_goal_);
-    
-    // Update if making progress
-    if (std::abs(current_distance - last_distance_to_goal_) > config_.stuck_distance_threshold) {
-        last_movement_time_ = this->now();
-    }
-    
-    last_distance_to_goal_ = current_distance;
+    return cmd_vel;
 }
-
-void MotionController::performRecovery() 
-{
-    static rclcpp::Time recovery_start = this->now();
-    static int recovery_phase = 0;
-    const double recovery_duration = 3.0;
-    
-    double elapsed = (this->now() - recovery_start).seconds();
-    
-    if (recovery_phase == 0) {
-        // Back up
-        if (elapsed < recovery_duration * 0.4) {
-            publishVelocityCommand(-0.15, 0.0);
-        } else {
-            recovery_phase = 1;
-            recovery_start = this->now();
-        }
-    } else if (recovery_phase == 1) {
-        // Turn
-        if (elapsed < recovery_duration * 0.4) {
-            publishVelocityCommand(0.0, 1.0);
-        } else {
-            recovery_phase = 2;
-            recovery_start = this->now();
-        }
-    } else {
-        // Move forward briefly
-        if (elapsed < recovery_duration * 0.2) {
-            publishVelocityCommand(0.1, 0.0);
-        } else {
-            stopRobot();
-            recovery_phase = 0;
-            last_movement_time_ = this->now();
-            publishStatus("recovery_complete");
-            RCLCPP_INFO(this->get_logger(), "Recovery complete");
-        }
-    }
-}
-
-void MotionController::publishVelocityCommand(double linear, double angular) 
-{
-    geometry_msgs::msg::TwistStamped cmd;
-    cmd.header.stamp = this->now();
-    cmd.header.frame_id = "base_footprint";
-    cmd.twist.linear.x = linear;
-    cmd.twist.angular.z = angular;
-    cmd_vel_pub_->publish(cmd);
-}
-
-void MotionController::stopRobot() 
-{
-    publishVelocityCommand(0.0, 0.0);
-}
-
-void MotionController::publishStatus(const std::string& status) 
-{
-    std_msgs::msg::String msg;
-    msg.data = status;
-    status_pub_->publish(msg);
-}
-
-double MotionController::calculateDistance(const geometry_msgs::msg::Point& p1,
-                        const geometry_msgs::msg::Point& p2) 
-{
-    double dx = p2.x - p1.x;
-    double dy = p2.y - p1.y;
-    return std::sqrt(dx * dx + dy * dy);
-}
-
-double MotionController::calculateYawFromPose(const geometry_msgs::msg::PoseStamped::SharedPtr& pose) 
-{
-    tf2::Quaternion q(
-        pose->pose.orientation.x,
-        pose->pose.orientation.y,
-        pose->pose.orientation.z,
-        pose->pose.orientation.w
-    );
-    
-    tf2::Matrix3x3 m(q);
-    double roll, pitch, yaw;
-    m.getRPY(roll, pitch, yaw);
-    return yaw;
-}
-
-
-} // namespace slam

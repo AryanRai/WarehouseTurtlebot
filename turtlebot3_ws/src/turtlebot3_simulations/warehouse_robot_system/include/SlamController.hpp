@@ -1,48 +1,63 @@
-// MTRX3760 2025 Project 2: Warehouse Robot
-// File: SlamController.cpp
-// Author(s): Aryan Rai
-//
-// SLAM Controller - Handles mapping and localization only
+// SLAM Controller - Manages SLAM Toolbox integration
+// Coordinates mapping, localization, and map saving
+
+#ifndef SLAM_CONTROLLER_HPP
+#define SLAM_CONTROLLER_HPP
 
 #include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav_msgs/msg/odometry.hpp>
-#include <geometry_msgs/msg/pose_stamped.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
-#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/buffer.h>
+#include <memory>
+#include <string>
 
-namespace slam {
-
-class SlamController : public rclcpp::Node {
+class SlamController {
 public:
-    SlamController();
-
-private:
-    void lidarCallback(const sensor_msgs::msg::LaserScan::SharedPtr msg);
+    SlamController(rclcpp::Node::SharedPtr node);
+    ~SlamController() = default;
     
+    // Map access
+    nav_msgs::msg::OccupancyGrid::SharedPtr getCurrentMap() const;
+    bool hasValidMap() const;
+    
+    // Pose access
+    geometry_msgs::msg::Pose getCurrentPose() const;
+    bool hasValidPose() const;
+    
+    // Map saving
+    void saveMap(const std::string& map_name = "warehouse_map");
+    
+    // Exploration status
+    bool isExplorationComplete() const;
+    void setExplorationComplete(bool complete);
+    
+private:
+    rclcpp::Node::SharedPtr node_;
+    
+    // Subscribers
+    rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
+    
+    // TF2
+    std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+    
+    // State
+    nav_msgs::msg::OccupancyGrid::SharedPtr current_map_;
+    geometry_msgs::msg::Pose current_pose_;
+    bool has_valid_map_;
+    bool has_valid_pose_;
+    bool exploration_complete_;
+    
+    // Callbacks
+    void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
     void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
     
-    void updateMap();
-    
-    void publishPose();
-    
-    // ROS2 interfaces
-    rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr lidar_sub_;
-    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
-    rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr map_pub_;
-    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
-    rclcpp::TimerBase::SharedPtr pose_timer_;
-    
-    std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
-    std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
-    std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
-    
-    // SLAM data
-    sensor_msgs::msg::LaserScan::SharedPtr current_scan_;
-    nav_msgs::msg::Odometry::SharedPtr current_odom_;
-    nav_msgs::msg::OccupancyGrid::SharedPtr current_map_;
+    // Helper functions
+    void updatePoseFromTF();
 };
 
-} // namespace slam
+#endif // SLAM_CONTROLLER_HPP

@@ -1,133 +1,31 @@
-// MTRX3760 2025 Project 2: Warehouse Robot
-// File: PathPlanner.cpp
-// Author(s): Aryan Rai
-//
-// Path Planner Node - Plans paths using A* algorithm
-
-#include <rclcpp/rclcpp.hpp>
-#include <nav_msgs/msg/occupancy_grid.hpp>
-#include <nav_msgs/msg/path.hpp>
-#include <geometry_msgs/msg/pose_stamped.hpp>
-#include <opencv2/opencv.hpp>
 #include "PathPlanner.hpp"
 #include "priority_queue.hpp"
-#include "slam_types.hpp"
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <unordered_map>
+#include <algorithm>
 
-namespace slam {
+// Directions for neighbor search
+static const std::vector<GridCell> DIRECTIONS_OF_4 = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+static const std::vector<GridCell> DIRECTIONS_OF_8 = {
+    {-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}
+};
 
-PathPlanner::PathPlanner() : Node("path_planner_node") 
-{
-    RCLCPP_INFO(this->get_logger(), "Path Planner Node starting...");
-    
-    // Subscribers - receive map, pose from SlamController and goal from ExplorationPlanner
-    map_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
-        "/map", 10,
-        std::bind(&PathPlanner::mapCallback, this, std::placeholders::_1));
-    
-    pose_sub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
-        "/robot_pose", 10,
-        std::bind(&PathPlanner::poseCallback, this, std::placeholders::_1));
-    
-    goal_sub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
-        "/exploration_goal", 10,
-        std::bind(&PathPlanner::goalCallback, this, std::placeholders::_1));
-    
-    // Publisher - send planned path to MotionController
-    path_pub_ = this->create_publisher<nav_msgs::msg::Path>("/planned_path", 10);
-    
-    // For visualization
-    path_viz_pub_ = this->create_publisher<nav_msgs::msg::Path>("/path_visualization", 10);
-    
-    RCLCPP_INFO(this->get_logger(), "Path Planner Node initialized");
-}
-
-void PathPlanner::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) 
-{
-    current_map_ = msg;
-    
-    // Pre-compute C-space and cost map when map updates
-    if (current_map_) {
-        RCLCPP_DEBUG(this->get_logger(), "Computing C-space and cost map...");
-        auto [cspace, cspace_cells] = calcCspace(*current_map_, false);
-        cspace_map_ = std::make_shared<nav_msgs::msg::OccupancyGrid>(cspace);
-        cost_map_ = calcCostMap(*current_map_);
-        RCLCPP_DEBUG(this->get_logger(), "C-space and cost map ready");
+// Hash function for GridCell to use in unordered_map
+struct GridCellHash {
+    std::size_t operator()(const GridCell& cell) const {
+        return std::hash<int>()(cell.first) ^ (std::hash<int>()(cell.second) << 1);
     }
-}
+};
 
-void PathPlanner::poseCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg) 
-{
-    current_pose_ = msg;
-}
-
-void PathPlanner::goalCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg) 
-{
-    if (!current_map_ || !current_pose_ || !cspace_map_) {
-        RCLCPP_WARN(this->get_logger(), "Cannot plan path: missing map or pose data");
-        return;
-    }
-    
-    RCLCPP_INFO(this->get_logger(), "Received goal at (%.2f, %.2f), planning path...",
-                msg->pose.position.x, msg->pose.position.y);
-    
-    // Convert start and goal to grid coordinates
-    GridCell start = worldToGrid(*current_map_, current_pose_->pose.position);
-    GridCell goal = worldToGrid(*current_map_, msg->pose.position);
-    
-    // Plan path using A* with C-space and cost map
-    auto [path, cost, actual_start, actual_goal] = 
-        aStar(*cspace_map_, cost_map_, start, goal);
-    
-    if (!path.has_value() || path->empty()) {
-        RCLCPP_WARN(this->get_logger(), "Failed to find path to goal");
-        return;
-    }
-    
-    // Convert path to ROS message
-    nav_msgs::msg::Path path_msg;
-    path_msg.header.frame_id = "map";
-    path_msg.header.stamp = this->now();
-    
-    for (const auto& cell : path.value()) {
-        geometry_msgs::msg::PoseStamped pose;
-        pose.header = path_msg.header;
-        
-        geometry_msgs::msg::Point world_point = gridToWorld(*current_map_, cell);
-        pose.pose.position = world_point;
-        pose.pose.orientation.w = 1.0;
-        
-        path_msg.poses.push_back(pose);
-    }
-    
-    // Publish path to MotionController
-    path_pub_->publish(path_msg);
-    path_viz_pub_->publish(path_msg);
-    
-    RCLCPP_INFO(this->get_logger(), "Published path with %zu waypoints, total cost: %.2f",
-                path_msg.poses.size(), cost.value_or(0.0));
-}
-
-// Grid utility functions
 int PathPlanner::gridToIndex(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p) {
     return p.second * mapdata.info.width + p.first;
 }
 
-int PathPlanner::getCellValue(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p) {
-    if (!isCellInBounds(mapdata, p)) {
-        return -1; // Unknown/out of bounds
-    }
+int8_t PathPlanner::getCellValue(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p) {
     return mapdata.data[gridToIndex(mapdata, p)];
 }
 
-double PathPlanner::euclideanDistance(const GridCell& p1, const GridCell& p2) {
-    return std::sqrt(std::pow(p2.first - p1.first, 2) + std::pow(p2.second - p1.second, 2));
-}
-
-double PathPlanner::euclideanDistance(const std::pair<double, double>& p1, const std::pair<double, double>& p2) {
-    return std::sqrt(std::pow(p2.first - p1.first, 2) + std::pow(p2.second - p1.second, 2));
-}
-
-// Coordinate transformations
 geometry_msgs::msg::Point PathPlanner::gridToWorld(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p) {
     geometry_msgs::msg::Point point;
     point.x = (p.first + 0.5) * mapdata.info.resolution + mapdata.info.origin.position.x;
@@ -142,287 +40,141 @@ GridCell PathPlanner::worldToGrid(const nav_msgs::msg::OccupancyGrid& mapdata, c
     return {x, y};
 }
 
-// Grid validation
+double PathPlanner::euclideanDistance(const GridCell& p1, const GridCell& p2) {
+    return std::sqrt(std::pow(p2.first - p1.first, 2) + std::pow(p2.second - p1.second, 2));
+}
+
+double PathPlanner::euclideanDistance(const std::pair<double, double>& p1, const std::pair<double, double>& p2) {
+    return std::sqrt(std::pow(p2.first - p1.first, 2) + std::pow(p2.second - p1.second, 2));
+}
+
 bool PathPlanner::isCellInBounds(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p) {
     return p.first >= 0 && p.first < static_cast<int>(mapdata.info.width) &&
            p.second >= 0 && p.second < static_cast<int>(mapdata.info.height);
 }
 
 bool PathPlanner::isCellWalkable(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p) {
-    if (!isCellInBounds(mapdata, p)) {
-        return false;
-    }
-    int cell_value = getCellValue(mapdata, p);
-    return cell_value >= 0 && cell_value < WALKABLE_THRESHOLD;
+    if (!isCellInBounds(mapdata, p)) return false;
+    return getCellValue(mapdata, p) >= 0 && getCellValue(mapdata, p) < WALKABLE_THRESHOLD;
 }
 
-// Neighbor finding
-std::vector<GridCell> PathPlanner::neighbors(
-    const nav_msgs::msg::OccupancyGrid& mapdata,
-    const GridCell& p,
-    const std::vector<GridCell>& directions,
-    bool must_be_walkable) {
-    
-    std::vector<GridCell> result;
-    for (const auto& direction : directions) {
-        GridCell candidate = {p.first + direction.first, p.second + direction.second};
-        
-        if (must_be_walkable) {
-            if (isCellWalkable(mapdata, candidate)) {
-                result.push_back(candidate);
-            }
-        } else {
-            if (isCellInBounds(mapdata, candidate)) {
-                result.push_back(candidate);
-            }
+std::vector<GridCell> PathPlanner::neighborsOf4(const nav_msgs::msg::OccupancyGrid& mapdata, 
+                                                 const GridCell& p, bool must_be_walkable) {
+    std::vector<GridCell> neighbors;
+    for (const auto& dir : DIRECTIONS_OF_4) {
+        GridCell candidate = {p.first + dir.first, p.second + dir.second};
+        if ((must_be_walkable && isCellWalkable(mapdata, candidate)) ||
+            (!must_be_walkable && isCellInBounds(mapdata, candidate))) {
+            neighbors.push_back(candidate);
         }
     }
-    return result;
+    return neighbors;
 }
 
-std::vector<GridCell> PathPlanner::neighborsOf4(
-    const nav_msgs::msg::OccupancyGrid& mapdata,
-    const GridCell& p,
-    bool must_be_walkable) {
-    return neighbors(mapdata, p, DIRECTIONS_OF_4, must_be_walkable);
-}
-
-std::vector<GridCell> PathPlanner::neighborsOf8(
-    const nav_msgs::msg::OccupancyGrid& mapdata,
-    const GridCell& p,
-    bool must_be_walkable) {
-    return neighbors(mapdata, p, DIRECTIONS_OF_8, must_be_walkable);
-}
-
-// Neighbors with distances
-std::vector<std::pair<GridCell, double>> PathPlanner::neighborsAndDistances(
-    const nav_msgs::msg::OccupancyGrid& mapdata,
-    const GridCell& p,
-    const std::vector<GridCell>& directions,
-    bool must_be_walkable) {
-    
-    std::vector<std::pair<GridCell, double>> result;
-    for (const auto& direction : directions) {
-        GridCell candidate = {p.first + direction.first, p.second + direction.second};
-        
-        bool valid = must_be_walkable ? isCellWalkable(mapdata, candidate) : isCellInBounds(mapdata, candidate);
-        if (valid) {
-            double distance = euclideanDistance({0, 0}, direction);
-            result.emplace_back(candidate, distance);
+std::vector<GridCell> PathPlanner::neighborsOf8(const nav_msgs::msg::OccupancyGrid& mapdata, 
+                                                 const GridCell& p, bool must_be_walkable) {
+    std::vector<GridCell> neighbors;
+    for (const auto& dir : DIRECTIONS_OF_8) {
+        GridCell candidate = {p.first + dir.first, p.second + dir.second};
+        if ((must_be_walkable && isCellWalkable(mapdata, candidate)) ||
+            (!must_be_walkable && isCellInBounds(mapdata, candidate))) {
+            neighbors.push_back(candidate);
         }
     }
-    return result;
-}
-
-std::vector<std::pair<GridCell, double>> PathPlanner::neighborsAndDistancesOf4(
-    const nav_msgs::msg::OccupancyGrid& mapdata,
-    const GridCell& p,
-    bool must_be_walkable) {
-    return neighborsAndDistances(mapdata, p, DIRECTIONS_OF_4, must_be_walkable);
+    return neighbors;
 }
 
 std::vector<std::pair<GridCell, double>> PathPlanner::neighborsAndDistancesOf8(
-    const nav_msgs::msg::OccupancyGrid& mapdata,
-    const GridCell& p,
-    bool must_be_walkable) {
-    return neighborsAndDistances(mapdata, p, DIRECTIONS_OF_8, must_be_walkable);
+    const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p, bool must_be_walkable) {
+    std::vector<std::pair<GridCell, double>> neighbors;
+    for (const auto& dir : DIRECTIONS_OF_8) {
+        GridCell candidate = {p.first + dir.first, p.second + dir.second};
+        if ((must_be_walkable && isCellWalkable(mapdata, candidate)) ||
+            (!must_be_walkable && isCellInBounds(mapdata, candidate))) {
+            double distance = euclideanDistance({0, 0}, dir);
+            neighbors.push_back({candidate, distance});
+        }
+    }
+    return neighbors;
 }
 
-// Path conversion (minimal implementation)
-std::vector<geometry_msgs::msg::PoseStamped> PathPlanner::pathToPoses(
-    const nav_msgs::msg::OccupancyGrid& mapdata, 
-    const std::vector<GridCell>& path) {
-    
-    std::vector<geometry_msgs::msg::PoseStamped> poses;
-    // TODO: Implement full pose conversion with orientations
-    return poses;
-}
-
-nav_msgs::msg::Path PathPlanner::pathToMessage(
-    const nav_msgs::msg::OccupancyGrid& mapdata, 
-    const std::vector<GridCell>& path) {
-    
-    nav_msgs::msg::Path path_msg;
-    path_msg.header.frame_id = "map";
-    // TODO: Implement full path message conversion
-    return path_msg;
-}
-
-// C-space calculation (OpenCV-based implementation)
-std::pair<nav_msgs::msg::OccupancyGrid, std::vector<GridCell>> PathPlanner::calcCspace(
-    const nav_msgs::msg::OccupancyGrid& mapdata,
-    bool include_cells) {
-    
-    const int PADDING = 5; // Hard-coded padding (5 cells = ~0.25m) to NEVER touch walls
-    
+std::tuple<nav_msgs::msg::OccupancyGrid, nav_msgs::msg::GridCells> 
+PathPlanner::calcCSpace(const nav_msgs::msg::OccupancyGrid& mapdata, bool include_cells) {
     int width = mapdata.info.width;
     int height = mapdata.info.height;
     
-    // Create OpenCV Mat from mapdata
+    // Create OpenCV matrix from map data
     cv::Mat map(height, width, CV_8UC1);
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            int idx = y * width + x;
-            int8_t value = mapdata.data[idx];
-            // Map values: -1=unknown(255), >50=occupied(100), else=free(0)
-            if (value == -1) {
-                map.at<uint8_t>(y, x) = 255;  // Unknown
-            } else if (value > 50) {
-                map.at<uint8_t>(y, x) = 100;  // Occupied
-            } else {
-                map.at<uint8_t>(y, x) = 0;    // Free
-            }
+            int8_t value = mapdata.data[y * width + x];
+            map.at<uint8_t>(y, x) = (value == -1) ? 255 : static_cast<uint8_t>(value);
         }
     }
     
-    // Create binary obstacle mask (occupied cells only)
-    cv::Mat obstacle_mask;
-    cv::threshold(map, obstacle_mask, 50, 100, cv::THRESH_BINARY);
-    
-    // Inflate obstacles by PADDING cells
-    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(PADDING, PADDING));
-    cv::Mat inflated_obstacles;
-    cv::dilate(obstacle_mask, inflated_obstacles, kernel);
-    
-    // Get unknown area mask
+    // Get mask of unknown areas
     cv::Mat unknown_mask;
     cv::inRange(map, 255, 255, unknown_mask);
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(CSPACE_PADDING, CSPACE_PADDING));
+    cv::erode(unknown_mask, unknown_mask, kernel);
     
-    // Combine inflated obstacles with unknown areas
+    // Change unknown areas to free space
+    map.setTo(0, map == 255);
+    
+    // Inflate obstacles
+    cv::Mat obstacle_mask;
+    cv::dilate(map, obstacle_mask, kernel);
     cv::Mat cspace_mat;
-    cv::bitwise_or(inflated_obstacles, unknown_mask, cspace_mat);
+    cv::bitwise_or(obstacle_mask, unknown_mask, cspace_mat);
     
-    // Convert back to OccupancyGrid
+    // Create C-space occupancy grid
     nav_msgs::msg::OccupancyGrid cspace = mapdata;
     cspace.data.resize(width * height);
-    
-    std::vector<GridCell> cspace_cells;
-    int inflated_count = 0;
-    
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            int idx = y * width + x;
-            uint8_t cspace_value = cspace_mat.at<uint8_t>(y, x);
-            uint8_t original_value = map.at<uint8_t>(y, x);
-            
-            if (cspace_value == 255) {
-                cspace.data[idx] = -1;  // Unknown
-            } else if (cspace_value > 0) {
-                cspace.data[idx] = 100;  // Occupied (original or inflated)
-                // Count newly inflated cells
-                if (original_value == 0 && include_cells) {
-                    cspace_cells.push_back({x, y});
-                    inflated_count++;
-                }
-            } else {
-                cspace.data[idx] = 0;  // Free
-            }
+            cspace.data[y * width + x] = cspace_mat.at<uint8_t>(y, x);
         }
     }
     
-    std::cout << "C-space: Added " << inflated_count << " inflated cells (PADDING=" << PADDING << " for guaranteed wall clearance)." << std::endl;
+    // Create grid cells if requested
+    nav_msgs::msg::GridCells cspace_cells;
+    if (include_cells) {
+        cspace_cells.header.frame_id = "map";
+        cspace_cells.cell_width = mapdata.info.resolution;
+        cspace_cells.cell_height = mapdata.info.resolution;
+        
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                if (obstacle_mask.at<uint8_t>(y, x) > 0) {
+                    cspace_cells.cells.push_back(gridToWorld(mapdata, {x, y}));
+                }
+            }
+        }
+    }
     
     return {cspace, cspace_cells};
 }
 
-// Cost map calculation (iterative dilation implementation)
-cv::Mat PathPlanner::calcCostMap(const nav_msgs::msg::OccupancyGrid& mapdata) {
-    std::cout << "Calculating cost map..." << std::endl;
-    
-    int width = mapdata.info.width;
-    int height = mapdata.info.height;
-    
-    // Create OpenCV Mat from mapdata
-    cv::Mat map(height, width, CV_8UC1);
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            int idx = y * width + x;
-            int8_t value = mapdata.data[idx];
-            // Convert -1 (unknown) to 100, keep others as is
-            map.at<uint8_t>(y, x) = (value == -1) ? 100 : static_cast<uint8_t>(std::max(0, static_cast<int>(value)));
+double PathPlanner::getCostMapValue(const cv::Mat& cost_map, const GridCell& p) {
+    return cost_map.at<uint8_t>(p.second, p.first);
+}
+
+bool PathPlanner::isHallwayCell(const nav_msgs::msg::OccupancyGrid& mapdata, 
+                                const cv::Mat& cost_map, const GridCell& p, int threshold) {
+    double cost_value = getCostMapValue(cost_map, p);
+    for (const auto& neighbor : neighborsOf8(mapdata, p, false)) {
+        double neighbor_cost = getCostMapValue(cost_map, neighbor);
+        if (neighbor_cost < threshold || neighbor_cost > cost_value) {
+            return false;
         }
     }
-    
-    // Iteratively dilate walls until no changes are made
-    cv::Mat cost_map = cv::Mat::zeros(height, width, CV_8UC1);
-    cv::Mat dilated_map = map.clone();
-    int iterations = 0;
-    
-    // Cross-shaped kernel for 4-connectivity
-    cv::Mat kernel = (cv::Mat_<uint8_t>(3, 3) << 0, 1, 0, 1, 1, 1, 0, 1, 0);
-    
-    while (cv::countNonZero(dilated_map == 0) > 0 && iterations < 50) { // Limit iterations
-        iterations++;
-        
-        // Dilate the map
-        cv::Mat next_dilated_map;
-        cv::dilate(dilated_map, next_dilated_map, kernel, cv::Point(-1, -1), 1);
-        
-        // Get difference to find outline
-        cv::Mat difference;
-        cv::subtract(next_dilated_map, dilated_map, difference);
-        
-        // Assign cost to outline cells
-        cv::Mat cost_layer = cv::Mat::zeros(height, width, CV_8UC1);
-        cost_layer.setTo(cv::Scalar(iterations), difference > 0);
-        
-        // Add to cost map
-        cv::bitwise_or(cost_map, cost_layer, cost_map);
-        
-        // Update dilated map
-        dilated_map = next_dilated_map;
-    }
-    
-    // Create hallway mask (simplified version)
-    cv::Mat hallway_mask = createHallwayMask(mapdata, cost_map, iterations / 4);
-    
-    // Iteratively dilate hallway mask
-    cv::Mat final_cost_map = hallway_mask.clone();
-    dilated_map = hallway_mask.clone();
-    int cost = 1;
-    
-    for (int i = 0; i < iterations && i < 20; i++) { // Limit iterations
-        cost++;
-        
-        cv::Mat next_dilated_map;
-        cv::dilate(dilated_map, next_dilated_map, kernel, cv::Point(-1, -1), 1);
-        
-        cv::Mat difference;
-        cv::subtract(next_dilated_map, dilated_map, difference);
-        
-        cv::Mat cost_layer = cv::Mat::zeros(height, width, CV_8UC1);
-        cost_layer.setTo(cv::Scalar(cost), difference > 0);
-        
-        cv::bitwise_or(final_cost_map, cost_layer, final_cost_map);
-        dilated_map = next_dilated_map;
-    }
-    
-    // Subtract 1 from all non-zero values
-    cv::Mat mask = final_cost_map > 0;
-    final_cost_map -= 1;
-    final_cost_map.setTo(0, ~mask);  // Reset zero values back to zero
-    
-    std::cout << "Cost map calculation complete after " << iterations << " iterations." << std::endl;
-    
-    return final_cost_map;
+    return true;
 }
 
-int PathPlanner::getCostMapValue(const cv::Mat& cost_map, const GridCell& p) {
-    if (p.second >= 0 && p.second < cost_map.rows && p.first >= 0 && p.first < cost_map.cols) {
-        return cost_map.at<uint8_t>(p.second, p.first);
-    }
-    return 0;
-}
-
-// Hallway detection implementation
-cv::Mat PathPlanner::createHallwayMask(
-    const nav_msgs::msg::OccupancyGrid& mapdata,
-    const cv::Mat& cost_map,
-    int threshold) {
-    
+cv::Mat PathPlanner::createHallwayMask(const nav_msgs::msg::OccupancyGrid& mapdata, 
+                                       const cv::Mat& cost_map, int threshold) {
     cv::Mat mask = cv::Mat::zeros(cost_map.size(), CV_8UC1);
     
-    // Find non-zero cells in cost map
     for (int y = 0; y < cost_map.rows; y++) {
         for (int x = 0; x < cost_map.cols; x++) {
             if (cost_map.at<uint8_t>(y, x) > 0) {
@@ -436,172 +188,201 @@ cv::Mat PathPlanner::createHallwayMask(
     return mask;
 }
 
-bool PathPlanner::isHallwayCell(
-    const nav_msgs::msg::OccupancyGrid& mapdata,
-    const cv::Mat& cost_map,
-    const GridCell& p,
-    int threshold) {
+cv::Mat PathPlanner::calcCostMap(const nav_msgs::msg::OccupancyGrid& mapdata) {
+    int width = mapdata.info.width;
+    int height = mapdata.info.height;
     
-    int cost_map_value = getCostMapValue(cost_map, p);
-    
-    // Check all 8-connected neighbors
-    auto neighbors = neighborsOf8(mapdata, p, false);
-    for (const auto& neighbor : neighbors) {
-        int neighbor_cost = getCostMapValue(cost_map, neighbor);
-        if (neighbor_cost < threshold || neighbor_cost > cost_map_value) {
-            return false;
+    // Create map matrix
+    cv::Mat map(height, width, CV_8UC1);
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int8_t value = mapdata.data[y * width + x];
+            map.at<uint8_t>(y, x) = (value == -1) ? 100 : static_cast<uint8_t>(value);
         }
     }
     
-    return true;
+    // Iteratively dilate walls
+    cv::Mat cost_map = cv::Mat::zeros(map.size(), CV_8UC1);
+    cv::Mat dilated_map = map.clone();
+    int iterations = 0;
+    cv::Mat kernel = (cv::Mat_<uint8_t>(3, 3) << 0, 1, 0, 1, 1, 1, 0, 1, 0);
+    
+    while (cv::countNonZero(dilated_map == 0) > 0 && iterations < 100) {
+        iterations++;
+        cv::Mat next_dilated;
+        cv::dilate(dilated_map, next_dilated, kernel);
+        
+        cv::Mat difference = next_dilated - dilated_map;
+        cv::Mat mask = difference > 0;
+        difference.setTo(cv::Scalar(iterations), mask);
+        
+        cv::bitwise_or(cost_map, difference, cost_map);
+        dilated_map = next_dilated;
+    }
+    
+    // Create hallway mask
+    cost_map = createHallwayMask(mapdata, cost_map, iterations / 4);
+    
+    // Dilate hallway mask
+    dilated_map = cost_map.clone();
+    int cost = 1;
+    for (int i = 0; i < iterations; i++) {
+        cost++;
+        cv::Mat next_dilated;
+        cv::dilate(dilated_map, next_dilated, kernel);
+        
+        cv::Mat difference = next_dilated - dilated_map;
+        cv::Mat mask = difference > 0;
+        difference.setTo(cv::Scalar(cost), mask);
+        
+        cv::bitwise_or(cost_map, difference, cost_map);
+        dilated_map = next_dilated;
+    }
+    
+    // Subtract 1 from all non-zero values
+    cv::Mat non_zero_mask = cost_map > 0;
+    for (int y = 0; y < cost_map.rows; y++) {
+        for (int x = 0; x < cost_map.cols; x++) {
+            if (non_zero_mask.at<uint8_t>(y, x)) {
+                cost_map.at<uint8_t>(y, x) -= 1;
+            }
+        }
+    }
+    
+    return cost_map;
 }
 
-// A* pathfinding (minimal implementation)
-GridCell PathPlanner::getFirstWalkableNeighbor(
-    const nav_msgs::msg::OccupancyGrid& mapdata,
-    const GridCell& start) {
-    
-    std::queue<GridCell> queue;
-    std::map<GridCell, bool> visited;
-    
-    queue.push(start);
+GridCell PathPlanner::getFirstWalkableNeighbor(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& start) {
+    std::vector<GridCell> queue = {start};
+    std::unordered_map<GridCell, bool, GridCellHash> visited;
     
     while (!queue.empty()) {
         GridCell current = queue.front();
-        queue.pop();
+        queue.erase(queue.begin());
         
         if (isCellWalkable(mapdata, current)) {
             return current;
         }
         
-        auto neighbors = neighborsOf4(mapdata, current, false);
-        for (const auto& neighbor : neighbors) {
+        for (const auto& neighbor : neighborsOf4(mapdata, current, false)) {
             if (visited.find(neighbor) == visited.end()) {
                 visited[neighbor] = true;
-                queue.push(neighbor);
+                queue.push_back(neighbor);
             }
         }
     }
     
-    return start; // Return original if nothing found
+    return start;
 }
 
-std::tuple<std::optional<std::vector<GridCell>>, std::optional<double>, GridCell, GridCell> 
-PathPlanner::aStar(
-    const nav_msgs::msg::OccupancyGrid& mapdata,
-    const cv::Mat& cost_map,
-    const GridCell& start,
-    const GridCell& goal) {
+std::tuple<std::vector<GridCell>, double, GridCell, GridCell> 
+PathPlanner::aStar(const nav_msgs::msg::OccupancyGrid& mapdata, const cv::Mat& cost_map,
+                   const GridCell& start_in, const GridCell& goal_in) {
+    // Get walkable start and goal
+    GridCell start = isCellWalkable(mapdata, start_in) ? start_in : getFirstWalkableNeighbor(mapdata, start_in);
+    GridCell goal = isCellWalkable(mapdata, goal_in) ? goal_in : getFirstWalkableNeighbor(mapdata, goal_in);
     
-    std::cout << "A* pathfinding from (" << start.first << "," << start.second 
-              << ") to (" << goal.first << "," << goal.second << ")" << std::endl;
+    PriorityQueue<GridCell> pq;
+    pq.put(start, 0.0);
     
-    // Check if start and goal are valid
-    if (!isCellInBounds(mapdata, start) || !isCellInBounds(mapdata, goal)) {
-        std::cout << "Start or goal out of bounds" << std::endl;
-        return {std::nullopt, std::nullopt, start, goal};
-    }
+    std::unordered_map<GridCell, double, GridCellHash> cost_so_far;
+    std::unordered_map<GridCell, double, GridCellHash> distance_cost_so_far;
+    std::unordered_map<GridCell, GridCell, GridCellHash> came_from;
     
-    // Get walkable neighbors if start/goal not walkable
-    GridCell actual_start = start;
-    GridCell actual_goal = goal;
+    cost_so_far[start] = 0.0;
+    distance_cost_so_far[start] = 0.0;
+    came_from[start] = {-1, -1};
     
-    if (!isCellWalkable(mapdata, start)) {
-        actual_start = getFirstWalkableNeighbor(mapdata, start);
-        std::cout << "Start not walkable, using (" << actual_start.first << "," << actual_start.second << ")" << std::endl;
-    }
-    
-    if (!isCellWalkable(mapdata, goal)) {
-        actual_goal = getFirstWalkableNeighbor(mapdata, goal);
-        std::cout << "Goal not walkable, using (" << actual_goal.first << "," << actual_goal.second << ")" << std::endl;
-    }
-    
-    // A* algorithm implementation
-    PriorityQueue open_set;
-    std::map<GridCell, double> g_score;
-    std::map<GridCell, double> distance_cost;
-    std::map<GridCell, GridCell> came_from;
-    std::set<GridCell> closed_set;
-    
-    const double COST_MAP_WEIGHT = 1000.0;
-    
-    // Initialize scores
-    g_score[actual_start] = 0.0;
-    distance_cost[actual_start] = 0.0;
-    double h_score = euclideanDistance(actual_start, actual_goal);
-    open_set.put(actual_start, h_score);
-    
-    while (!open_set.empty()) {
-        GridCell current = open_set.get();
+    while (!pq.empty()) {
+        GridCell current = pq.get();
         
-        if (current == actual_goal) {
-            // Reconstruct path
-            std::vector<GridCell> path;
-            GridCell node = actual_goal;
-            double total_distance = distance_cost[actual_goal];
-            
-            while (came_from.find(node) != came_from.end()) {
-                path.push_back(node);
-                node = came_from[node];
-            }
-            path.push_back(actual_start);
-            
-            std::reverse(path.begin(), path.end());
-            
-            // Check minimum path length (reduced for nearby frontiers)
-            const int MIN_PATH_LENGTH = 3;  // Reduced from 12 to allow nearby frontiers
-            if (path.size() < MIN_PATH_LENGTH) {
-                std::cout << "Path too short (" << path.size() << " < " << MIN_PATH_LENGTH << ")" << std::endl;
-                return {std::nullopt, std::nullopt, actual_start, actual_goal};
-            }
-            
-            // Truncate last few poses (but not if path is already short)
-            const int POSES_TO_TRUNCATE = 5;  // Reduced from 8
-            if (path.size() > POSES_TO_TRUNCATE + 3) {  // Only truncate if we have enough poses
-                path.erase(path.end() - POSES_TO_TRUNCATE, path.end());
-            }
-            
-            std::cout << "A* found path with " << path.size() << " nodes, distance: " << total_distance << std::endl;
-            return {path, total_distance, actual_start, actual_goal};
-        }
+        if (current == goal) break;
         
-        closed_set.insert(current);
-        
-        // Check all neighbors with distances
-        auto neighbors_with_dist = neighborsAndDistancesOf8(mapdata, current, true);
-        for (const auto& [neighbor, distance] : neighbors_with_dist) {
-            if (closed_set.find(neighbor) != closed_set.end()) {
-                continue;
-            }
-            
-            // Calculate cost including distance and cost map
+        for (const auto& [neighbor, distance] : neighborsAndDistancesOf8(mapdata, current)) {
             double added_cost = distance;
-            if (!cost_map.empty() && neighbor.second < cost_map.rows && neighbor.first < cost_map.cols) {
+            if (!cost_map.empty()) {
                 added_cost += COST_MAP_WEIGHT * getCostMapValue(cost_map, neighbor);
             }
+            double new_cost = cost_so_far[current] + added_cost;
             
-            double tentative_g = g_score[current] + added_cost;
-            double tentative_distance = distance_cost[current] + distance;
-            
-            if (g_score.find(neighbor) == g_score.end() || tentative_g < g_score[neighbor]) {
+            if (cost_so_far.find(neighbor) == cost_so_far.end() || new_cost < cost_so_far[neighbor]) {
+                cost_so_far[neighbor] = new_cost;
+                distance_cost_so_far[neighbor] = distance_cost_so_far[current] + distance;
+                double priority = new_cost + euclideanDistance(neighbor, goal);
+                pq.put(neighbor, priority);
                 came_from[neighbor] = current;
-                g_score[neighbor] = tentative_g;
-                distance_cost[neighbor] = tentative_distance;
-                
-                double priority = tentative_g + euclideanDistance(neighbor, actual_goal);
-                open_set.put(neighbor, priority);
             }
         }
     }
     
-    std::cout << "A* failed to find path" << std::endl;
-    return {std::nullopt, std::nullopt, actual_start, actual_goal};
+    // Reconstruct path
+    std::vector<GridCell> path;
+    GridCell cell = goal;
+    
+    while (cell.first != -1 && cell.second != -1) {
+        path.insert(path.begin(), cell);
+        if (came_from.find(cell) != came_from.end()) {
+            cell = came_from[cell];
+        } else {
+            return {{}, 0.0, start, goal};
+        }
+    }
+    
+    // Check minimum path length
+    if (path.size() < MIN_PATH_LENGTH) {
+        return {{}, 0.0, start, goal};
+    }
+    
+    // Truncate last poses
+    if (path.size() > POSES_TO_TRUNCATE) {
+        path.erase(path.end() - POSES_TO_TRUNCATE, path.end());
+    }
+    
+    return {path, distance_cost_so_far[goal], start, goal};
 }
 
-// Helper functions
-void PathPlanner::showMap(const std::string& name, const cv::Mat& map) {
-    // TODO: Implement OpenCV visualization
-    std::cout << "Showing map: " << name << " (visualization not implemented)" << std::endl;
+std::vector<geometry_msgs::msg::PoseStamped> PathPlanner::pathToPoses(
+    const nav_msgs::msg::OccupancyGrid& mapdata, const std::vector<GridCell>& path) {
+    std::vector<geometry_msgs::msg::PoseStamped> poses;
+    
+    for (size_t i = 0; i < path.size() - 1; i++) {
+        const auto& cell = path[i];
+        const auto& next_cell = path[i + 1];
+        
+        double angle = std::atan2(next_cell.second - cell.second, next_cell.first - cell.first);
+        
+        tf2::Quaternion q;
+        q.setRPY(0, 0, angle);
+        
+        geometry_msgs::msg::PoseStamped pose;
+        pose.header.frame_id = "map";
+        pose.pose.position = gridToWorld(mapdata, cell);
+        pose.pose.orientation = tf2::toMsg(q);
+        
+        poses.push_back(pose);
+    }
+    
+    return poses;
 }
 
-} // namespace slam
+nav_msgs::msg::Path PathPlanner::pathToMessage(const nav_msgs::msg::OccupancyGrid& mapdata, 
+                                                const std::vector<GridCell>& path) {
+    nav_msgs::msg::Path path_msg;
+    path_msg.header.frame_id = "map";
+    path_msg.poses = pathToPoses(mapdata, path);
+    return path_msg;
+}
+
+nav_msgs::msg::GridCells PathPlanner::getGridCells(const nav_msgs::msg::OccupancyGrid& mapdata, 
+                                                    const std::vector<GridCell>& cells) {
+    nav_msgs::msg::GridCells grid_cells;
+    grid_cells.header.frame_id = "map";
+    grid_cells.cell_width = mapdata.info.resolution;
+    grid_cells.cell_height = mapdata.info.resolution;
+    
+    for (const auto& cell : cells) {
+        grid_cells.cells.push_back(gridToWorld(mapdata, cell));
+    }
+    
+    return grid_cells;
+}

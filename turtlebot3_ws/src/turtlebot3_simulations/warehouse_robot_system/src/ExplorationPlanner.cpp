@@ -1,249 +1,236 @@
-// MTRX3760 2025 Project 2: Warehouse Robot
-// File: ExplorationPlanner.cpp
-// Author(s): Aryan Rai
-//
-// Exploration Planner - Selects exploration goals using frontier detection
-
-#include <rclcpp/rclcpp.hpp>
-#include <nav_msgs/msg/occupancy_grid.hpp>
-#include <geometry_msgs/msg/pose_stamped.hpp>
-#include <geometry_msgs/msg/point.hpp>
 #include "ExplorationPlanner.hpp"
-#include "FrontierSearch.hpp"
-#include "PathPlanner.hpp"
-#include "slam_types.hpp"
+#include <algorithm>
 
-namespace slam {
-
-ExplorationPlanner::ExplorationPlanner() : Node("exploration_planner"), 
-                        state_(ExplorationState::WAITING_FOR_DATA),
-                        consecutive_no_frontiers_(0),
-                        total_frontiers_explored_(0) 
-{
-    RCLCPP_INFO(this->get_logger(), "Exploration Planner starting...");
+ExplorationPlanner::ExplorationPlanner(rclcpp::Node::SharedPtr node)
+    : node_(node),
+      no_frontiers_found_counter_(0),
+      no_path_found_counter_(0),
+      is_finished_exploring_(false),
+      debug_mode_(false) {
     
-    // Subscribers - receive map and pose from SlamController
-    map_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
-        "/map", 10,
-        std::bind(&ExplorationPlanner::mapCallback, this, std::placeholders::_1));
-    
-    pose_sub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
-        "/robot_pose", 10,
-        std::bind(&ExplorationPlanner::poseCallback, this, std::placeholders::_1));
-    
-    // Subscriber - receive motion status from MotionController
-    motion_status_sub_ = this->create_subscription<std_msgs::msg::String>(
-        "/motion_status", 10,
-        std::bind(&ExplorationPlanner::motionStatusCallback, this, std::placeholders::_1));
-    
-    // Publisher - send exploration goals to PathPlanner
-    goal_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>(
-        "/exploration_goal", 10);
-    
-    // Timer for exploration planning
-    planning_timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(500),
-        std::bind(&ExplorationPlanner::planningLoop, this));
-    
-    // Initialize frontier searcher
-    frontier_searcher_ = std::make_unique<FrontierSearch>();
-    
-    // Configuration
-    config_.frontier_min_size = 8;
-    config_.max_no_frontier_count = 8;
-    config_.visited_frontier_radius = 0.5;
-    config_.exploration_timeout_s = 300.0;
-    
-    origin_point_.x = 0.0;
-    origin_point_.y = 0.0;
-    origin_point_.z = 0.0;
-    
-    exploration_start_time_ = this->now();
-    
-    RCLCPP_INFO(this->get_logger(), "Exploration Planner initialized");
-}
-
-void ExplorationPlanner::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) 
-{
-    current_map_ = msg;
-    if (state_ == ExplorationState::WAITING_FOR_DATA && current_pose_) {
-        state_ = ExplorationState::SEARCHING_FRONTIERS;
-        RCLCPP_INFO(this->get_logger(), "Received map, starting exploration");
+    // Check if debug mode is enabled
+    if (!node_->has_parameter("debug")) {
+        node_->declare_parameter("debug", false);
     }
-}
-
-void ExplorationPlanner::poseCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg) 
-{
-    current_pose_ = msg;
-    if (state_ == ExplorationState::WAITING_FOR_DATA && current_map_) {
-        state_ = ExplorationState::SEARCHING_FRONTIERS;
-        RCLCPP_INFO(this->get_logger(), "Received pose, starting exploration");
-    }
-}
-
-void ExplorationPlanner::motionStatusCallback(const std_msgs::msg::String::SharedPtr msg) 
-{
-    // When robot reaches goal, search for new frontiers
-    if (msg->data == "goal_reached" && state_ == ExplorationState::GOAL_PUBLISHED) {
-        total_frontiers_explored_++;
-        RCLCPP_INFO(this->get_logger(), "Goal reached, searching for new frontier");
-        state_ = ExplorationState::SEARCHING_FRONTIERS;
-    }
-}
-
-void ExplorationPlanner::planningLoop() 
-{
-    switch (state_) {
-        case ExplorationState::WAITING_FOR_DATA:
-            // Wait for map and pose
-            break;
-            
-        case ExplorationState::SEARCHING_FRONTIERS:
-            searchAndPublishFrontier();
-            break;
-            
-        case ExplorationState::GOAL_PUBLISHED:
-            // Wait for robot to reach goal
-            break;
-            
-        case ExplorationState::EXPLORATION_COMPLETE:
-            returnHome();
-            break;
-            
-        case ExplorationState::RETURNING_HOME:
-            // Wait for robot to reach home
-            break;
+    debug_mode_ = node_->get_parameter("debug").as_bool();
+    
+    // Create publishers for visualization
+    if (debug_mode_) {
+        frontier_cells_pub_ = node_->create_publisher<nav_msgs::msg::GridCells>(
+            "/exploration/frontier_cells", 10
+        );
+        start_pub_ = node_->create_publisher<nav_msgs::msg::GridCells>(
+            "/exploration/start", 10
+        );
+        goal_pub_ = node_->create_publisher<nav_msgs::msg::GridCells>(
+            "/exploration/goal", 10
+        );
+        cspace_pub_ = node_->create_publisher<nav_msgs::msg::GridCells>(
+            "/exploration/cspace", 10
+        );
+        cost_map_pub_ = node_->create_publisher<nav_msgs::msg::OccupancyGrid>(
+            "/exploration/cost_map", 10
+        );
     }
     
-    // Check for timeout
-    if ((this->now() - exploration_start_time_).seconds() > config_.exploration_timeout_s) {
-        if (state_ != ExplorationState::EXPLORATION_COMPLETE && 
-            state_ != ExplorationState::RETURNING_HOME) {
-            RCLCPP_WARN(this->get_logger(), "Exploration timeout, returning home");
-            state_ = ExplorationState::EXPLORATION_COMPLETE;
+    RCLCPP_INFO(node_->get_logger(), "Exploration Planner initialized (debug=%s)", 
+                debug_mode_ ? "true" : "false");
+}
+
+std::vector<Frontier> ExplorationPlanner::getTopFrontiers(
+    const std::vector<Frontier>& frontiers, int n) {
+    
+    std::vector<Frontier> sorted_frontiers = frontiers;
+    std::sort(sorted_frontiers.begin(), sorted_frontiers.end(),
+              [](const Frontier& a, const Frontier& b) {
+                  return a.size > b.size;
+              });
+    
+    if (sorted_frontiers.size() > static_cast<size_t>(n)) {
+        sorted_frontiers.resize(n);
+    }
+    
+    return sorted_frontiers;
+}
+
+void ExplorationPlanner::publishCostMap(const nav_msgs::msg::OccupancyGrid& mapdata, 
+                                        const cv::Mat& cost_map) {
+    if (!debug_mode_ || !cost_map_pub_) return;
+    
+    nav_msgs::msg::OccupancyGrid grid;
+    grid.header.stamp = node_->now();
+    grid.header.frame_id = "map";
+    grid.info = mapdata.info;
+    
+    // Normalize cost map to [0, 100]
+    double max_val;
+    cv::minMaxLoc(cost_map, nullptr, &max_val);
+    
+    grid.data.resize(cost_map.rows * cost_map.cols);
+    for (int y = 0; y < cost_map.rows; y++) {
+        for (int x = 0; x < cost_map.cols; x++) {
+            int idx = y * cost_map.cols + x;
+            double normalized = (cost_map.at<uint8_t>(y, x) / max_val) * 100.0;
+            grid.data[idx] = static_cast<int8_t>(normalized);
         }
     }
+    
+    cost_map_pub_->publish(grid);
 }
 
-void ExplorationPlanner::searchAndPublishFrontier() 
-{
-    if (!current_map_ || !current_pose_) {
-        return;
+nav_msgs::msg::Path ExplorationPlanner::planExplorationPath(
+    const nav_msgs::msg::OccupancyGrid& map,
+    const geometry_msgs::msg::Pose& current_pose) {
+    
+    nav_msgs::msg::Path empty_path;
+    empty_path.header.frame_id = "map";
+    
+    if (is_finished_exploring_) {
+        return empty_path;
     }
+    
+    // Get current position in grid coordinates
+    GridCell start = PathPlanner::worldToGrid(map, current_pose.position);
     
     // Search for frontiers
-    GridCell start_cell = PathPlanner::worldToGrid(*current_map_, current_pose_->pose.position);
-    auto [frontier_list, frontier_cells] = frontier_searcher_->search(*current_map_, start_cell, false);
+    auto [frontier_list, frontier_cells] = FrontierSearch::search(map, start, debug_mode_);
     
-    // Filter frontiers by size
-    std::vector<Frontier> valid_frontiers;
-    for (const auto& frontier : frontier_list.frontiers) {
-        if (frontier.size >= config_.frontier_min_size) {
-            // Check if not recently visited
-            bool is_visited = false;
-            for (const auto& visited : visited_frontiers_) {
-                double dist = calculateDistance(frontier.centroid, visited);
-                if (dist < config_.visited_frontier_radius) {
-                    is_visited = true;
-                    break;
-                }
-            }
-            if (!is_visited) {
-                valid_frontiers.push_back(frontier);
-            }
-        }
+    // Publish frontier cells for visualization
+    if (debug_mode_ && frontier_cells_pub_) {
+        auto grid_cells = PathPlanner::getGridCells(map, frontier_cells);
+        grid_cells.header.stamp = node_->now();
+        frontier_cells_pub_->publish(grid_cells);
     }
     
-    if (valid_frontiers.empty()) {
-        consecutive_no_frontiers_++;
-        RCLCPP_DEBUG(this->get_logger(), "No valid frontiers found (count: %d)", 
-                    consecutive_no_frontiers_);
+    // Check if frontiers were found
+    if (frontier_list.frontiers.empty()) {
+        RCLCPP_INFO(node_->get_logger(), "No frontiers found");
+        no_frontiers_found_counter_++;
         
-        if (consecutive_no_frontiers_ >= config_.max_no_frontier_count) {
-            RCLCPP_INFO(this->get_logger(), "Exploration complete! Explored %d frontiers", 
-                        total_frontiers_explored_);
-            state_ = ExplorationState::EXPLORATION_COMPLETE;
+        if (no_frontiers_found_counter_ >= NUM_EXPLORE_FAILS_BEFORE_FINISH) {
+            RCLCPP_INFO(node_->get_logger(), "Exploration complete - no more frontiers");
+            is_finished_exploring_ = true;
         }
-        return;
-    }
-    
-    // Select best frontier
-    consecutive_no_frontiers_ = 0;
-    Frontier best_frontier = selectBestFrontier(valid_frontiers);
-    
-    // Mark as visited
-    visited_frontiers_.push_back(best_frontier.centroid);
-    
-    // Publish goal
-    geometry_msgs::msg::PoseStamped goal;
-    goal.header.frame_id = "map";
-    goal.header.stamp = this->now();
-    goal.pose.position = best_frontier.centroid;
-    goal.pose.orientation.w = 1.0;
-    
-    goal_pub_->publish(goal);
-    state_ = ExplorationState::GOAL_PUBLISHED;
-    
-    RCLCPP_INFO(this->get_logger(), "Published exploration goal at (%.2f, %.2f), size: %d",
-                best_frontier.centroid.x, best_frontier.centroid.y, best_frontier.size);
-}
-
-Frontier ExplorationPlanner::selectBestFrontier(const std::vector<Frontier>& frontiers) 
-{
-    if (frontiers.empty()) {
-        return Frontier{};
-    }
-    
-    // Sort by size (larger is better)
-    std::vector<Frontier> sorted = frontiers;
-    std::sort(sorted.begin(), sorted.end(),
-                [](const Frontier& a, const Frontier& b) { return a.size > b.size; });
-    
-    // Consider distance and size
-    double best_cost = std::numeric_limits<double>::max();
-    Frontier best_frontier = sorted[0];
-    
-    int max_to_check = std::min(static_cast<int>(sorted.size()), 8);
-    for (int i = 0; i < max_to_check; ++i) {
-        const auto& frontier = sorted[i];
-        double distance = calculateDistance(current_pose_->pose.position, frontier.centroid);
-        double cost = 10.0 * distance + 1.0 / frontier.size;
         
-        if (cost < best_cost) {
-            best_cost = cost;
-            best_frontier = frontier;
+        return empty_path;
+    } else {
+        no_frontiers_found_counter_ = 0;
+    }
+    
+    // Calculate C-space
+    auto [cspace, cspace_cells] = PathPlanner::calcCSpace(map, debug_mode_);
+    if (debug_mode_ && cspace_pub_) {
+        cspace_cells.header.stamp = node_->now();
+        cspace_pub_->publish(cspace_cells);
+    }
+    
+    // Calculate cost map
+    cv::Mat cost_map = PathPlanner::calcCostMap(map);
+    if (debug_mode_) {
+        publishCostMap(map, cost_map);
+    }
+    
+    // Get top frontiers by size
+    auto top_frontiers = getTopFrontiers(frontier_list.frontiers, MAX_NUM_FRONTIERS_TO_CHECK);
+    
+    RCLCPP_INFO(node_->get_logger(), "Exploring %zu frontiers", top_frontiers.size());
+    
+    // Find best path among all frontiers
+    double lowest_cost = std::numeric_limits<double>::infinity();
+    std::vector<GridCell> best_path;
+    std::vector<GridCell> starts, goals;
+    
+    // Minimum distance to frontier (in meters) to avoid planning to current location
+    const double MIN_FRONTIER_DISTANCE = 0.20;  // 20cm minimum - increased from 15cm
+    
+    int frontiers_checked = 0;
+    int frontiers_too_close = 0;
+    
+    for (const auto& frontier : top_frontiers) {
+        GridCell goal = PathPlanner::worldToGrid(map, frontier.centroid);
+        
+        // Check if frontier is too close to current position
+        double dx = frontier.centroid.x - current_pose.position.x;
+        double dy = frontier.centroid.y - current_pose.position.y;
+        double distance_to_frontier = std::sqrt(dx * dx + dy * dy);
+        
+        if (distance_to_frontier < MIN_FRONTIER_DISTANCE) {
+            frontiers_too_close++;
+            RCLCPP_DEBUG(node_->get_logger(), 
+                        "Skipping frontier at (%.2f, %.2f) - too close (%.3fm)", 
+                        frontier.centroid.x, frontier.centroid.y, distance_to_frontier);
+            continue;
+        }
+        
+        frontiers_checked++;
+        
+        // Execute A*
+        auto [path, a_star_cost, actual_start, actual_goal] = 
+            PathPlanner::aStar(cspace, cost_map, start, goal);
+        
+        if (debug_mode_) {
+            starts.push_back(actual_start);
+            goals.push_back(actual_goal);
+        }
+        
+        if (path.empty() || a_star_cost == 0.0) {
+            continue;
+        }
+        
+        // Calculate total cost
+        double cost = (A_STAR_COST_WEIGHT * a_star_cost) + 
+                     (FRONTIER_SIZE_COST_WEIGHT / frontier.size);
+        
+        if (cost < lowest_cost) {
+            lowest_cost = cost;
+            best_path = path;
         }
     }
     
-    return best_frontier;
-}
-
-void ExplorationPlanner::returnHome() 
-{
-    if (state_ != ExplorationState::EXPLORATION_COMPLETE) {
-        return;
+    // Log if all frontiers were too close
+    if (frontiers_too_close > 0 && frontiers_checked == 0) {
+        RCLCPP_INFO(node_->get_logger(), 
+                   "All %d frontiers were too close (< %.2fm) - waiting for map to update", 
+                   frontiers_too_close, MIN_FRONTIER_DISTANCE);
     }
     
-    // Publish goal to return to origin
-    geometry_msgs::msg::PoseStamped home_goal;
-    home_goal.header.frame_id = "map";
-    home_goal.header.stamp = this->now();
-    home_goal.pose.position = origin_point_;
-    home_goal.pose.orientation.w = 1.0;
+    // Publish start and goal for visualization
+    if (debug_mode_ && start_pub_ && goal_pub_) {
+        auto start_cells = PathPlanner::getGridCells(map, starts);
+        start_cells.header.stamp = node_->now();
+        start_pub_->publish(start_cells);
+        
+        auto goal_cells = PathPlanner::getGridCells(map, goals);
+        goal_cells.header.stamp = node_->now();
+        goal_pub_->publish(goal_cells);
+    }
     
-    goal_pub_->publish(home_goal);
-    state_ = ExplorationState::RETURNING_HOME;
-    
-    RCLCPP_INFO(this->get_logger(), "Returning to home position (0, 0)");
+    // Return best path
+    if (!best_path.empty()) {
+        RCLCPP_INFO(node_->get_logger(), "Found best path with cost %.2f", lowest_cost);
+        no_path_found_counter_ = 0;
+        return PathPlanner::pathToMessage(map, best_path);
+    } else {
+        RCLCPP_INFO(node_->get_logger(), "No paths found");
+        no_path_found_counter_++;
+        
+        if (no_path_found_counter_ >= NUM_EXPLORE_FAILS_BEFORE_FINISH) {
+            RCLCPP_INFO(node_->get_logger(), "Exploration complete - no valid paths");
+            is_finished_exploring_ = true;
+        }
+        
+        return empty_path;
+    }
 }
 
-double ExplorationPlanner::calculateDistance(const geometry_msgs::msg::Point& p1, 
-                        const geometry_msgs::msg::Point& p2) 
-{
-    double dx = p2.x - p1.x;
-    double dy = p2.y - p1.y;
-    return std::sqrt(dx * dx + dy * dy);
+bool ExplorationPlanner::isExplorationComplete() const {
+    return is_finished_exploring_;
 }
 
+int ExplorationPlanner::getNoFrontiersCounter() const {
+    return no_frontiers_found_counter_;
+}
 
-} // namespace slam
+int ExplorationPlanner::getNoPathCounter() const {
+    return no_path_found_counter_;
+}

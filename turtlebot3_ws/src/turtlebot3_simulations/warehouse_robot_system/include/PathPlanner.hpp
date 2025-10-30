@@ -1,8 +1,5 @@
-// MTRX3760 2025 Project 2: Warehouse Robot
-// File: PathPlanner.cpp
-// Author(s): Aryan Rai
-//
-// Path Planner Node - Plans paths using A* algorithm
+// PathPlanner - A* pathfinding with cost map support
+// Adapted from SLAM_Reference.md path_planner.py
 
 #ifndef PATH_PLANNER_HPP
 #define PATH_PLANNER_HPP
@@ -10,129 +7,75 @@
 #include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav_msgs/msg/path.hpp>
+#include <nav_msgs/msg/grid_cells.hpp>
+#include <geometry_msgs/msg/point.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
+#include <vector>
+#include <tuple>
+#include <cmath>
 #include <opencv2/opencv.hpp>
-#include "slam_types.hpp"
 
-namespace slam {
+using GridCell = std::pair<int, int>;
 
-class PathPlanner : public rclcpp::Node {
+class PathPlanner {
 public:
-    PathPlanner();
-
-    // Grid utility functions
+    // Grid/World conversions
     static int gridToIndex(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p);
-    static int getCellValue(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p);
-    static double euclideanDistance(const GridCell& p1, const GridCell& p2);
-    static double euclideanDistance(const std::pair<double, double>& p1, const std::pair<double, double>& p2);
-    
-    // Coordinate transformations
+    static int8_t getCellValue(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p);
     static geometry_msgs::msg::Point gridToWorld(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p);
     static GridCell worldToGrid(const nav_msgs::msg::OccupancyGrid& mapdata, const geometry_msgs::msg::Point& wp);
     
-    // Path conversion
-    static std::vector<geometry_msgs::msg::PoseStamped> pathToPoses(
-        const nav_msgs::msg::OccupancyGrid& mapdata, 
-        const std::vector<GridCell>& path);
-    static nav_msgs::msg::Path pathToMessage(
-        const nav_msgs::msg::OccupancyGrid& mapdata, 
-        const std::vector<GridCell>& path);
+    // Distance calculations
+    static double euclideanDistance(const GridCell& p1, const GridCell& p2);
+    static double euclideanDistance(const std::pair<double, double>& p1, const std::pair<double, double>& p2);
     
-    // Grid validation
+    // Cell validation
     static bool isCellInBounds(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p);
     static bool isCellWalkable(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p);
     
     // Neighbor finding
-    static std::vector<GridCell> neighbors(
-        const nav_msgs::msg::OccupancyGrid& mapdata,
-        const GridCell& p,
-        const std::vector<GridCell>& directions,
-        bool must_be_walkable = true);
-    
-    static std::vector<GridCell> neighborsOf4(
-        const nav_msgs::msg::OccupancyGrid& mapdata,
-        const GridCell& p,
-        bool must_be_walkable = true);
-    
-    static std::vector<GridCell> neighborsOf8(
-        const nav_msgs::msg::OccupancyGrid& mapdata,
-        const GridCell& p,
-        bool must_be_walkable = true);
-    
-    // Neighbors with distances
-    static std::vector<std::pair<GridCell, double>> neighborsAndDistances(
-        const nav_msgs::msg::OccupancyGrid& mapdata,
-        const GridCell& p,
-        const std::vector<GridCell>& directions,
-        bool must_be_walkable = true);
-    
-    static std::vector<std::pair<GridCell, double>> neighborsAndDistancesOf4(
-        const nav_msgs::msg::OccupancyGrid& mapdata,
-        const GridCell& p,
-        bool must_be_walkable = true);
-    
+    static std::vector<GridCell> neighborsOf4(const nav_msgs::msg::OccupancyGrid& mapdata, 
+                                               const GridCell& p, bool must_be_walkable = true);
+    static std::vector<GridCell> neighborsOf8(const nav_msgs::msg::OccupancyGrid& mapdata, 
+                                               const GridCell& p, bool must_be_walkable = true);
     static std::vector<std::pair<GridCell, double>> neighborsAndDistancesOf8(
-        const nav_msgs::msg::OccupancyGrid& mapdata,
-        const GridCell& p,
-        bool must_be_walkable = true);
+        const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p, bool must_be_walkable = true);
     
-    // C-space calculation
-    static std::pair<nav_msgs::msg::OccupancyGrid, std::vector<GridCell>> calcCspace(
-        const nav_msgs::msg::OccupancyGrid& mapdata,
-        bool include_cells = false);
+    // C-Space calculation
+    static std::tuple<nav_msgs::msg::OccupancyGrid, nav_msgs::msg::GridCells> 
+        calcCSpace(const nav_msgs::msg::OccupancyGrid& mapdata, bool include_cells = false);
     
     // Cost map calculation
     static cv::Mat calcCostMap(const nav_msgs::msg::OccupancyGrid& mapdata);
-    static int getCostMapValue(const cv::Mat& cost_map, const GridCell& p);
-    
-    // Hallway detection
-    static cv::Mat createHallwayMask(
-        const nav_msgs::msg::OccupancyGrid& mapdata,
-        const cv::Mat& cost_map,
-        int threshold);
-    
-    static bool isHallwayCell(
-        const nav_msgs::msg::OccupancyGrid& mapdata,
-        const cv::Mat& cost_map,
-        const GridCell& p,
-        int threshold);
     
     // A* pathfinding
-    static GridCell getFirstWalkableNeighbor(
-        const nav_msgs::msg::OccupancyGrid& mapdata,
-        const GridCell& start);
+    static std::tuple<std::vector<GridCell>, double, GridCell, GridCell> 
+        aStar(const nav_msgs::msg::OccupancyGrid& mapdata, const cv::Mat& cost_map,
+              const GridCell& start, const GridCell& goal);
     
-    static std::tuple<std::optional<std::vector<GridCell>>, std::optional<double>, GridCell, GridCell> 
-    aStar(
-        const nav_msgs::msg::OccupancyGrid& mapdata,
-        const cv::Mat& cost_map,
-        const GridCell& start,
-        const GridCell& goal);
+    // Path conversion
+    static nav_msgs::msg::Path pathToMessage(const nav_msgs::msg::OccupancyGrid& mapdata, 
+                                              const std::vector<GridCell>& path);
+    static std::vector<geometry_msgs::msg::PoseStamped> pathToPoses(
+        const nav_msgs::msg::OccupancyGrid& mapdata, const std::vector<GridCell>& path);
+    
+    // Grid cells message
+    static nav_msgs::msg::GridCells getGridCells(const nav_msgs::msg::OccupancyGrid& mapdata, 
+                                                  const std::vector<GridCell>& cells);
 
 private:
-    void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
+    static constexpr int WALKABLE_THRESHOLD = 50;
+    static constexpr int CSPACE_PADDING = 5;
+    static constexpr double COST_MAP_WEIGHT = 1000.0;
+    static constexpr int MIN_PATH_LENGTH = 12;
+    static constexpr int POSES_TO_TRUNCATE = 8;
     
-    void poseCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
-    
-    void goalCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
-    
-    // ROS2 interfaces
-    rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
-    rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr pose_sub_;
-    rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr goal_sub_;
-    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
-    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_viz_pub_;
-    
-    // Data
-    nav_msgs::msg::OccupancyGrid::SharedPtr current_map_;
-    nav_msgs::msg::OccupancyGrid::SharedPtr cspace_map_;
-    geometry_msgs::msg::PoseStamped::SharedPtr current_pose_;
-    cv::Mat cost_map_;
-
-    static void showMap(const std::string& name, const cv::Mat& map);
-
+    static GridCell getFirstWalkableNeighbor(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& start);
+    static double getCostMapValue(const cv::Mat& cost_map, const GridCell& p);
+    static cv::Mat createHallwayMask(const nav_msgs::msg::OccupancyGrid& mapdata, 
+                                     const cv::Mat& cost_map, int threshold);
+    static bool isHallwayCell(const nav_msgs::msg::OccupancyGrid& mapdata, 
+                              const cv::Mat& cost_map, const GridCell& p, int threshold);
 };
-
-} // namespace slam
 
 #endif // PATH_PLANNER_HPP
