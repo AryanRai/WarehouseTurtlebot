@@ -43,8 +43,7 @@ int main(int argc, char** argv) {
     // Create delivery robot
     g_robot = std::make_shared<DeliveryRobot>(node);
     
-    // Example: Add some delivery requests programmatically
-    // (In real use, these would come from web UI or service calls)
+    // Add delivery requests programmatically
     DeliveryRequest req1;
     req1.id = "DEL001";
     req1.from_zone = "Zone_1";
@@ -55,13 +54,25 @@ int main(int argc, char** argv) {
     DeliveryRequest req2;
     req2.id = "DEL002";
     req2.from_zone = "Zone_2";
-    req2.to_zone = "Zone_3";
+    req2.to_zone = "Zone_1";
     req2.item_description = "Package B";
     req2.priority = 2;
     
-    // Uncomment to add example requests
-    // g_robot->addDeliveryRequest(req1);
-    // g_robot->addDeliveryRequest(req2);
+    // Add the requests
+    g_robot->addDeliveryRequest(req1);
+    g_robot->addDeliveryRequest(req2);
+    
+    RCLCPP_INFO(node->get_logger(), "Added 2 delivery requests");
+    
+    // Auto-start deliveries after 5 seconds
+    auto start_timer = node->create_wall_timer(
+        std::chrono::seconds(5),
+        [&]() {
+            RCLCPP_INFO(node->get_logger(), "Auto-starting deliveries...");
+            g_robot->startDeliveries();
+        });
+    start_timer->cancel();  // Will be called once by executor
+    start_timer->reset();
     
     // Create executor for proper service handling
     rclcpp::executors::MultiThreadedExecutor executor;
