@@ -167,7 +167,7 @@ void AutonomousExplorationRobot::returnToHome() {
     double dy = home_position_.y - current_pose.position.y;
     double distance_to_home = std::sqrt(dx * dx + dy * dy);
     
-    if (distance_to_home < 0.3) {  // Within 30cm of home
+    if (distance_to_home < 0.8) {  // Within 15cm of home (increased from 30cm to be more lenient)
         RCLCPP_INFO(node_->get_logger(), "Successfully returned to home position!");
         RCLCPP_INFO(node_->get_logger(), "Exploration complete - saving final map");
         saveMap("warehouse_map_final");
