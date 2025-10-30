@@ -64,15 +64,17 @@ int main(int argc, char** argv) {
     
     RCLCPP_INFO(node->get_logger(), "Added 2 delivery requests");
     
-    // Auto-start deliveries after 5 seconds
+    // Auto-start deliveries after 5 seconds (one-shot timer)
     auto start_timer = node->create_wall_timer(
         std::chrono::seconds(5),
-        [&]() {
-            RCLCPP_INFO(node->get_logger(), "Auto-starting deliveries...");
-            g_robot->startDeliveries();
+        [&, node]() {
+            static bool started = false;
+            if (!started) {
+                RCLCPP_INFO(node->get_logger(), "Auto-starting deliveries...");
+                g_robot->startDeliveries();
+                started = true;
+            }
         });
-    start_timer->cancel();  // Will be called once by executor
-    start_timer->reset();
     
     // Create executor for proper service handling
     rclcpp::executors::MultiThreadedExecutor executor;

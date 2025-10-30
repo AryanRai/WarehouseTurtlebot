@@ -1,1 +1,2 @@
 Timestamp,RequestID,FromZone,ToZone,Distance(m),Time(s),Status,Notes
+2025-10-31 07:28:00,,Start,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully

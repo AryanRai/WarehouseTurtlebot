@@ -315,6 +315,47 @@ void DeliveryRobot::update() {
         auto [path, cost, actual_start, actual_goal] = 
             PathPlanner::aStar(cspace, cost_map, start, goal);
         
+        // If path planning fails, try to find nearest accessible point
+        if (path.empty()) {
+            RCLCPP_WARN_THROTTLE(node_->get_logger(), *node_->get_clock(), 5000,
+                                "Cannot reach exact zone position, searching for nearest accessible point...");
+            
+            // Search in expanding radius around goal
+            bool found_goal = false;
+            std::vector<std::pair<int,int>> directions = {
+                {1,0}, {-1,0}, {0,1}, {0,-1},  // Cardinal
+                {1,1}, {1,-1}, {-1,1}, {-1,-1}  // Diagonal
+            };
+            
+            for (int radius = 1; radius <= 30 && !found_goal; radius++) {
+                for (const auto& [dx_unit, dy_unit] : directions) {
+                    GridCell candidate = {
+                        goal.first + dx_unit * radius, 
+                        goal.second + dy_unit * radius
+                    };
+                    
+                    // Check if this cell is walkable
+                    if (PathPlanner::isCellInBounds(*current_map, candidate) &&
+                        PathPlanner::isCellWalkable(*current_map, candidate)) {
+                        
+                        // Try to plan to this cell
+                        auto [alt_path, alt_cost, alt_start, alt_goal] = 
+                            PathPlanner::aStar(cspace, cost_map, start, candidate);
+                        
+                        if (!alt_path.empty()) {
+                            path = alt_path;
+                            found_goal = true;
+                            geometry_msgs::msg::Point alt_pos = PathPlanner::gridToWorld(*current_map, candidate);
+                            RCLCPP_INFO(node_->get_logger(), 
+                                       "Found accessible point near %s at (%.2f, %.2f)",
+                                       current_zone.name.c_str(), alt_pos.x, alt_pos.y);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
         if (!path.empty()) {
             auto path_msg = PathPlanner::pathToMessage(*current_map, path);
             motion_controller_->setPath(path_msg);
@@ -322,7 +363,9 @@ void DeliveryRobot::update() {
             RCLCPP_INFO(node_->get_logger(), "Navigating to %s", current_zone.name.c_str());
             publishStatus("Navigating to: " + current_zone.name);
         } else {
-            RCLCPP_ERROR(node_->get_logger(), "Failed to plan path to %s", current_zone.name.c_str());
+            RCLCPP_ERROR_THROTTLE(node_->get_logger(), *node_->get_clock(), 5000,
+                                 "Failed to plan path to %s - zone may be unreachable", 
+                                 current_zone.name.c_str());
         }
     }
     
