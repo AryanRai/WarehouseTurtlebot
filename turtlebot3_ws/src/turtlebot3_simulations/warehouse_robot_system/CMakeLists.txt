@@ -24,6 +24,7 @@ find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 # Include directories
 include_directories(
@@ -204,6 +205,39 @@ target_link_libraries(autonomous_slam_node
   autonomous_exploration_lib
 )
 
+# Delivery Robot Library
+add_library(delivery_robot_lib
+  src/DeliveryRobot.cpp
+)
+ament_target_dependencies(delivery_robot_lib
+  rclcpp
+  geometry_msgs
+  nav_msgs
+  std_msgs
+  std_srvs
+)
+target_link_libraries(delivery_robot_lib
+  slam_controller_lib
+  motion_controller_lib
+  path_planner_lib
+  yaml-cpp
+)
+
+# Delivery Robot Node
+add_executable(delivery_robot_node
+  src/delivery_robot_node.cpp
+)
+ament_target_dependencies(delivery_robot_node
+  rclcpp
+  geometry_msgs
+  nav_msgs
+  std_msgs
+  std_srvs
+)
+target_link_libraries(delivery_robot_node
+  delivery_robot_lib
+)
+
 # Twist to TwistStamped Bridge
 add_executable(twist_stamped_bridge
   src/twist_stamped_bridge.cpp
@@ -221,6 +255,7 @@ ament_target_dependencies(twist_stamped_bridge
 install(TARGETS
   warehouse_robot_node
   autonomous_slam_node
+  delivery_robot_node
   twist_stamped_bridge
   DESTINATION lib/${PROJECT_NAME}
 )
@@ -235,6 +270,7 @@ install(TARGETS
   motion_controller_lib
   autonomous_exploration_lib
   warehouse_robot_lib
+  delivery_robot_lib
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin

@@ -71,6 +71,12 @@ private:
     double last_distance_to_home_;
     bool in_docking_mode_;  // Precise docking mode when close to home
     
+    // Advanced recovery state
+    bool in_return_home_recovery_;
+    int return_home_recovery_step_;  // Which recovery step we're on
+    rclcpp::Time return_home_recovery_start_;
+    double distance_before_recovery_;  // Distance to home before recovery started
+    
     // Laser scan for obstacle detection
     sensor_msgs::msg::LaserScan::SharedPtr current_scan_;
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
@@ -78,6 +84,7 @@ private:
     // Recovery behavior
     void performRecovery();
     void returnToHome();
+    void performAdvancedReturnHomeRecovery(const geometry_msgs::msg::Pose& current_pose, double current_distance);
     void preciseDocking(const geometry_msgs::msg::Pose& current_pose, double distance_to_home);
     bool isObstacleAhead(double min_distance = 0.3);  // Check if obstacle within distance
     

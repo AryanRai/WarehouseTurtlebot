@@ -95,15 +95,27 @@ int main(int argc, char** argv) {
     
     // Main loop
     rclcpp::Rate rate(20);  // 20 Hz
+    bool exploration_finished = false;
+    
     while (rclcpp::ok()) {
         // Update robot
         g_robot->update();
         
         // Check if exploration is complete
-        if (g_robot->isExplorationComplete()) {
+        if (!exploration_finished && g_robot->isExplorationComplete()) {
             RCLCPP_INFO(g_node->get_logger(), "Exploration complete!");
             g_robot->saveMap("warehouse_map_complete");
-            break;
+            exploration_finished = true;
+            
+            // Stay alive in idle mode - wait for external signal to shutdown
+            RCLCPP_INFO(g_node->get_logger(), "");
+            RCLCPP_INFO(g_node->get_logger(), "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            RCLCPP_INFO(g_node->get_logger(), "🎉 EXPLORATION COMPLETE - READY FOR MODE SWITCH");
+            RCLCPP_INFO(g_node->get_logger(), "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            RCLCPP_INFO(g_node->get_logger(), "");
+            RCLCPP_INFO(g_node->get_logger(), "Node staying alive for mode transition...");
+            RCLCPP_INFO(g_node->get_logger(), "Press Ctrl+C or send SIGTERM to shutdown");
+            RCLCPP_INFO(g_node->get_logger(), "");
         }
         
         // Spin once

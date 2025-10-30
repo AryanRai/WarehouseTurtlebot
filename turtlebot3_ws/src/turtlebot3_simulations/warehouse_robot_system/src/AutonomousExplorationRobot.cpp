@@ -19,7 +19,11 @@ AutonomousExplorationRobot::AutonomousExplorationRobot(rclcpp::Node::SharedPtr n
       return_home_failures_(0),
       last_return_home_progress_(node->now()),
       last_distance_to_home_(std::numeric_limits<double>::max()),
-      in_docking_mode_(false) {
+      in_docking_mode_(false),
+      in_return_home_recovery_(false),
+      return_home_recovery_step_(0),
+      return_home_recovery_start_(node->now()),
+      distance_before_recovery_(0.0) {
     
     // Initialize SLAM components
     slam_controller_ = std::make_unique<SlamController>(node);
@@ -154,6 +158,130 @@ void AutonomousExplorationRobot::performRecovery() {
         consecutive_no_path_count_ = 0;
         recovery_attempt_++;  // Increment for next time
         last_replan_time_ = node_->now() - rclcpp::Duration::from_seconds(MIN_REPLAN_INTERVAL);  // Allow immediate replan
+    }
+}
+
+void AutonomousExplorationRobot::performAdvancedReturnHomeRecovery(
+    const geometry_msgs::msg::Pose& current_pose, 
+    double current_distance) {
+    
+    if (!in_return_home_recovery_) {
+        // Start recovery
+        in_return_home_recovery_ = true;
+        return_home_recovery_step_ = 0;
+        return_home_recovery_start_ = node_->now();
+        distance_before_recovery_ = current_distance;
+        RCLCPP_WARN(node_->get_logger(), 
+                   "Starting advanced return-home recovery (distance: %.3fm)", 
+                   current_distance);
+    }
+    
+    double elapsed = (node_->now() - return_home_recovery_start_).seconds();
+    
+    // Recovery sequence: forward, backward, forward+rotate left, forward+rotate right
+    // Each step lasts 2 seconds, then we check if distance improved
+    const double STEP_DURATION = 2.0;
+    
+    if (elapsed < STEP_DURATION) {
+        geometry_msgs::msg::TwistStamped cmd_vel;
+        cmd_vel.header.stamp = node_->now();
+        cmd_vel.header.frame_id = "base_footprint";
+        
+        switch (return_home_recovery_step_) {
+            case 0:  // Forward
+                if (!isObstacleAhead(0.3)) {
+                    cmd_vel.twist.linear.x = 0.15;
+                    cmd_vel.twist.angular.z = 0.0;
+                    RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
+                                        "Recovery step 1/4: Moving forward");
+                } else {
+                    cmd_vel.twist.linear.x = 0.0;
+                    cmd_vel.twist.angular.z = 0.5;
+                    RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
+                                        "Recovery step 1/4: Obstacle ahead, rotating");
+                }
+                break;
+                
+            case 1:  // Backward
+                cmd_vel.twist.linear.x = -0.15;
+                cmd_vel.twist.angular.z = 0.0;
+                RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
+                                    "Recovery step 2/4: Moving backward");
+                break;
+                
+            case 2:  // Forward + rotate left
+                if (!isObstacleAhead(0.3)) {
+                    cmd_vel.twist.linear.x = 0.15;
+                    cmd_vel.twist.angular.z = 0.5;
+                    RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
+                                        "Recovery step 3/4: Forward + rotate left");
+                } else {
+                    cmd_vel.twist.linear.x = 0.0;
+                    cmd_vel.twist.angular.z = 0.5;
+                    RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
+                                        "Recovery step 3/4: Obstacle ahead, rotating left");
+                }
+                break;
+                
+            case 3:  // Forward + rotate right
+                if (!isObstacleAhead(0.3)) {
+                    cmd_vel.twist.linear.x = 0.15;
+                    cmd_vel.twist.angular.z = -0.5;
+                    RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
+                                        "Recovery step 4/4: Forward + rotate right");
+                } else {
+                    cmd_vel.twist.linear.x = 0.0;
+                    cmd_vel.twist.angular.z = -0.5;
+                    RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
+                                        "Recovery step 4/4: Obstacle ahead, rotating right");
+                }
+                break;
+                
+            default:
+                // Should not reach here
+                cmd_vel.twist.linear.x = 0.0;
+                cmd_vel.twist.angular.z = 0.0;
+                break;
+        }
+        
+        recovery_cmd_vel_pub_->publish(cmd_vel);
+    } else {
+        // Step complete, stop and check if we improved
+        geometry_msgs::msg::TwistStamped stop_cmd;
+        stop_cmd.header.stamp = node_->now();
+        stop_cmd.header.frame_id = "base_footprint";
+        stop_cmd.twist.linear.x = 0.0;
+        stop_cmd.twist.angular.z = 0.0;
+        recovery_cmd_vel_pub_->publish(stop_cmd);
+        
+        // Check if distance improved
+        double distance_improvement = distance_before_recovery_ - current_distance;
+        
+        if (distance_improvement > 0.05) {
+            // Success! We got closer to home
+            RCLCPP_INFO(node_->get_logger(), 
+                       "Recovery successful! Reduced distance by %.3fm (%.3f -> %.3f)",
+                       distance_improvement, distance_before_recovery_, current_distance);
+            in_return_home_recovery_ = false;
+            return_home_failures_ = 0;
+            motion_controller_->clearPath();  // Force replan with new position
+        } else if (return_home_recovery_step_ < 3) {
+            // Try next recovery step
+            return_home_recovery_step_++;
+            return_home_recovery_start_ = node_->now();
+            RCLCPP_WARN(node_->get_logger(), 
+                       "Recovery step %d didn't help (distance: %.3fm), trying step %d",
+                       return_home_recovery_step_, current_distance, 
+                       return_home_recovery_step_ + 1);
+        } else {
+            // All steps tried, give up this recovery attempt
+            RCLCPP_ERROR(node_->get_logger(), 
+                        "All recovery steps failed. Distance: %.3fm (was %.3fm)",
+                        current_distance, distance_before_recovery_);
+            in_return_home_recovery_ = false;
+            return_home_failures_ = 0;  // Reset to try path planning again
+            motion_controller_->clearPath();
+        }
     }
 }
 
@@ -335,6 +463,12 @@ void AutonomousExplorationRobot::returnToHome() {
         }
     }
     
+    // If in recovery mode, perform recovery and return
+    if (in_return_home_recovery_) {
+        performAdvancedReturnHomeRecovery(current_pose, distance_to_home);
+        return;
+    }
+    
     // Check if making progress toward home
     if (std::abs(distance_to_home - last_distance_to_home_) > 0.05) {
         // Made progress
@@ -347,26 +481,9 @@ void AutonomousExplorationRobot::returnToHome() {
         last_return_home_progress_ = node_->now();
         
         if (return_home_failures_ >= 3) {
-            RCLCPP_WARN(node_->get_logger(), "Stuck while returning home, performing recovery...");
+            // Start advanced recovery
             motion_controller_->clearPath();
-            
-            // Do a simple recovery: back up and rotate
-            geometry_msgs::msg::TwistStamped cmd_vel;
-            cmd_vel.header.stamp = node_->now();
-            cmd_vel.header.frame_id = "base_footprint";
-            cmd_vel.twist.linear.x = -0.1;
-            cmd_vel.twist.angular.z = 0.5;
-            recovery_cmd_vel_pub_->publish(cmd_vel);
-            
-            // Wait a bit
-            rclcpp::sleep_for(std::chrono::seconds(2));
-            
-            // Stop
-            cmd_vel.twist.linear.x = 0.0;
-            cmd_vel.twist.angular.z = 0.0;
-            recovery_cmd_vel_pub_->publish(cmd_vel);
-            
-            return_home_failures_ = 0;
+            performAdvancedReturnHomeRecovery(current_pose, distance_to_home);
             return;
         }
     }

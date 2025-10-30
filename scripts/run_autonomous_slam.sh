@@ -88,6 +88,33 @@ fi
 
 source install/setup.bash
 
+# Check for and kill any existing rosbridge instances
+EXISTING_ROSBRIDGE=$(pgrep -f "rosbridge_websocket" | tr '\n' ' ')
+if [ ! -z "$EXISTING_ROSBRIDGE" ]; then
+    echo "🔍 Found existing rosbridge instance(s): $EXISTING_ROSBRIDGE"
+    echo "   Cleaning up old rosbridge processes..."
+    
+    for pid in $EXISTING_ROSBRIDGE; do
+        if ps -p $pid > /dev/null 2>&1; then
+            # Try graceful shutdown first
+            kill -TERM $pid 2>/dev/null
+        fi
+    done
+    
+    # Wait a moment for graceful shutdown
+    sleep 2
+    
+    # Force kill any that didn't respond
+    for pid in $EXISTING_ROSBRIDGE; do
+        if ps -p $pid > /dev/null 2>&1; then
+            kill -9 $pid 2>/dev/null
+        fi
+    done
+    
+    echo "   ✅ Old rosbridge instances cleaned up"
+    echo ""
+fi
+
 # Check if Gazebo is running
 USE_PHYSICAL_ROBOT=false
 if ! pgrep -f "gz sim" > /dev/null; then
@@ -127,25 +154,29 @@ cleanup() {
     echo ""
     echo "🛑 Shutting down Autonomous SLAM System..."
     
-    # Kill background processes
+    # Gracefully shutdown background processes
     if [ ! -z "$RSP_PID" ] && ps -p $RSP_PID > /dev/null 2>&1; then
         echo "   Stopping robot_state_publisher..."
-        kill $RSP_PID 2>/dev/null
+        kill -TERM $RSP_PID 2>/dev/null
+        sleep 0.5
     fi
     
     if [ ! -z "$SLAM_TOOLBOX_PID" ] && ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
         echo "   Stopping SLAM Toolbox..."
-        kill $SLAM_TOOLBOX_PID 2>/dev/null
+        kill -TERM $SLAM_TOOLBOX_PID 2>/dev/null
+        sleep 0.5
     fi
     
     if [ ! -z "$BATTERY_PID" ] && ps -p $BATTERY_PID > /dev/null 2>&1; then
         echo "   Stopping Battery Monitor..."
-        kill $BATTERY_PID 2>/dev/null
+        kill -TERM $BATTERY_PID 2>/dev/null
+        sleep 0.3
     fi
     
     if [ ! -z "$BATTERY_DISPLAY_PID" ] && ps -p $BATTERY_DISPLAY_PID > /dev/null 2>&1; then
         echo "   Stopping Battery Display..."
-        kill $BATTERY_DISPLAY_PID 2>/dev/null
+        kill -TERM $BATTERY_DISPLAY_PID 2>/dev/null
+        sleep 0.3
     fi
     
     if [ ! -z "$ROSBRIDGE_PID" ] && ps -p $ROSBRIDGE_PID > /dev/null 2>&1; then
@@ -177,18 +208,29 @@ cleanup() {
     
     if [ ! -z "$RVIZ_PID" ] && ps -p $RVIZ_PID > /dev/null 2>&1; then
         echo "   Stopping RViz..."
-        kill $RVIZ_PID 2>/dev/null
+        kill -TERM $RVIZ_PID 2>/dev/null
+        sleep 0.5
     fi
     
     if [ ! -z "$SLAM_PID" ] && ps -p $SLAM_PID > /dev/null 2>&1; then
         echo "   Stopping Autonomous SLAM Controller..."
-        kill $SLAM_PID 2>/dev/null
+        kill -TERM $SLAM_PID 2>/dev/null
+        sleep 0.5
     fi
     
     if [ ! -z "$SPAWN_PID" ] && ps -p $SPAWN_PID > /dev/null 2>&1; then
         echo "   Stopping TurtleBot3 spawn..."
-        kill $SPAWN_PID 2>/dev/null
+        kill -TERM $SPAWN_PID 2>/dev/null
+        sleep 0.3
     fi
+    
+    # Final cleanup - force kill any remaining processes
+    echo "   Cleaning up any remaining processes..."
+    for pid in $RSP_PID $SLAM_TOOLBOX_PID $BATTERY_PID $BATTERY_DISPLAY_PID $ROSBRIDGE_PID $WEB_SERVER_PID $RVIZ_PID $SLAM_PID $SPAWN_PID; do
+        if [ ! -z "$pid" ] && ps -p $pid > /dev/null 2>&1; then
+            kill -9 $pid 2>/dev/null
+        fi
+    done
     
     echo "✅ Autonomous SLAM system stopped."
     exit 0
@@ -474,11 +516,29 @@ echo "   • /exploration/frontier_cells - Detected frontiers (debug mode)"
 echo ""
 echo "Press Ctrl+C to stop all components"
 
-# Wait for user interrupt
+# Wait for user interrupt or exploration completion
+EXPLORATION_COMPLETE=false
+echo ""
+echo "⏳ Monitoring exploration progress..."
+echo "   (Exploration will complete automatically when map is finished)"
+echo ""
+
 while true; do
     # Check if any critical process died
     if ! ps -p $SLAM_PID > /dev/null 2>&1; then
-        echo "❌ Autonomous SLAM Controller process died!"
+        # Wait a moment to ensure clean shutdown
+        sleep 2
+        
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "✅ AUTONOMOUS SLAM CONTROLLER COMPLETED!"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "   ✓ Exploration finished"
+        echo "   ✓ Robot returned home"
+        echo "   ✓ Map saved successfully"
+        echo ""
+        EXPLORATION_COMPLETE=true
         break
     fi
     
@@ -501,5 +561,226 @@ while true; do
     
     sleep 1
 done
+
+# If exploration completed successfully, offer to switch to delivery mode
+if [ "$EXPLORATION_COMPLETE" = true ]; then
+    # Alert the user (beep if available)
+    echo -e "\a"  # Terminal bell
+    sleep 0.5
+    echo -e "\a"
+    sleep 0.5
+    echo -e "\a"
+    
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "🎉 EXPLORATION PHASE COMPLETE!"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "   ✓ Warehouse fully mapped"
+    echo "   ✓ Robot at home position (0, 0)"
+    echo "   ✓ Map saved and ready"
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "🤖 SELECT ROBOT MODE"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "   Choose which robot mode to activate:"
+    echo ""
+    echo "   [1] 📦 DELIVERY MODE"
+    echo "       • Multi-point delivery operations"
+    echo "       • Define zones via RViz clicks"
+    echo "       • Route optimization (TSP)"
+    echo "       • Delivery logging to CSV"
+    echo ""
+    echo "   [2] 🔍 INSPECTION MODE (Coming Soon)"
+    echo "       • Damage detection with camera"
+    echo "       • Inspection point navigation"
+    echo "       • Damage report generation"
+    echo ""
+    echo "   [3] ❌ EXIT"
+    echo "       • Shutdown system"
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "   Enter your choice [1/2/3]"
+    echo "   (You have 60 seconds to respond)"
+    echo ""
+    echo -n "   👉 Your choice: "
+    read -r -t 60 response || response="3"
+    echo ""
+    
+    if [[ "$response" == "1" ]]; then
+        echo ""
+        echo "🔄 Switching to Delivery Mode..."
+        echo "================================"
+        echo ""
+        
+        # Stop SLAM Toolbox (mapping mode)
+        if [ ! -z "$SLAM_TOOLBOX_PID" ] && ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
+            echo "   Stopping SLAM Toolbox (mapping mode)..."
+            kill -TERM $SLAM_TOOLBOX_PID 2>/dev/null
+            sleep 2
+        fi
+        
+        # Start SLAM Toolbox in localization mode
+        echo "   Starting SLAM Toolbox (localization mode)..."
+        ros2 launch slam_toolbox localization_launch.py use_sim_time:=$USE_SIM_TIME > /tmp/slam_toolbox.log 2>&1 &
+        SLAM_TOOLBOX_PID=$!
+        sleep 5
+        
+        if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
+            echo "   ❌ Failed to start SLAM in localization mode"
+            cleanup
+            exit 1
+        fi
+        
+        echo "   ✅ SLAM Toolbox running in localization mode"
+        
+        # Start delivery robot node
+        echo "   Starting Delivery Robot node..."
+        ros2 run warehouse_robot_system delivery_robot_node &
+        DELIVERY_PID=$!
+        sleep 3
+        
+        if ! ps -p $DELIVERY_PID > /dev/null 2>&1; then
+            echo "   ❌ Failed to start delivery robot"
+            cleanup
+            exit 1
+        fi
+        
+        echo "   ✅ Delivery Robot node started"
+        echo ""
+        echo "✅ =============================================="
+        echo "   DELIVERY MODE ACTIVE!"
+        echo "   =============================================="
+        echo ""
+        echo "📋 Delivery Robot Workflow:"
+        echo "   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "   STEP 1: Define Delivery Zones"
+        echo "   • Use RViz 'Publish Point' tool"
+        echo "   • Click on map to add zones"
+        echo "   • Each click = new zone (Zone_1, Zone_2, etc.)"
+        echo ""
+        echo "   STEP 2: Save Zones (in another terminal)"
+        echo "   $ ./scripts/delivery_commands.sh save"
+        echo ""
+        echo "   STEP 3: Start Deliveries"
+        echo "   $ ./scripts/delivery_commands.sh start"
+        echo ""
+        echo "   STEP 4: Monitor Progress"
+        echo "   $ ./scripts/delivery_commands.sh status"
+        echo ""
+        echo "📁 Output Files:"
+        echo "   • delivery_zones.yaml - Saved zones"
+        echo "   • delivery_log.csv - Delivery records"
+        echo ""
+        echo "💡 Quick Commands:"
+        echo "   ./scripts/delivery_commands.sh save    # Save zones"
+        echo "   ./scripts/delivery_commands.sh start   # Begin deliveries"
+        echo "   ./scripts/delivery_commands.sh status  # Watch progress"
+        echo "   ./scripts/delivery_commands.sh log     # View history"
+        echo ""
+        echo "Press Ctrl+C to stop delivery system"
+        echo ""
+        
+        # Wait in delivery mode
+        while true; do
+            if ! ps -p $DELIVERY_PID > /dev/null 2>&1; then
+                echo "❌ Delivery Robot process died!"
+                break
+            fi
+            
+            if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
+                echo "❌ SLAM Toolbox process died!"
+                break
+            fi
+            
+            if [ "$USE_PHYSICAL_ROBOT" = false ] && [ ! -z "$RSP_PID" ]; then
+                if ! ps -p $RSP_PID > /dev/null 2>&1; then
+                    echo "❌ robot_state_publisher process died!"
+                    break
+                fi
+            fi
+            
+            sleep 1
+        done
+        
+        # Cleanup delivery mode
+        if [ ! -z "$DELIVERY_PID" ] && ps -p $DELIVERY_PID > /dev/null 2>&1; then
+            echo "   Stopping Delivery Robot..."
+            kill -TERM $DELIVERY_PID 2>/dev/null
+            sleep 0.5
+        fi
+        
+    elif [[ "$response" == "2" ]]; then
+        echo ""
+        echo "🔄 Switching to Inspection Mode..."
+        echo "================================"
+        echo ""
+        
+        # Stop SLAM Toolbox (mapping mode)
+        if [ ! -z "$SLAM_TOOLBOX_PID" ] && ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
+            echo "   Stopping SLAM Toolbox (mapping mode)..."
+            kill -TERM $SLAM_TOOLBOX_PID 2>/dev/null
+            sleep 2
+        fi
+        
+        # Start SLAM Toolbox in localization mode
+        echo "   Starting SLAM Toolbox (localization mode)..."
+        ros2 launch slam_toolbox localization_launch.py use_sim_time:=$USE_SIM_TIME > /tmp/slam_toolbox.log 2>&1 &
+        SLAM_TOOLBOX_PID=$!
+        sleep 5
+        
+        if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
+            echo "   ❌ Failed to start SLAM in localization mode"
+            cleanup
+            exit 1
+        fi
+        
+        echo "   ✅ SLAM Toolbox running in localization mode"
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "🔍 INSPECTION MODE"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "   ⚠️  Inspection mode is not yet implemented!"
+        echo ""
+        echo "   Planned features:"
+        echo "   • Camera-based damage detection"
+        echo "   • Navigate to inspection points"
+        echo "   • Save damage reports to disk"
+        echo "   • Image capture and logging"
+        echo ""
+        echo "   For now, the system will remain in localization mode."
+        echo "   You can manually control the robot or press Ctrl+C to exit."
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "Press Ctrl+C to stop system"
+        echo ""
+        
+        # Wait in inspection mode (placeholder)
+        while true; do
+            if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
+                echo "❌ SLAM Toolbox process died!"
+                break
+            fi
+            
+            if [ "$USE_PHYSICAL_ROBOT" = false ] && [ ! -z "$RSP_PID" ]; then
+                if ! ps -p $RSP_PID > /dev/null 2>&1; then
+                    echo "❌ robot_state_publisher process died!"
+                    break
+                fi
+            fi
+            
+            sleep 1
+        done
+        
+    else
+        echo ""
+        echo "   Exiting - shutting down system..."
+    fi
+fi
 
 cleanup
