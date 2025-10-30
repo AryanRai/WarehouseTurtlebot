@@ -63,16 +63,19 @@ int main(int argc, char** argv) {
     // g_robot->addDeliveryRequest(req1);
     // g_robot->addDeliveryRequest(req2);
     
-    // Main loop
-    rclcpp::Rate rate(10);  // 10 Hz
-    while (rclcpp::ok()) {
-        // Update robot
-        g_robot->update();
-        
-        // Spin once
-        rclcpp::spin_some(node);
-        rate.sleep();
-    }
+    // Create executor for proper service handling
+    rclcpp::executors::MultiThreadedExecutor executor;
+    executor.add_node(node);
+    
+    // Create timer for robot updates
+    auto timer = node->create_wall_timer(
+        std::chrono::milliseconds(100),  // 10 Hz
+        [&]() {
+            g_robot->update();
+        });
+    
+    // Spin with executor (handles services properly)
+    executor.spin();
     
     // Cleanup
     RCLCPP_INFO(node->get_logger(), "Delivery Robot node shutting down");

@@ -2,6 +2,9 @@
 # Delivery Robot Helper Commands
 # Quick access to common delivery robot operations
 
+# Set ROS Domain ID to match the system
+export ROS_DOMAIN_ID=29
+
 cd "$(dirname "$0")/../turtlebot3_ws"
 source install/setup.bash
 

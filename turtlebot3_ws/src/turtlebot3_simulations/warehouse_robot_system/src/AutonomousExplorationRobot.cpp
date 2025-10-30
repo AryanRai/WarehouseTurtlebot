@@ -366,6 +366,9 @@ void AutonomousExplorationRobot::returnToHome() {
         RCLCPP_INFO(node_->get_logger(), "Successfully returned to home position! (distance: %.3fm)", distance_to_home);
         RCLCPP_INFO(node_->get_logger(), "Exploration complete - saving final map");
         saveMap("warehouse_map_final");
+        
+        // Mark exploration as complete so the node can exit
+        slam_controller_->setExplorationComplete(true);
         stopExploration();
         return;
     }

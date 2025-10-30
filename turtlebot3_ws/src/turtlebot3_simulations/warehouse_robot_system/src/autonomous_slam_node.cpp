@@ -8,6 +8,8 @@
 #include "std_srvs/srv/trigger.hpp"
 #include <memory>
 #include <signal.h>
+#include <fstream>
+#include <ctime>
 
 std::shared_ptr<AutonomousExplorationRobot> g_robot;
 std::shared_ptr<rclcpp::Node> g_node;
@@ -107,6 +109,14 @@ int main(int argc, char** argv) {
             g_robot->saveMap("warehouse_map_complete");
             exploration_finished = true;
             
+            // Create marker file to signal completion to the launch script
+            std::ofstream marker_file("/tmp/slam_exploration_complete.marker");
+            if (marker_file.is_open()) {
+                marker_file << "Exploration completed at: " << std::time(nullptr) << std::endl;
+                marker_file.close();
+                RCLCPP_INFO(g_node->get_logger(), "Created completion marker for mode switching");
+            }
+            
             // Stay alive in idle mode - wait for external signal to shutdown
             RCLCPP_INFO(g_node->get_logger(), "");
             RCLCPP_INFO(g_node->get_logger(), "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -116,6 +126,11 @@ int main(int argc, char** argv) {
             RCLCPP_INFO(g_node->get_logger(), "Node staying alive for mode transition...");
             RCLCPP_INFO(g_node->get_logger(), "Press Ctrl+C or send SIGTERM to shutdown");
             RCLCPP_INFO(g_node->get_logger(), "");
+            
+            // Exit after a short delay to trigger mode selection
+            rclcpp::sleep_for(std::chrono::seconds(2));
+            RCLCPP_INFO(g_node->get_logger(), "Exiting to trigger mode selection...");
+            break;  // Exit the main loop
         }
         
         // Spin once
