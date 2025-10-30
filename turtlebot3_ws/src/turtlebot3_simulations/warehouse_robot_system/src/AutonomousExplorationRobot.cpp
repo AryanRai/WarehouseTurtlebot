@@ -1,4 +1,7 @@
 #include "AutonomousExplorationRobot.hpp"
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <cmath>
 
 AutonomousExplorationRobot::AutonomousExplorationRobot(rclcpp::Node::SharedPtr node)
     : node_(node),
@@ -15,7 +18,8 @@ AutonomousExplorationRobot::AutonomousExplorationRobot(rclcpp::Node::SharedPtr n
       consecutive_no_frontiers_count_(0),
       return_home_failures_(0),
       last_return_home_progress_(node->now()),
-      last_distance_to_home_(std::numeric_limits<double>::max()) {
+      last_distance_to_home_(std::numeric_limits<double>::max()),
+      in_docking_mode_(false) {
     
     // Initialize SLAM components
     slam_controller_ = std::make_unique<SlamController>(node);
@@ -153,6 +157,50 @@ void AutonomousExplorationRobot::performRecovery() {
     }
 }
 
+void AutonomousExplorationRobot::preciseDocking(const geometry_msgs::msg::Pose& current_pose, double distance_to_home) {
+    // Calculate direction to home
+    double dx = home_position_.x - current_pose.position.x;
+    double dy = home_position_.y - current_pose.position.y;
+    double angle_to_home = std::atan2(dy, dx);
+    
+    // Get current robot orientation
+    tf2::Quaternion q(
+        current_pose.orientation.x,
+        current_pose.orientation.y,
+        current_pose.orientation.z,
+        current_pose.orientation.w
+    );
+    tf2::Matrix3x3 m(q);
+    double roll, pitch, yaw;
+    m.getRPY(roll, pitch, yaw);
+    
+    // Calculate angle difference
+    double angle_diff = angle_to_home - yaw;
+    // Normalize to [-pi, pi]
+    while (angle_diff > M_PI) angle_diff -= 2.0 * M_PI;
+    while (angle_diff < -M_PI) angle_diff += 2.0 * M_PI;
+    
+    geometry_msgs::msg::TwistStamped cmd_vel;
+    cmd_vel.header.stamp = node_->now();
+    cmd_vel.header.frame_id = "base_footprint";
+    
+    // If angle is off by more than 10 degrees, rotate first
+    if (std::abs(angle_diff) > 0.175) {  // ~10 degrees
+        cmd_vel.twist.linear.x = 0.0;
+        cmd_vel.twist.angular.z = (angle_diff > 0) ? DOCKING_ANGULAR_SPEED : -DOCKING_ANGULAR_SPEED;
+        RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
+                            "Docking: Aligning (angle error: %.1f°)", angle_diff * 180.0 / M_PI);
+    } else {
+        // Move forward slowly toward home
+        cmd_vel.twist.linear.x = DOCKING_LINEAR_SPEED;
+        cmd_vel.twist.angular.z = angle_diff * 0.5;  // Gentle correction
+        RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
+                            "Docking: Moving forward (%.3fm remaining)", distance_to_home);
+    }
+    
+    recovery_cmd_vel_pub_->publish(cmd_vel);
+}
+
 void AutonomousExplorationRobot::returnToHome() {
     // If already at home, do nothing
     if (at_home_) {
@@ -173,8 +221,10 @@ void AutonomousExplorationRobot::returnToHome() {
     double dy = home_position_.y - current_pose.position.y;
     double distance_to_home = std::sqrt(dx * dx + dy * dy);
     
-    if (distance_to_home < 0.10) {  // Within 10cm of home
+    // Check if reached home with tighter tolerance
+    if (distance_to_home < HOME_TOLERANCE) {  // Within 5cm of home
         at_home_ = true;
+        in_docking_mode_ = false;
         motion_controller_->clearPath();
         
         // Send zero velocity to stop the robot
@@ -189,6 +239,19 @@ void AutonomousExplorationRobot::returnToHome() {
         RCLCPP_INFO(node_->get_logger(), "Exploration complete - saving final map");
         saveMap("warehouse_map_final");
         stopExploration();
+        return;
+    }
+    
+    // Enter precise docking mode when close to home
+    if (distance_to_home < DOCKING_DISTANCE) {
+        if (!in_docking_mode_) {
+            RCLCPP_INFO(node_->get_logger(), "Entering precise docking mode (%.3fm from home)", distance_to_home);
+            in_docking_mode_ = true;
+            motion_controller_->clearPath();  // Stop using path planner
+        }
+        
+        // Use precise docking control
+        preciseDocking(current_pose, distance_to_home);
         return;
     }
     

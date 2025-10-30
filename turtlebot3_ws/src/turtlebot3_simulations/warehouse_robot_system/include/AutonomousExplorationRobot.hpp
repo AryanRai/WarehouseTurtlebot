@@ -69,6 +69,7 @@ private:
     int return_home_failures_;
     rclcpp::Time last_return_home_progress_;
     double last_distance_to_home_;
+    bool in_docking_mode_;  // Precise docking mode when close to home
     
     // Laser scan for obstacle detection
     sensor_msgs::msg::LaserScan::SharedPtr current_scan_;
@@ -77,7 +78,14 @@ private:
     // Recovery behavior
     void performRecovery();
     void returnToHome();
+    void preciseDocking(const geometry_msgs::msg::Pose& current_pose, double distance_to_home);
     bool isObstacleAhead(double min_distance = 0.3);  // Check if obstacle within distance
+    
+    // Docking thresholds
+    static constexpr double DOCKING_DISTANCE = 0.5;  // Enter docking mode within 50cm
+    static constexpr double HOME_TOLERANCE = 0.05;   // Success within 5cm
+    static constexpr double DOCKING_LINEAR_SPEED = 0.05;  // Slow speed for docking
+    static constexpr double DOCKING_ANGULAR_SPEED = 0.3;  // Moderate rotation for alignment
 };
 
 #endif // AUTONOMOUS_EXPLORATION_ROBOT_HPP
