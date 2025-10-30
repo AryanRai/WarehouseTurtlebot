@@ -9,7 +9,8 @@ AutonomousExplorationRobot::AutonomousExplorationRobot(rclcpp::Node::SharedPtr n
       consecutive_no_path_count_(0),
       recovery_start_time_(node->now()),
       in_recovery_(false),
-      recovery_attempt_(0) {
+      recovery_attempt_(0),
+      returning_home_(false) {
     
     // Initialize SLAM components
     slam_controller_ = std::make_unique<SlamController>(node);
@@ -20,23 +21,33 @@ AutonomousExplorationRobot::AutonomousExplorationRobot(rclcpp::Node::SharedPtr n
     path_pub_ = node_->create_publisher<nav_msgs::msg::Path>("/exploration/path", 10);
     recovery_cmd_vel_pub_ = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
     
+    // Initialize home position (0, 0)
+    home_position_.x = 0.0;
+    home_position_.y = 0.0;
+    home_position_.z = 0.0;
+    
     // Initialize last goal position
     last_goal_position_.x = 0.0;
     last_goal_position_.y = 0.0;
     last_goal_position_.z = 0.0;
     
     RCLCPP_INFO(node_->get_logger(), "Autonomous Exploration Robot initialized");
+    RCLCPP_INFO(node_->get_logger(), "Home position set to (%.2f, %.2f)", 
+               home_position_.x, home_position_.y);
 }
 
 void AutonomousExplorationRobot::performRecovery() {
-    // Recovery behavior: alternate between forward and backward movement
-    // This helps discover new frontiers or escape from stuck situations
+    // Recovery behavior: forward, backward, then forward+rotate pattern
+    // This helps discover new frontiers and break oscillation loops
     
     if (!in_recovery_) {
-        const char* direction = (recovery_attempt_ % 2 == 0) ? "forward" : "backward";
+        int pattern = recovery_attempt_ % 3;
+        const char* action = (pattern == 0) ? "forward" : 
+                            (pattern == 1) ? "backward" : 
+                            "forward + rotate";
         RCLCPP_WARN(node_->get_logger(), 
-                   "Starting recovery behavior (attempt %d) - moving %s to find new frontiers",
-                   recovery_attempt_ + 1, direction);
+                   "Starting recovery behavior (attempt %d) - %s to find new frontiers",
+                   recovery_attempt_ + 1, action);
         in_recovery_ = true;
         recovery_start_time_ = node_->now();
         motion_controller_->clearPath();  // Clear any existing path
@@ -45,19 +56,36 @@ void AutonomousExplorationRobot::performRecovery() {
     double elapsed = (node_->now() - recovery_start_time_).seconds();
     
     if (elapsed < RECOVERY_DURATION) {
-        // Alternate between forward and backward based on recovery attempt
-        double linear_speed = (recovery_attempt_ % 2 == 0) ? 0.1 : -0.1;  // Forward on even, backward on odd
+        int pattern = recovery_attempt_ % 3;
+        double linear_speed = 0.0;
+        double angular_speed = 0.0;
+        
+        if (pattern == 0) {
+            // Forward
+            linear_speed = 0.1;
+            angular_speed = 0.0;
+        } else if (pattern == 1) {
+            // Backward
+            linear_speed = -0.1;
+            angular_speed = 0.0;
+        } else {
+            // Forward + rotate (to break oscillation)
+            linear_speed = 0.1;
+            angular_speed = 0.5;  // Rotate while moving forward
+        }
         
         geometry_msgs::msg::TwistStamped cmd_vel;
         cmd_vel.header.stamp = node_->now();
         cmd_vel.header.frame_id = "base_footprint";
         cmd_vel.twist.linear.x = linear_speed;
-        cmd_vel.twist.angular.z = 0.0;  // Go straight
+        cmd_vel.twist.angular.z = angular_speed;
         recovery_cmd_vel_pub_->publish(cmd_vel);
         
-        const char* direction = (recovery_attempt_ % 2 == 0) ? "forward" : "backward";
+        const char* action = (pattern == 0) ? "forward" : 
+                            (pattern == 1) ? "backward" : 
+                            "forward + rotating";
         RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
-                             "Recovery: moving %s (%.1fs / %.1fs)", direction, elapsed, RECOVERY_DURATION);
+                             "Recovery: %s (%.1fs / %.1fs)", action, elapsed, RECOVERY_DURATION);
     } else {
         // Stop movement
         geometry_msgs::msg::TwistStamped cmd_vel;
@@ -72,6 +100,73 @@ void AutonomousExplorationRobot::performRecovery() {
         consecutive_no_path_count_ = 0;
         recovery_attempt_++;  // Increment for next time
         last_replan_time_ = node_->now() - rclcpp::Duration::from_seconds(MIN_REPLAN_INTERVAL);  // Allow immediate replan
+        
+        // Check if we've tried too many recoveries - exploration might be complete
+        if (recovery_attempt_ >= MAX_RECOVERY_ATTEMPTS) {
+            RCLCPP_WARN(node_->get_logger(), 
+                       "Max recovery attempts reached - exploration appears complete");
+            RCLCPP_INFO(node_->get_logger(), "Initiating return to home");
+            returning_home_ = true;
+            recovery_attempt_ = 0;  // Reset for future use
+        }
+    }
+}
+
+void AutonomousExplorationRobot::returnToHome() {
+    if (!slam_controller_->hasValidMap() || !slam_controller_->hasValidPose()) {
+        RCLCPP_WARN_THROTTLE(node_->get_logger(), *node_->get_clock(), 5000,
+                            "Waiting for valid map and pose to return home...");
+        return;
+    }
+    
+    auto current_map = slam_controller_->getCurrentMap();
+    auto current_pose = slam_controller_->getCurrentPose();
+    
+    // Check if already at home
+    double dx = home_position_.x - current_pose.position.x;
+    double dy = home_position_.y - current_pose.position.y;
+    double distance_to_home = std::sqrt(dx * dx + dy * dy);
+    
+    if (distance_to_home < 0.2) {  // Within 20cm of home
+        RCLCPP_INFO(node_->get_logger(), "Arrived at home position!");
+        RCLCPP_INFO(node_->get_logger(), "Exploration complete - saving map");
+        saveMap("warehouse_map_final");
+        stopExploration();
+        return;
+    }
+    
+    // Plan path to home if we don't have one
+    if (!motion_controller_->hasPath()) {
+        RCLCPP_INFO(node_->get_logger(), "Planning path to home (%.2f, %.2f), distance: %.2fm",
+                   home_position_.x, home_position_.y, distance_to_home);
+        
+        // Use the path planner to plan a path to home
+        GridCell start = PathPlanner::worldToGrid(*current_map, current_pose.position);
+        GridCell goal = PathPlanner::worldToGrid(*current_map, home_position_);
+        
+        auto [cspace, cspace_cells] = PathPlanner::calcCSpace(*current_map, false);
+        cv::Mat cost_map = PathPlanner::calcCostMap(*current_map);
+        
+        auto [path, cost, actual_start, actual_goal] = 
+            PathPlanner::aStar(cspace, cost_map, start, goal);
+        
+        if (!path.empty()) {
+            auto path_msg = PathPlanner::pathToMessage(*current_map, path);
+            motion_controller_->setPath(path_msg);
+            path_pub_->publish(path_msg);
+            RCLCPP_INFO(node_->get_logger(), "Path to home planned with %zu waypoints", 
+                       path_msg.poses.size());
+        } else {
+            RCLCPP_WARN(node_->get_logger(), "Failed to plan path to home - will retry");
+        }
+    }
+    
+    // Execute motion control
+    if (motion_controller_->hasPath()) {
+        auto cmd_vel = motion_controller_->computeVelocityCommand(current_pose, *current_map);
+        RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 2000,
+                            "Returning home: distance=%.2fm, linear=%.3f, angular=%.3f", 
+                            distance_to_home, cmd_vel.linear.x, cmd_vel.angular.z);
     }
 }
 
@@ -158,6 +253,12 @@ void AutonomousExplorationRobot::update() {
     // Get current state
     auto current_map = slam_controller_->getCurrentMap();
     auto current_pose = slam_controller_->getCurrentPose();
+    
+    // Check if returning home
+    if (returning_home_) {
+        returnToHome();
+        return;  // Skip normal exploration when returning home
+    }
     
     // Check if in recovery mode
     if (in_recovery_) {

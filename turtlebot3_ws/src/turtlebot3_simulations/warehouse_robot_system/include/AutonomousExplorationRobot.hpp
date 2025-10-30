@@ -59,9 +59,15 @@ private:
     static constexpr double MIN_REPLAN_INTERVAL = 2.0;  // seconds - minimum time between replans
     static constexpr int MAX_NO_PATH_BEFORE_RECOVERY = 5;  // attempts before recovery
     static constexpr double RECOVERY_DURATION = 3.0;  // seconds to rotate during recovery
+    static constexpr int MAX_RECOVERY_ATTEMPTS = 3;  // max recovery attempts before giving up
+    
+    // Home position
+    geometry_msgs::msg::Point home_position_;
+    bool returning_home_;
     
     // Recovery behavior
     void performRecovery();
+    void returnToHome();
 };
 
 #endif // AUTONOMOUS_EXPLORATION_ROBOT_HPP
