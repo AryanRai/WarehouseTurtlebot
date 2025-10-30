@@ -41,6 +41,7 @@ private:
     
     // Publishers
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
+    rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr recovery_cmd_vel_pub_;
     
     // State
     bool is_exploring_;
@@ -48,10 +49,19 @@ private:
     rclcpp::Time last_update_time_;
     rclcpp::Time last_replan_time_;
     geometry_msgs::msg::Point last_goal_position_;
+    int consecutive_no_path_count_;
+    rclcpp::Time recovery_start_time_;
+    bool in_recovery_;
+    int recovery_attempt_;  // Track which recovery attempt (0=forward, 1=backward, etc.)
     
     // Configuration
     static constexpr double UPDATE_RATE = 20.0;  // Hz
     static constexpr double MIN_REPLAN_INTERVAL = 2.0;  // seconds - minimum time between replans
+    static constexpr int MAX_NO_PATH_BEFORE_RECOVERY = 5;  // attempts before recovery
+    static constexpr double RECOVERY_DURATION = 3.0;  // seconds to rotate during recovery
+    
+    // Recovery behavior
+    void performRecovery();
 };
 
 #endif // AUTONOMOUS_EXPLORATION_ROBOT_HPP

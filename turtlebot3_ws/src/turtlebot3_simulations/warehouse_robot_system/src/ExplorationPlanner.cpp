@@ -156,11 +156,15 @@ nav_msgs::msg::Path ExplorationPlanner::planExplorationPath(
         
         if (distance_to_frontier < MIN_FRONTIER_DISTANCE) {
             frontiers_too_close++;
-            RCLCPP_DEBUG(node_->get_logger(), 
-                        "Skipping frontier at (%.2f, %.2f) - too close (%.3fm)", 
-                        frontier.centroid.x, frontier.centroid.y, distance_to_frontier);
+            RCLCPP_INFO(node_->get_logger(), 
+                        "Skipping frontier at (%.2f, %.2f) - too close (%.3fm < %.2fm)", 
+                        frontier.centroid.x, frontier.centroid.y, distance_to_frontier, MIN_FRONTIER_DISTANCE);
             continue;
         }
+        
+        RCLCPP_DEBUG(node_->get_logger(), 
+                    "Checking frontier at (%.2f, %.2f) - distance: %.3fm", 
+                    frontier.centroid.x, frontier.centroid.y, distance_to_frontier);
         
         frontiers_checked++;
         
@@ -207,9 +211,26 @@ nav_msgs::msg::Path ExplorationPlanner::planExplorationPath(
     
     // Return best path
     if (!best_path.empty()) {
+        // Final check: verify the goal is far enough away
+        auto path_msg = PathPlanner::pathToMessage(map, best_path);
+        if (!path_msg.poses.empty()) {
+            auto goal_pos = path_msg.poses.back().pose.position;
+            double dx = goal_pos.x - current_pose.position.x;
+            double dy = goal_pos.y - current_pose.position.y;
+            double goal_distance = std::sqrt(dx * dx + dy * dy);
+            
+            if (goal_distance < MIN_FRONTIER_DISTANCE) {
+                RCLCPP_WARN(node_->get_logger(), 
+                           "Best path goal at (%.2f, %.2f) is too close (%.3fm) - rejecting", 
+                           goal_pos.x, goal_pos.y, goal_distance);
+                // Don't count as failure - just wait for better frontiers
+                return empty_path;
+            }
+        }
+        
         RCLCPP_INFO(node_->get_logger(), "Found best path with cost %.2f", lowest_cost);
         no_path_found_counter_ = 0;
-        return PathPlanner::pathToMessage(map, best_path);
+        return path_msg;
     } else {
         // Don't count "all frontiers too close" as a failure - just wait for map to update
         if (frontiers_checked == 0 && frontiers_too_close > 0) {
