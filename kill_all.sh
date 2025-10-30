@@ -20,6 +20,8 @@ pkill -9 -f path_visualizer
 # Kill SLAM nodes
 pkill -9 -f cartographer
 pkill -9 -f "cartographer.launch"
+pkill -9 -f slam_toolbox
+pkill -9 -f "slam_toolbox_node"
 
 # Kill RViz
 pkill -9 -f rviz2

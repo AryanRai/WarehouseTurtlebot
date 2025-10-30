@@ -30,10 +30,15 @@ This project implements a heterogeneous warehouse robot system using polymorphic
 # Terminal 1: Generate maze and launch Gazebo
 ./launch_mgen.sh
 
-# Terminal 2: Run fully autonomous SLAM
-./scripts/run_autonomous_slam.sh
+# Terminal 2: Run fully autonomous SLAM with SLAM Toolbox
+./scripts/run_slam_toolbox_mapping.sh
 # Robot explores automatically - no manual control needed!
+
+# Or use Cartographer (legacy)
+./scripts/run_autonomous_slam.sh
 ```
+
+> **New!** SLAM Toolbox is now the recommended SLAM backend for better Nav2 integration and delivery robot functionality. See [SLAM_TOOLBOX_QUICKSTART.md](SLAM_TOOLBOX_QUICKSTART.md) for details.
 
 ### 🤖 Physical Robot Mode (TurtleBot3)
 
@@ -127,17 +132,15 @@ python3 scripts/turtlebot_bringup.py stop
 
 | Script | Description |
 |--------|-------------|
-| `scripts/run_autonomous_slam.sh` | **Fully autonomous SLAM with frontier exploration** |
+| `scripts/run_slam_toolbox_mapping.sh` | **🆕 Autonomous SLAM with SLAM Toolbox (Recommended)** |
+| `scripts/run_autonomous_slam.sh` | Autonomous SLAM with Cartographer (Legacy) |
 | `scripts/build_project.sh` | Build project with Anaconda conflict resolution |
 | `scripts/run_teleop.sh` | Manual robot control via keyboard |
 | `scripts/spawn_robot.sh` | Spawn TurtleBot3 in existing Gazebo simulation |
 | `scripts/kill_all_ros.sh` | Clean shutdown of all ROS processes |
 | `scripts/diagnose_ros.sh` | Diagnostic tool for troubleshooting |
-
-See `scripts/README.md` for detailed documentation.
 | `scripts/run_full_slam_demo.sh` | Complete maze + SLAM demonstration |
 | `scripts/run_slam_sim.sh` | SLAM simulation with RViz visualization |
-| `scripts/run_teleop.sh` | Manual robot control via keyboard |
 | `launch_mgen.sh` | Interactive maze generator |
 
 See `scripts/README.md` for detailed usage instructions.
@@ -177,7 +180,7 @@ FrontierSearch
 
 ### Prerequisites
 - Ubuntu 22.04 LTS
-- ROS2 Humble
+- ROS2 Jazzy
 - Python 3.8+
 - Git
 
@@ -185,9 +188,10 @@ FrontierSearch
 ```bash
 # Install ROS2 packages
 sudo apt update
-sudo apt install ros-humble-turtlebot3*
-sudo apt install ros-humble-cartographer*
-sudo apt install ros-humble-navigation2*
+sudo apt install ros-jazzy-turtlebot3*
+sudo apt install ros-jazzy-cartographer*
+sudo apt install ros-jazzy-slam-toolbox*
+sudo apt install ros-jazzy-navigation2*
 
 # Install development tools
 sudo apt install python3-colcon-common-extensions
@@ -237,6 +241,39 @@ ros2 run warehouse_robot_system warehouse_robot_main
 # Full system test with maze
 ./scripts/run_full_slam_demo.sh
 # Follow prompts to select maze size and complexity
+```
+
+## 🗺️ SLAM Backends
+
+### SLAM Toolbox (Recommended) 🆕
+The project now supports SLAM Toolbox as the primary SLAM backend for better delivery robot functionality.
+
+**Advantages:**
+- Built-in localization mode for delivery operations
+- Native Nav2 integration
+- Automatic map saving
+- Better for multi-phase operations (mapping → delivery)
+
+**Usage:**
+```bash
+# Mapping phase
+./scripts/run_slam_toolbox_mapping.sh
+
+# Save map
+ros2 service call /slam_toolbox/save_map slam_toolbox/srv/SaveMap \
+  "{name: {data: '/tmp/warehouse_map'}}"
+
+# Localization phase (for delivery)
+ros2 launch warehouse_robot_system slam_toolbox_localization.launch.py \
+  map_file:=/tmp/warehouse_map
+```
+
+See [SLAM_TOOLBOX_QUICKSTART.md](SLAM_TOOLBOX_QUICKSTART.md) for complete guide.
+
+### Cartographer (Legacy)
+Original SLAM backend, still fully supported:
+```bash
+./scripts/run_autonomous_slam.sh
 ```
 
 ## 📊 Features Demonstrated
@@ -349,7 +386,7 @@ This project is developed for educational purposes as part of MTRX3760 coursewor
 
 ## 👥 Contributors
 
-- Dylan George - System architecture, SLAM integration, polymorphic design
+- Aryan Rai- System architecture, SLAM integration, polymorphic design
 - Course materials and references from MTRX3760 curriculum
 
 ---
