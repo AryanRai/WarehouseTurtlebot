@@ -36,8 +36,8 @@ export ROS_DOMAIN_ID=29
 export TURTLEBOT3_MODEL=burger
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 
-echo "🤖 Starting Autonomous SLAM System"
-echo "=================================="
+echo "🤖 Starting Autonomous SLAM System with SLAM Toolbox"
+echo "====================================================="
 echo "   ROS_DOMAIN_ID: $ROS_DOMAIN_ID"
 echo "   TURTLEBOT3_MODEL: $TURTLEBOT3_MODEL"
 echo "   RMW_IMPLEMENTATION: $RMW_IMPLEMENTATION"
@@ -104,9 +104,9 @@ cleanup() {
         kill $RSP_PID 2>/dev/null
     fi
     
-    if [ ! -z "$CARTOGRAPHER_PID" ] && ps -p $CARTOGRAPHER_PID > /dev/null 2>&1; then
-        echo "   Stopping Cartographer SLAM..."
-        kill $CARTOGRAPHER_PID 2>/dev/null
+    if [ ! -z "$SLAM_TOOLBOX_PID" ] && ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
+        echo "   Stopping SLAM Toolbox..."
+        kill $SLAM_TOOLBOX_PID 2>/dev/null
     fi
     
     if [ ! -z "$BATTERY_PID" ] && ps -p $BATTERY_PID > /dev/null 2>&1; then
@@ -193,16 +193,16 @@ else
     USE_SIM_TIME="True"
 fi
 
-echo "3️⃣ Starting Cartographer SLAM (output redirected to /tmp/cartographer.log)..."
-ros2 launch turtlebot3_cartographer cartographer.launch.py use_sim_time:=$USE_SIM_TIME > /tmp/cartographer.log 2>&1 &
-CARTOGRAPHER_PID=$!
+echo "3️⃣ Starting SLAM Toolbox (output redirected to /tmp/slam_toolbox.log)..."
+ros2 launch slam_toolbox online_async_launch.py use_sim_time:=$USE_SIM_TIME > /tmp/slam_toolbox.log 2>&1 &
+SLAM_TOOLBOX_PID=$!
 
-echo "⏳ Waiting for Cartographer to initialize..."
+echo "⏳ Waiting for SLAM Toolbox to initialize..."
 sleep 5
 
-# Check if Cartographer started successfully
-if ! ps -p $CARTOGRAPHER_PID > /dev/null 2>&1; then
-    echo "❌ Cartographer failed to start!"
+# Check if SLAM Toolbox started successfully
+if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
+    echo "❌ SLAM Toolbox failed to start!"
     cleanup
     exit 1
 fi
@@ -315,8 +315,20 @@ else
 fi
 sleep 2
 
-echo "6️⃣ Launching RViz2 for visualization (output redirected to /tmp/rviz.log)..."
-rviz2 > /tmp/rviz.log 2>&1 &
+echo "6️⃣ Launching RViz2 with SLAM Toolbox config (output redirected to /tmp/rviz.log)..."
+# Try to find RViz config in install directory first, then source
+RVIZ_CONFIG="$(pwd)/install/warehouse_robot_system/share/warehouse_robot_system/config/slam_toolbox.rviz"
+if [ ! -f "$RVIZ_CONFIG" ]; then
+    RVIZ_CONFIG="$(pwd)/src/turtlebot3_simulations/warehouse_robot_system/config/slam_toolbox.rviz"
+fi
+
+if [ -f "$RVIZ_CONFIG" ]; then
+    echo "   Using RViz config: $RVIZ_CONFIG"
+    rviz2 -d "$RVIZ_CONFIG" > /tmp/rviz.log 2>&1 &
+else
+    echo "   ⚠️  RViz config not found, using default"
+    rviz2 > /tmp/rviz.log 2>&1 &
+fi
 RVIZ_PID=$!
 sleep 3
 
@@ -344,7 +356,7 @@ else
     echo "   🔧 robot_state_publisher (PID: $RSP_PID)"
     echo "   🤖 TurtleBot3 in Gazebo (PID: $SPAWN_PID)"
 fi
-echo "   🗺️  Cartographer SLAM (PID: $CARTOGRAPHER_PID)"
+echo "   🗺️  SLAM Toolbox (PID: $SLAM_TOOLBOX_PID)"
 if [ ! -z "$ROSBRIDGE_PID" ]; then
     echo "   🌐 rosbridge WebSocket (PID: $ROSBRIDGE_PID)"
 fi
@@ -367,13 +379,10 @@ echo "   • Returns to origin (0,0) when mapping is complete"
 echo "   • Transitions to operational mode for warehouse tasks"
 echo ""
 echo "🖥️  RViz2 Setup:"
-echo "   1. RViz2 should have opened automatically"
-echo "   2. Add these displays if not visible:"
-echo "      - Map (topic: /map) - shows the SLAM map"
-echo "      - LaserScan (topic: /scan) - shows lidar data"
-echo "      - Path (topic: /slam/planned_path) - shows planned paths"
-echo "      - PoseStamped (topic: /slam/current_goal) - shows current goal"
-echo "   3. Set Fixed Frame to: 'map'"
+echo "   • RViz2 opened with SLAM Toolbox configuration"
+echo "   • Map, LaserScan, and Path displays are pre-configured"
+echo "   • Fixed Frame: 'map' (may show error initially until SLAM starts)"
+echo "   • Wait 10-20 seconds for SLAM Toolbox to initialize"
 echo ""
 echo "📈 Monitoring:"
 echo "   • Watch RViz to see autonomous exploration"
@@ -389,7 +398,7 @@ else
     echo "   • Web dashboard: Install rosbridge to enable"
 fi
 echo "   • System logs show state transitions and progress"
-echo "   • Cartographer logs: tail -f /tmp/cartographer.log"
+echo "   • SLAM Toolbox logs: tail -f /tmp/slam_toolbox.log"
 echo "   • Battery logs: tail -f /tmp/battery_monitor.log (or battery_simulator.log)"
 if [ ! -z "$ROSBRIDGE_PID" ]; then
     echo "   • rosbridge logs: tail -f /tmp/rosbridge.log"
@@ -415,8 +424,8 @@ while true; do
         break
     fi
     
-    if ! ps -p $CARTOGRAPHER_PID > /dev/null 2>&1; then
-        echo "❌ Cartographer SLAM process died!"
+    if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
+        echo "❌ SLAM Toolbox process died!"
         break
     fi
     
