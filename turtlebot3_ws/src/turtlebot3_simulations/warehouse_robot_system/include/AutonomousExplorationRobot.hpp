@@ -65,7 +65,6 @@ private:
     // Home position
     geometry_msgs::msg::Point home_position_;
     bool returning_home_;
-    bool at_home_;  // Flag to indicate robot has reached home and should stay stopped
     int return_home_failures_;
     rclcpp::Time last_return_home_progress_;
     double last_distance_to_home_;
