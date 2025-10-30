@@ -10,8 +10,9 @@ AutonomousExplorationRobot::AutonomousExplorationRobot(rclcpp::Node::SharedPtr n
       recovery_start_time_(node->now()),
       in_recovery_(false),
       recovery_attempt_(0),
-      returning_home_(false),
       consecutive_no_frontiers_count_(0),
+      returning_home_(false),
+      at_home_(false),
       return_home_failures_(0),
       last_return_home_progress_(node->now()),
       last_distance_to_home_(std::numeric_limits<double>::max()) {
@@ -153,6 +154,18 @@ void AutonomousExplorationRobot::performRecovery() {
 }
 
 void AutonomousExplorationRobot::returnToHome() {
+    // If already at home, just ensure robot is stopped and return
+    if (at_home_) {
+        // Publish zero velocity to ensure robot stays stopped
+        geometry_msgs::msg::TwistStamped cmd_vel;
+        cmd_vel.header.stamp = node_->now();
+        cmd_vel.header.frame_id = "base_footprint";
+        cmd_vel.twist.linear.x = 0.0;
+        cmd_vel.twist.angular.z = 0.0;
+        recovery_cmd_vel_pub_->publish(cmd_vel);
+        return;
+    }
+    
     if (!slam_controller_->hasValidMap() || !slam_controller_->hasValidPose()) {
         RCLCPP_WARN_THROTTLE(node_->get_logger(), *node_->get_clock(), 5000,
                             "Waiting for valid map and pose to return home...");
@@ -167,10 +180,32 @@ void AutonomousExplorationRobot::returnToHome() {
     double dy = home_position_.y - current_pose.position.y;
     double distance_to_home = std::sqrt(dx * dx + dy * dy);
     
-    if (distance_to_home < 0.3) {  // Within 30cm of home
-        RCLCPP_INFO(node_->get_logger(), "Successfully returned to home position!");
+    RCLCPP_DEBUG(node_->get_logger(), "Current position: (%.2f, %.2f), Home: (%.2f, %.2f), Distance: %.3fm",
+                 current_pose.position.x, current_pose.position.y,
+                 home_position_.x, home_position_.y, distance_to_home);
+    
+    if (distance_to_home < 0.1) {  // Within 10cm of home
+        RCLCPP_INFO(node_->get_logger(), "Successfully returned to home position! Final distance: %.3fm", distance_to_home);
         RCLCPP_INFO(node_->get_logger(), "Exploration complete - saving final map");
+        
+        // Clear path and stop the robot
+        motion_controller_->clearPath();
+        
+        // Publish zero velocity to halt the robot
+        geometry_msgs::msg::TwistStamped cmd_vel;
+        cmd_vel.header.stamp = node_->now();
+        cmd_vel.header.frame_id = "base_footprint";
+        cmd_vel.twist.linear.x = 0.0;
+        cmd_vel.twist.angular.z = 0.0;
+        recovery_cmd_vel_pub_->publish(cmd_vel);
+        
+        // Save the map
         saveMap("warehouse_map_final");
+        
+        // Set the at_home flag to prevent further processing
+        at_home_ = true;
+        
+        // Stop exploration
         stopExploration();
         return;
     }
@@ -298,10 +333,14 @@ void AutonomousExplorationRobot::returnToHome() {
                             "Returning home: %.2fm remaining", distance_to_home);
         
         // If path following fails (returns zero velocity unexpectedly), clear path to force replan
-        if (cmd_vel.linear.x == 0.0 && cmd_vel.angular.z == 0.0 && distance_to_home > 0.5) {
-            RCLCPP_DEBUG(node_->get_logger(), "Path following returned zero velocity, clearing path");
+        // But only if we're still far from home
+        if (cmd_vel.linear.x == 0.0 && cmd_vel.angular.z == 0.0 && distance_to_home > 0.15) {
+            RCLCPP_DEBUG(node_->get_logger(), "Path following returned zero velocity, clearing path to replan");
             motion_controller_->clearPath();
         }
+    } else if (distance_to_home > 0.15) {
+        // No path but not at home yet - need to replan
+        RCLCPP_DEBUG(node_->get_logger(), "No path but still %.2fm from home, will replan", distance_to_home);
     }
 }
 
@@ -393,6 +432,11 @@ void AutonomousExplorationRobot::update() {
     if (returning_home_) {
         returnToHome();
         return;  // Skip normal exploration when returning home
+    }
+    
+    // If at home, do nothing (robot has completed its mission)
+    if (at_home_) {
+        return;
     }
     
     // Check if in recovery mode
