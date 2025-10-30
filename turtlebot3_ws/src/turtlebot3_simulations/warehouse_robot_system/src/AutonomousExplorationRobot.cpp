@@ -11,6 +11,7 @@ AutonomousExplorationRobot::AutonomousExplorationRobot(rclcpp::Node::SharedPtr n
       in_recovery_(false),
       recovery_attempt_(0),
       returning_home_(false),
+      at_home_(false),
       consecutive_no_frontiers_count_(0),
       return_home_failures_(0),
       last_return_home_progress_(node->now()),
@@ -153,6 +154,11 @@ void AutonomousExplorationRobot::performRecovery() {
 }
 
 void AutonomousExplorationRobot::returnToHome() {
+    // If already at home, do nothing
+    if (at_home_) {
+        return;
+    }
+    
     if (!slam_controller_->hasValidMap() || !slam_controller_->hasValidPose()) {
         RCLCPP_WARN_THROTTLE(node_->get_logger(), *node_->get_clock(), 5000,
                             "Waiting for valid map and pose to return home...");
@@ -167,8 +173,19 @@ void AutonomousExplorationRobot::returnToHome() {
     double dy = home_position_.y - current_pose.position.y;
     double distance_to_home = std::sqrt(dx * dx + dy * dy);
     
-    if (distance_to_home < 0.8) {  // Within 15cm of home (increased from 30cm to be more lenient)
-        RCLCPP_INFO(node_->get_logger(), "Successfully returned to home position!");
+    if (distance_to_home < 0.10) {  // Within 10cm of home
+        at_home_ = true;
+        motion_controller_->clearPath();
+        
+        // Send zero velocity to stop the robot
+        geometry_msgs::msg::TwistStamped stop_cmd;
+        stop_cmd.header.stamp = node_->now();
+        stop_cmd.header.frame_id = "base_footprint";
+        stop_cmd.twist.linear.x = 0.0;
+        stop_cmd.twist.angular.z = 0.0;
+        recovery_cmd_vel_pub_->publish(stop_cmd);
+        
+        RCLCPP_INFO(node_->get_logger(), "Successfully returned to home position! (distance: %.3fm)", distance_to_home);
         RCLCPP_INFO(node_->get_logger(), "Exploration complete - saving final map");
         saveMap("warehouse_map_final");
         stopExploration();
