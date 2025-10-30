@@ -7,6 +7,35 @@
 #   ./scripts/run_autonomous_slam.sh          # Normal mode
 #   ./scripts/run_autonomous_slam.sh -web     # With web dashboard
 
+# Deactivate conda if active to prevent library conflicts
+if [ ! -z "$CONDA_PREFIX" ]; then
+    echo "🔧 Deactivating conda environment..."
+    echo "   Detected conda environment: $CONDA_DEFAULT_ENV"
+    echo "   Deactivating for clean ROS environment..."
+    echo ""
+    
+    # Unset all conda-related environment variables
+    unset CONDA_PREFIX
+    unset CONDA_DEFAULT_ENV
+    unset CONDA_PROMPT_MODIFIER
+    unset CONDA_SHLVL
+    unset CONDA_PYTHON_EXE
+    unset CONDA_EXE
+    unset _CE_CONDA
+    unset _CE_M
+    
+    # Remove conda from PATH
+    export PATH=$(echo $PATH | tr ':' '\n' | grep -v conda | tr '\n' ':' | sed 's/:$//')
+    
+    # Remove conda from LD_LIBRARY_PATH if it exists
+    if [ ! -z "$LD_LIBRARY_PATH" ]; then
+        export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr ':' '\n' | grep -v conda | tr '\n' ':' | sed 's/:$//')
+    fi
+    
+    echo "   ✅ Conda deactivated"
+    echo ""
+fi
+
 # Parse command line arguments
 START_WEB_DASHBOARD=false
 while [[ $# -gt 0 ]]; do
@@ -43,15 +72,6 @@ echo "   TURTLEBOT3_MODEL: $TURTLEBOT3_MODEL"
 echo "   RMW_IMPLEMENTATION: $RMW_IMPLEMENTATION"
 if [ "$START_WEB_DASHBOARD" = true ]; then
     echo "   Web Dashboard: ENABLED"
-fi
-
-# Check for conda and warn user
-if [ ! -z "$CONDA_PREFIX" ]; then
-    echo ""
-    echo "⚠️  WARNING: Conda environment detected!"
-    echo "   This may cause library conflicts with ROS 2."
-    echo "   If you experience issues, use: ./run_slam_no_conda.sh"
-    echo "   Or manually: conda deactivate && ./scripts/run_autonomous_slam.sh"
 fi
 echo ""
 
@@ -130,12 +150,29 @@ cleanup() {
     
     if [ ! -z "$ROSBRIDGE_PID" ] && ps -p $ROSBRIDGE_PID > /dev/null 2>&1; then
         echo "   Stopping rosbridge..."
-        kill $ROSBRIDGE_PID 2>/dev/null
+        # Try graceful shutdown first (SIGTERM)
+        kill -TERM $ROSBRIDGE_PID 2>/dev/null
+        # Wait up to 3 seconds for graceful shutdown
+        for i in {1..6}; do
+            if ! ps -p $ROSBRIDGE_PID > /dev/null 2>&1; then
+                break
+            fi
+            sleep 0.5
+        done
+        # Force kill if still running
+        if ps -p $ROSBRIDGE_PID > /dev/null 2>&1; then
+            kill -9 $ROSBRIDGE_PID 2>/dev/null
+        fi
     fi
     
     if [ ! -z "$WEB_SERVER_PID" ] && ps -p $WEB_SERVER_PID > /dev/null 2>&1; then
         echo "   Stopping web server..."
-        kill $WEB_SERVER_PID 2>/dev/null
+        # Graceful shutdown for web server
+        kill -TERM $WEB_SERVER_PID 2>/dev/null
+        sleep 1
+        if ps -p $WEB_SERVER_PID > /dev/null 2>&1; then
+            kill -9 $WEB_SERVER_PID 2>/dev/null
+        fi
     fi
     
     if [ ! -z "$RVIZ_PID" ] && ps -p $RVIZ_PID > /dev/null 2>&1; then
