@@ -18,19 +18,21 @@ function App() {
   const [history, setHistory] = useState([])
   const [isConnected, setIsConnected] = useState(false)
   const [wsUrl, setWsUrl] = useState('ws://localhost:9090')
+  const [ws, setWs] = useState(null)
 
   useEffect(() => {
     // Connect to rosbridge websocket
-    let ws = null
+    let wsConnection = null
     let reconnectTimer = null
 
     const connect = () => {
       try {
-        ws = new WebSocket(wsUrl)
+        wsConnection = new WebSocket(wsUrl)
         
-        ws.onopen = () => {
+        wsConnection.onopen = () => {
           console.log('Connected to ROS bridge')
           setIsConnected(true)
+          setWs(wsConnection)
           
           // Subscribe to battery_state topic
           const subscribeMsg = {
@@ -38,10 +40,10 @@ function App() {
             topic: '/battery_state',
             type: 'sensor_msgs/BatteryState'
           }
-          ws.send(JSON.stringify(subscribeMsg))
+          wsConnection.send(JSON.stringify(subscribeMsg))
         }
         
-        ws.onmessage = (event) => {
+        wsConnection.onmessage = (event) => {
           const data = JSON.parse(event.data)
           if (data.topic === '/battery_state' && data.msg) {
             const msg = data.msg
@@ -69,14 +71,16 @@ function App() {
           }
         }
         
-        ws.onerror = (error) => {
+        wsConnection.onerror = (error) => {
           console.error('WebSocket error:', error)
           setIsConnected(false)
+          setWs(null)
         }
         
-        ws.onclose = () => {
+        wsConnection.onclose = () => {
           console.log('Disconnected from ROS bridge')
           setIsConnected(false)
+          setWs(null)
           
           // Attempt to reconnect after 3 seconds
           reconnectTimer = setTimeout(() => {
@@ -93,14 +97,32 @@ function App() {
     connect()
 
     return () => {
-      if (ws) {
-        ws.close()
+      if (wsConnection) {
+        wsConnection.close()
       }
       if (reconnectTimer) {
         clearTimeout(reconnectTimer)
       }
     }
   }, [wsUrl])
+
+  const handleReturnHome = () => {
+    if (!ws || !isConnected) {
+      alert('Not connected to ROS bridge')
+      return
+    }
+
+    // Call the return home service
+    const serviceCall = {
+      op: 'call_service',
+      service: '/return_home',
+      type: 'std_srvs/Trigger'
+    }
+    
+    ws.send(JSON.stringify(serviceCall))
+    console.log('Return home service called')
+    alert('Return home command sent!')
+  }
 
   const getStatusText = (status) => {
     const statusMap = {
@@ -134,6 +156,22 @@ function App() {
 
         <div className="side-panel">
           <BatteryInfo batteryData={batteryData} />
+          
+          <div className="control-panel">
+            <h3>Robot Control</h3>
+            <button 
+              className="return-home-btn"
+              onClick={handleReturnHome}
+              disabled={!isConnected}
+            >
+              🏠 Return to Home
+            </button>
+            {batteryData.percentage > 0 && batteryData.percentage < 20 && (
+              <div className="low-battery-warning">
+                ⚠️ Low Battery ({batteryData.percentage.toFixed(1)}%) - Auto return home activated
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="chart-panel">

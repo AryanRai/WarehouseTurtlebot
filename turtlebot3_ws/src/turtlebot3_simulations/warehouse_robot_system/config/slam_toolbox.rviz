@@ -220,10 +220,63 @@ Visualization Manager:
       Update Interval: 0
       Value: true
       Visual Enabled: true
+    - Class: rviz_default_plugins/TF
+      Enabled: true
+      Frame Timeout: 15
+      Frames:
+        All Enabled: false
+        base_footprint:
+          Value: false
+        base_link:
+          Value: false
+        base_scan:
+          Value: false
+        caster_back_left_link:
+          Value: false
+        caster_back_right_link:
+          Value: false
+        home_position:
+          Value: true
+        imu_link:
+          Value: false
+        map:
+          Value: true
+        odom:
+          Value: false
+        wheel_left_link:
+          Value: false
+        wheel_right_link:
+          Value: false
+      Marker Scale: 0.5
+      Name: TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+      Tree:
+        map:
+          home_position:
+            {}
+          odom:
+            base_footprint:
+              base_link:
+                base_scan:
+                  {}
+                caster_back_left_link:
+                  {}
+                caster_back_right_link:
+                  {}
+                imu_link:
+                  {}
+                wheel_left_link:
+                  {}
+                wheel_right_link:
+                  {}
+      Update Interval: 0
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: odom
+    Fixed Frame: map
     Frame Rate: 30
   Name: root
   Tools:

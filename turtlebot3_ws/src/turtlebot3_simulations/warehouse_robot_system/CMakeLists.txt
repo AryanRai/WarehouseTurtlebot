@@ -13,7 +13,9 @@ endif()
 # Find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
@@ -21,11 +23,18 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
 
 # Include directories
 include_directories(
   include
   ${OpenCV_INCLUDE_DIRS}
+)
+
+# Generate action interfaces (must be before executables)
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "action/ReturnHome.action"
+  DEPENDENCIES geometry_msgs std_msgs
 )
 
 # ============================================================================
@@ -160,10 +169,10 @@ target_link_libraries(warehouse_robot_lib
 )
 
 # Main Warehouse Robot System Executable
-add_executable(warehouse_robot_system
+add_executable(warehouse_robot_node
   src/warehouse_robot_main.cpp
 )
-ament_target_dependencies(warehouse_robot_system
+ament_target_dependencies(warehouse_robot_node
   rclcpp
   geometry_msgs
   nav_msgs
@@ -172,7 +181,7 @@ ament_target_dependencies(warehouse_robot_system
   tf2
   tf2_ros
 )
-target_link_libraries(warehouse_robot_system
+target_link_libraries(warehouse_robot_node
   warehouse_robot_lib
 )
 
@@ -182,9 +191,11 @@ add_executable(autonomous_slam_node
 )
 ament_target_dependencies(autonomous_slam_node
   rclcpp
+  rclcpp_action
   geometry_msgs
   nav_msgs
   std_msgs
+  std_srvs
   sensor_msgs
   tf2
   tf2_ros
@@ -208,7 +219,7 @@ ament_target_dependencies(twist_stamped_bridge
 
 # Install executables
 install(TARGETS
-  warehouse_robot_system
+  warehouse_robot_node
   autonomous_slam_node
   twist_stamped_bridge
   DESTINATION lib/${PROJECT_NAME}

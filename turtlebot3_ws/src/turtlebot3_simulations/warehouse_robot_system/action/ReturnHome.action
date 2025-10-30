@@ -1,0 +1,14 @@
+# ReturnHome.action - Action for returning robot to home position
+
+# Goal - Request to return home
+bool trigger  # Set to true to trigger return home
+---
+# Result - Final status when action completes
+bool success  # True if successfully returned home
+float32 final_distance  # Final distance from home position (meters)
+string message  # Status message
+---
+# Feedback - Progress updates during return
+float32 distance_remaining  # Current distance to home (meters)
+float32 estimated_time  # Estimated time to reach home (seconds)
+string status  # Current status (e.g., "planning", "moving", "recovering")

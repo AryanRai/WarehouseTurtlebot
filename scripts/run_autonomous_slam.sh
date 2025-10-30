@@ -44,6 +44,15 @@ echo "   RMW_IMPLEMENTATION: $RMW_IMPLEMENTATION"
 if [ "$START_WEB_DASHBOARD" = true ]; then
     echo "   Web Dashboard: ENABLED"
 fi
+
+# Check for conda and warn user
+if [ ! -z "$CONDA_PREFIX" ]; then
+    echo ""
+    echo "⚠️  WARNING: Conda environment detected!"
+    echo "   This may cause library conflicts with ROS 2."
+    echo "   If you experience issues, use: ./run_slam_no_conda.sh"
+    echo "   Or manually: conda deactivate && ./scripts/run_autonomous_slam.sh"
+fi
 echo ""
 
 # Save script directory before changing to workspace
@@ -342,8 +351,8 @@ timeout 10s bash -c 'until ros2 topic list | grep -q "^/map$"; do sleep 1; done'
     echo "⚠️  Map topic not available yet, but starting controller anyway..."
 }
 
-# Start the new autonomous exploration node
-ros2 run warehouse_robot_system autonomous_slam_node &
+# Start the new autonomous exploration node using clean launcher to avoid conda conflicts
+"$SCRIPT_DIR/start_autonomous_slam_clean.sh" "$(pwd)" &
 SLAM_PID=$!
 sleep 3
 

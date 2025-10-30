@@ -55,9 +55,21 @@ def generate_launch_description():
         }]
     )
     
+    # Home position marker (static TF at 0,0)
+    home_position_tf = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='home_position_broadcaster',
+        arguments=['0', '0', '0', '0', '0', '0', 'map', 'home_position'],
+        parameters=[{
+            'use_sim_time': LaunchConfiguration('use_sim_time')
+        }]
+    )
+    
     return LaunchDescription([
         debug_arg,
         use_sim_time_arg,
         slam_launch,
-        autonomous_slam_node
+        autonomous_slam_node,
+        home_position_tf
     ])
