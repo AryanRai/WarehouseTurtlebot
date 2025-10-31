@@ -75,6 +75,15 @@ private:
     static constexpr double ZONE_REACHED_THRESHOLD = 0.3;  // 30cm
     static constexpr double UPDATE_RATE = 10.0;  // Hz
     
+    // Docking parameters (same as exploration robot)
+    static constexpr double DOCKING_DISTANCE = 0.5;  // Enter docking mode within 50cm
+    static constexpr double HOME_TOLERANCE = 0.05;   // Success within 5cm
+    static constexpr double DOCKING_LINEAR_SPEED = 0.05;  // Slow speed for docking
+    static constexpr double DOCKING_ANGULAR_SPEED = 0.3;  // Moderate rotation for alignment
+    
+    // Docking state
+    bool in_docking_mode_;
+    
     // Helper methods
     void onPointClicked(const geometry_msgs::msg::PointStamped::SharedPtr msg);
     void onStartDeliveryService(
@@ -92,6 +101,7 @@ private:
     bool navigateToZone(const DeliveryZone& zone);
     bool isAtZone(const DeliveryZone& zone);
     void returnToHome();
+    void preciseDocking(const geometry_msgs::msg::Pose& current_pose, double distance_to_home);
     void publishStatus(const std::string& status);
     std::string getCurrentTimestamp();
 };

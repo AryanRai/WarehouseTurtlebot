@@ -5,12 +5,15 @@
 #include <sstream>
 #include <algorithm>
 #include <cmath>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
 
 DeliveryRobot::DeliveryRobot(rclcpp::Node::SharedPtr node)
     : node_(node),
       is_delivering_(false),
       current_delivery_index_(0),
-      total_distance_(0.0) {
+      total_distance_(0.0),
+      in_docking_mode_(false) {
     
     // Initialize SLAM components
     slam_controller_ = std::make_unique<SlamController>(node);
@@ -487,6 +490,18 @@ void DeliveryRobot::returnToHome() {
         motion_controller_->computeVelocityCommand(current_pose, *current_map);
         RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 3000,
                             "Returning home: %.2fm remaining", distance_to_home);
+        return;
+    }
+    
+    // No path - check if we're close enough to switch to docking
+    // This handles the case where path planner can't get us closer (home in obstacle)
+    if (distance_to_home < DOCKING_DISTANCE * 1.5) {  // Within 75cm
+        RCLCPP_INFO(node_->get_logger(), 
+                   "Path complete, %.2fm from home - switching to docking mode", 
+                   distance_to_home);
+        in_docking_mode_ = true;
+        motion_controller_->clearPath();
+        preciseDocking(current_pose, distance_to_home);
         return;
     }
     
