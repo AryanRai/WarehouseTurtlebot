@@ -40,6 +40,10 @@ public:
     void clearDeliveryQueue();
     std::vector<DeliveryRequest> getDeliveryQueue() const { return delivery_queue_; }
     
+    // Route optimization mode
+    void setOptimizationMode(bool use_tsp) { use_tsp_optimization_ = use_tsp; }
+    bool isUsingTSP() const { return use_tsp_optimization_; }
+    
     // Records
     void saveDeliveryRecord(const DeliveryRecord& record);
     
@@ -90,6 +94,9 @@ private:
     static constexpr double RELOCALIZATION_DURATION = 8.0;  // 8 seconds for 2 full rotations
     static constexpr double RELOCALIZATION_SPEED = 1.57;  // rad/s (~90°/s, 2 full rotations in 8s)
     
+    // Route optimization mode
+    bool use_tsp_optimization_;
+    
     // Helper methods
     void onPointClicked(const geometry_msgs::msg::PointStamped::SharedPtr msg);
     void onStartDeliveryService(
@@ -102,6 +109,25 @@ private:
     std::vector<DeliveryZone> optimizeRoute(
         const geometry_msgs::msg::Point& start,
         const std::vector<DeliveryRequest>& requests);
+    
+    std::vector<DeliveryZone> optimizeRouteTSP(
+        const geometry_msgs::msg::Point& start,
+        const std::vector<DeliveryRequest>& requests);
+    
+    std::vector<std::vector<double>> buildDistanceMatrix(
+        const geometry_msgs::msg::Point& start,
+        const std::vector<geometry_msgs::msg::Point>& points);
+    
+    std::vector<int> simulatedAnnealing(
+        const std::vector<std::vector<double>>& distance_matrix,
+        int start_idx,
+        double initial_temp = 10000.0,
+        double cooling_rate = 0.995,
+        int max_iterations = 10000);
+    
+    double calculateTourCost(
+        const std::vector<int>& tour,
+        const std::vector<std::vector<double>>& distance_matrix);
     
     DeliveryZone* findZone(const std::string& zone_name);
     bool navigateToZone(const DeliveryZone& zone);

@@ -43,6 +43,25 @@ int main(int argc, char** argv) {
     // Create delivery robot
     g_robot = std::make_shared<DeliveryRobot>(node);
     
+    // Check for optimization mode from environment variable
+    const char* opt_mode_env = std::getenv("DELIVERY_OPTIMIZATION");
+    bool use_tsp = false;
+    
+    if (opt_mode_env != nullptr) {
+        std::string opt_mode(opt_mode_env);
+        if (opt_mode == "tsp" || opt_mode == "TSP" || opt_mode == "optimized") {
+            use_tsp = true;
+            RCLCPP_INFO(node->get_logger(), "🎯 Route Optimization: TSP (A* + Simulated Annealing)");
+        } else {
+            RCLCPP_INFO(node->get_logger(), "🎯 Route Optimization: Ordered (Sequential)");
+        }
+    } else {
+        RCLCPP_INFO(node->get_logger(), "🎯 Route Optimization: Ordered (Sequential) - Default");
+        RCLCPP_INFO(node->get_logger(), "   Set DELIVERY_OPTIMIZATION=tsp for optimized routing");
+    }
+    
+    g_robot->setOptimizationMode(use_tsp);
+    
     // Generate delivery requests for all zones
     // Creates a sequential path: Zone_1 -> Zone_2 -> Zone_3 -> ... -> Zone_N -> Home
     auto zones = g_robot->getZones();

@@ -328,6 +328,41 @@ offer_mode_selection() {
         echo "================================"
         echo ""
         
+        # Prompt for route optimization mode
+        echo "📊 SELECT ROUTE OPTIMIZATION MODE"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "   [1] 📋 ORDERED MODE (Sequential)"
+        echo "       • Visits zones in defined order"
+        echo "       • Zone_1 → Zone_2 → Zone_3 → ... → Home"
+        echo "       • Fast startup, predictable route"
+        echo "       • Good for pre-planned sequences"
+        echo ""
+        echo "   [2] 🎯 OPTIMIZED MODE (TSP)"
+        echo "       • Finds shortest total path"
+        echo "       • Uses A* distance matrix"
+        echo "       • Simulated Annealing optimization"
+        echo "       • Minimizes total travel distance"
+        echo "       • Best for efficiency"
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo -n "   👉 Your choice [1/2]: "
+        read -r opt_mode
+        echo ""
+        
+        # Set environment variable based on choice
+        if [[ "$opt_mode" == "2" ]]; then
+            export DELIVERY_OPTIMIZATION="tsp"
+            echo "   ✅ Selected: OPTIMIZED MODE (TSP)"
+            echo "   Using A* + Simulated Annealing for route optimization"
+        else
+            export DELIVERY_OPTIMIZATION="ordered"
+            echo "   ✅ Selected: ORDERED MODE (Sequential)"
+            echo "   Zones will be visited in defined order"
+        fi
+        echo ""
+        
         # Find the most recent map file
         MAP_FILE_BASE="$(pwd)/warehouse_map_final"
         if [ ! -f "${MAP_FILE_BASE}.yaml" ]; then

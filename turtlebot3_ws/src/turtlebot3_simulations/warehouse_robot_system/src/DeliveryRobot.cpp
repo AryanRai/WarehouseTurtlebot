@@ -5,6 +5,9 @@
 #include <sstream>
 #include <algorithm>
 #include <cmath>
+#include <random>
+#include <set>
+#include <limits>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
 
@@ -16,7 +19,8 @@ DeliveryRobot::DeliveryRobot(rclcpp::Node::SharedPtr node)
       in_docking_mode_(false),
       initial_yaw_(0.0),
       has_relocalized_(false),
-      relocalization_start_time_(node->now()) {
+      relocalization_start_time_(node->now()),
+      use_tsp_optimization_(false) {
     
     // Initialize SLAM components
     slam_controller_ = std::make_unique<SlamController>(node);
@@ -184,10 +188,17 @@ void DeliveryRobot::startDeliveries() {
     // Get current position
     auto current_pose = slam_controller_->getCurrentPose();
     
-    // Optimize route
-    optimized_route_ = optimizeRoute(current_pose.position, delivery_queue_);
+    // Optimize route based on mode
+    if (use_tsp_optimization_) {
+        RCLCPP_INFO(node_->get_logger(), "Using TSP optimization (A* + Simulated Annealing)");
+        optimized_route_ = optimizeRouteTSP(current_pose.position, delivery_queue_);
+    } else {
+        RCLCPP_INFO(node_->get_logger(), "Using ordered delivery sequence");
+        optimized_route_ = optimizeRoute(current_pose.position, delivery_queue_);
+    }
     
-    RCLCPP_INFO(node_->get_logger(), "Starting deliveries with optimized route of %zu stops",
+    RCLCPP_INFO(node_->get_logger(), "Starting deliveries with %s route of %zu stops",
+                use_tsp_optimization_ ? "TSP-optimized" : "ordered",
                 optimized_route_.size());
     
     publishStatus("Deliveries started");
@@ -787,4 +798,250 @@ void DeliveryRobot::preciseDocking(const geometry_msgs::msg::Pose& current_pose,
     // Publish directly (bypass motion controller during docking)
     auto cmd_vel_pub = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
     cmd_vel_pub->publish(cmd_vel);
+}
+
+// TSP-based route optimization using A* distance matrix and Simulated Annealing
+std::vector<DeliveryZone> DeliveryRobot::optimizeRouteTSP(
+    const geometry_msgs::msg::Point& start,
+    const std::vector<DeliveryRequest>& requests) {
+    
+    if (requests.empty()) {
+        return {};
+    }
+    
+    // Build list of all unique points (start + all from/to zones)
+    std::vector<geometry_msgs::msg::Point> points;
+    std::vector<std::string> point_names;
+    
+    // Add start position
+    points.push_back(start);
+    point_names.push_back("Start");
+    
+    // Add all unique zones from requests
+    std::set<std::string> added_zones;
+    for (const auto& req : requests) {
+        // Add from zone
+        if (added_zones.find(req.from_zone) == added_zones.end()) {
+            auto* zone = findZone(req.from_zone);
+            if (zone) {
+                points.push_back(zone->position);
+                point_names.push_back(zone->name);
+                added_zones.insert(req.from_zone);
+            }
+        }
+        
+        // Add to zone
+        if (added_zones.find(req.to_zone) == added_zones.end()) {
+            auto* zone = findZone(req.to_zone);
+            if (zone) {
+                points.push_back(zone->position);
+                point_names.push_back(zone->name);
+                added_zones.insert(req.to_zone);
+            }
+        }
+    }
+    
+    RCLCPP_INFO(node_->get_logger(), "Building distance matrix for %zu points using A*...", points.size());
+    
+    // Build distance matrix using A* pathfinding
+    auto distance_matrix = buildDistanceMatrix(start, points);
+    
+    // Run Simulated Annealing to find optimal tour
+    RCLCPP_INFO(node_->get_logger(), "Running Simulated Annealing for TSP optimization...");
+    auto optimal_tour = simulatedAnnealing(distance_matrix, 0);  // Start from index 0 (start position)
+    
+    // Build optimized route from tour
+    std::vector<DeliveryZone> route;
+    for (size_t i = 1; i < optimal_tour.size(); ++i) {  // Skip index 0 (start)
+        int point_idx = optimal_tour[i];
+        if (point_idx > 0 && point_idx < static_cast<int>(points.size())) {
+            std::string zone_name = point_names[point_idx];
+            auto* zone = findZone(zone_name);
+            if (zone) {
+                route.push_back(*zone);
+            }
+        }
+    }
+    
+    // Calculate total tour cost
+    double total_cost = calculateTourCost(optimal_tour, distance_matrix);
+    RCLCPP_INFO(node_->get_logger(), "TSP optimization complete! Total path cost: %.2fm", total_cost);
+    
+    // Log the optimized route
+    std::stringstream route_str;
+    route_str << "Optimized route: Start";
+    for (const auto& zone : route) {
+        route_str << " → " << zone.name;
+    }
+    route_str << " → Home";
+    RCLCPP_INFO(node_->get_logger(), "%s", route_str.str().c_str());
+    
+    return route;
+}
+
+// Build distance matrix using A* pathfinding on the actual map
+std::vector<std::vector<double>> DeliveryRobot::buildDistanceMatrix(
+    const geometry_msgs::msg::Point& start,
+    const std::vector<geometry_msgs::msg::Point>& points) {
+    
+    size_t n = points.size();
+    std::vector<std::vector<double>> matrix(n, std::vector<double>(n, 0.0));
+    
+    auto current_map = slam_controller_->getCurrentMap();
+    if (!current_map) {
+        RCLCPP_ERROR(node_->get_logger(), "No map available for distance matrix calculation!");
+        return matrix;
+    }
+    
+    // Precompute C-space and cost map once
+    auto [cspace, cspace_cells] = PathPlanner::calcCSpace(*current_map, false);
+    cv::Mat cost_map = PathPlanner::calcCostMap(*current_map);
+    
+    // Calculate distance between every pair of points using A*
+    for (size_t i = 0; i < n; ++i) {
+        for (size_t j = i + 1; j < n; ++j) {
+            GridCell start_cell = PathPlanner::worldToGrid(*current_map, points[i]);
+            GridCell goal_cell = PathPlanner::worldToGrid(*current_map, points[j]);
+            
+            auto [path, cost, actual_start, actual_goal] = 
+                PathPlanner::aStar(cspace, cost_map, start_cell, goal_cell);
+            
+            if (!path.empty()) {
+                // Use actual path cost from A*
+                matrix[i][j] = cost;
+                matrix[j][i] = cost;  // Symmetric
+            } else {
+                // If no path found, use Euclidean distance as fallback (with penalty)
+                double dx = points[j].x - points[i].x;
+                double dy = points[j].y - points[i].y;
+                double euclidean = std::sqrt(dx*dx + dy*dy);
+                matrix[i][j] = euclidean * 10.0;  // Heavy penalty for unreachable
+                matrix[j][i] = euclidean * 10.0;
+                
+                RCLCPP_WARN(node_->get_logger(), 
+                           "No A* path found between points %zu and %zu, using penalized Euclidean distance",
+                           i, j);
+            }
+        }
+    }
+    
+    return matrix;
+}
+
+// Simulated Annealing algorithm for TSP
+std::vector<int> DeliveryRobot::simulatedAnnealing(
+    const std::vector<std::vector<double>>& distance_matrix,
+    int start_idx,
+    double initial_temp,
+    double cooling_rate,
+    int max_iterations) {
+    
+    int n = distance_matrix.size();
+    if (n <= 1) {
+        return {start_idx};
+    }
+    
+    // Initialize with greedy nearest neighbor tour
+    std::vector<int> current_tour;
+    std::vector<bool> visited(n, false);
+    current_tour.push_back(start_idx);
+    visited[start_idx] = true;
+    
+    int current_city = start_idx;
+    for (int i = 1; i < n; ++i) {
+        double min_dist = std::numeric_limits<double>::max();
+        int nearest = -1;
+        
+        for (int j = 0; j < n; ++j) {
+            if (!visited[j] && distance_matrix[current_city][j] < min_dist) {
+                min_dist = distance_matrix[current_city][j];
+                nearest = j;
+            }
+        }
+        
+        if (nearest != -1) {
+            current_tour.push_back(nearest);
+            visited[nearest] = true;
+            current_city = nearest;
+        }
+    }
+    
+    std::vector<int> best_tour = current_tour;
+    double current_cost = calculateTourCost(current_tour, distance_matrix);
+    double best_cost = current_cost;
+    
+    double temperature = initial_temp;
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dis(0.0, 1.0);
+    
+    int improvements = 0;
+    
+    // Simulated Annealing main loop
+    for (int iter = 0; iter < max_iterations; ++iter) {
+        // Generate neighbor solution using 2-opt swap
+        std::vector<int> new_tour = current_tour;
+        
+        // Select two random positions (not including start)
+        std::uniform_int_distribution<> pos_dis(1, n - 1);
+        int i = pos_dis(gen);
+        int j = pos_dis(gen);
+        
+        if (i > j) std::swap(i, j);
+        if (i == j) continue;
+        
+        // Reverse segment between i and j (2-opt move)
+        std::reverse(new_tour.begin() + i, new_tour.begin() + j + 1);
+        
+        double new_cost = calculateTourCost(new_tour, distance_matrix);
+        double delta = new_cost - current_cost;
+        
+        // Accept or reject new solution
+        if (delta < 0 || dis(gen) < std::exp(-delta / temperature)) {
+            current_tour = new_tour;
+            current_cost = new_cost;
+            
+            if (current_cost < best_cost) {
+                best_tour = current_tour;
+                best_cost = current_cost;
+                improvements++;
+            }
+        }
+        
+        // Cool down
+        temperature *= cooling_rate;
+        
+        // Log progress periodically
+        if (iter % 1000 == 0 && iter > 0) {
+            RCLCPP_DEBUG(node_->get_logger(), 
+                        "SA iteration %d: best_cost=%.2f, current_cost=%.2f, temp=%.2f",
+                        iter, best_cost, current_cost, temperature);
+        }
+    }
+    
+    RCLCPP_INFO(node_->get_logger(), 
+               "Simulated Annealing complete: %d improvements, final cost: %.2fm",
+               improvements, best_cost);
+    
+    return best_tour;
+}
+
+// Calculate total cost of a tour
+double DeliveryRobot::calculateTourCost(
+    const std::vector<int>& tour,
+    const std::vector<std::vector<double>>& distance_matrix) {
+    
+    if (tour.size() <= 1) {
+        return 0.0;
+    }
+    
+    double total_cost = 0.0;
+    for (size_t i = 0; i < tour.size() - 1; ++i) {
+        total_cost += distance_matrix[tour[i]][tour[i + 1]];
+    }
+    
+    // Add return to start (home)
+    total_cost += distance_matrix[tour.back()][tour[0]];
+    
+    return total_cost;
 }
