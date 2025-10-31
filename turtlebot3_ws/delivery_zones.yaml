@@ -1,9 +1,17 @@
 delivery_zones:
   - name: Zone_1
-    x: 0.65200126171112061
-    y: 0.56748944520950317
+    x: 0.42462688684463501
+    y: -0.96341687440872192
     description: Delivery zone added via RViz
   - name: Zone_2
-    x: -0.8729175329208374
-    y: 0.74814009666442871
+    x: -0.99878853559494019
+    y: -0.77036583423614502
+    description: Delivery zone added via RViz
+  - name: Zone_3
+    x: -0.84345769882202148
+    y: 0.84456390142440796
+    description: Delivery zone added via RViz
+  - name: Zone_4
+    x: 0.72089123725891113
+    y: 0.58160370588302612
     description: Delivery zone added via RViz

@@ -616,13 +616,23 @@ void DeliveryRobot::returnToHome() {
     // No path - check if we're close enough to switch to docking
     // This handles the case where path planner can't get us closer (home in obstacle)
     if (distance_to_home < DOCKING_DISTANCE * 1.5) {  // Within 75cm
-        RCLCPP_INFO(node_->get_logger(), 
-                   "Path complete, %.2fm from home - switching to docking mode", 
-                   distance_to_home);
-        in_docking_mode_ = true;
-        motion_controller_->clearPath();
-        preciseDocking(current_pose, distance_to_home);
-        return;
+        // Check line of sight before switching to docking
+        bool has_clear_path = hasLineOfSight(current_pose.position, home_position, *current_map);
+        
+        if (has_clear_path) {
+            RCLCPP_INFO(node_->get_logger(), 
+                       "Path complete, %.2fm from home with clear line of sight - switching to docking mode", 
+                       distance_to_home);
+            in_docking_mode_ = true;
+            motion_controller_->clearPath();
+            preciseDocking(current_pose, distance_to_home);
+            return;
+        } else {
+            RCLCPP_WARN_THROTTLE(node_->get_logger(), *node_->get_clock(), 2000,
+                                "Path complete but obstacle between robot and home (%.2fm) - replanning", 
+                                distance_to_home);
+            // Fall through to replan
+        }
     }
     
     // Need to plan path home
