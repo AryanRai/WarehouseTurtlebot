@@ -306,41 +306,57 @@ offer_mode_selection() {
         fi
         
         echo ""
-        echo "🔄 Restarting system in exploration mode..."
+        echo "🔄 Switching to exploration mode..."
         echo ""
         
-        # Cleanup current processes (but don't exit)
-        echo "   Stopping current processes..."
-        
-        if [ ! -z "$RSP_PID" ] && ps -p $RSP_PID > /dev/null 2>&1; then
-            kill -TERM $RSP_PID 2>/dev/null
-        fi
-        
+        # Stop SLAM Toolbox (localization mode)
         if [ ! -z "$SLAM_TOOLBOX_PID" ] && ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
+            echo "   Stopping SLAM Toolbox (localization)..."
             kill -TERM $SLAM_TOOLBOX_PID 2>/dev/null
+            sleep 2
         fi
         
-        if [ ! -z "$BATTERY_PID" ] && ps -p $BATTERY_PID > /dev/null 2>&1; then
-            kill -TERM $BATTERY_PID 2>/dev/null
+        # Start SLAM Toolbox in mapping mode
+        echo "   Starting SLAM Toolbox in MAPPING mode..."
+        ros2 launch slam_toolbox online_async_launch.py use_sim_time:=$USE_SIM_TIME > /tmp/slam_toolbox.log 2>&1 &
+        SLAM_TOOLBOX_PID=$!
+        sleep 3
+        
+        if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
+            echo "   ❌ Failed to start SLAM Toolbox in mapping mode"
+            offer_mode_selection
+            return
         fi
         
-        if [ ! -z "$ROSBRIDGE_PID" ] && ps -p $ROSBRIDGE_PID > /dev/null 2>&1; then
-            kill -TERM $ROSBRIDGE_PID 2>/dev/null
-        fi
+        echo "   ✓ SLAM Toolbox started in mapping mode"
         
-        if [ ! -z "$RVIZ_PID" ] && ps -p $RVIZ_PID > /dev/null 2>&1; then
-            kill -TERM $RVIZ_PID 2>/dev/null
-        fi
-        
+        # Start exploration node
+        echo "   Starting Autonomous SLAM Controller..."
+        "$SCRIPT_DIR/start_autonomous_slam_clean.sh" "$(pwd)" &
+        SLAM_PID=$!
         sleep 2
         
-        echo "   ✓ Processes stopped"
-        echo ""
-        echo "   Launching exploration mode..."
-        sleep 1
+        if ! ps -p $SLAM_PID > /dev/null 2>&1; then
+            echo "   ❌ Failed to start exploration controller"
+            offer_mode_selection
+            return
+        fi
         
-        # Re-execute script without -preload flag
-        exec "$SCRIPT_DIR/run_autonomous_slam.sh"
+        echo ""
+        echo "✅ Exploration mode active!"
+        echo "   Robot will now explore and create a new map"
+        echo "   Press Ctrl+C to stop"
+        echo ""
+        
+        # Wait for exploration to complete
+        while ps -p $SLAM_PID > /dev/null 2>&1; do
+            sleep 1
+        done
+        
+        echo ""
+        echo "✅ Exploration complete!"
+        sleep 2
+        offer_mode_selection
         
     elif [[ "$response" == "2" ]]; then
         echo ""

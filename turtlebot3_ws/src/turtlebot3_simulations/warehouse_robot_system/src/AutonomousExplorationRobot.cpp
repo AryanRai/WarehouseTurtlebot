@@ -290,6 +290,23 @@ void AutonomousExplorationRobot::performAdvancedReturnHomeRecovery(
 }
 
 void AutonomousExplorationRobot::preciseDocking(const geometry_msgs::msg::Pose& current_pose, double distance_to_home) {
+    // SAFETY CHECK: Verify line of sight before every docking movement
+    auto current_map = slam_controller_->getCurrentMap();
+    if (!hasLineOfSight(current_pose.position, home_position_, *current_map)) {
+        RCLCPP_WARN(node_->get_logger(), 
+                   "Lost line of sight during docking! Exiting docking mode.");
+        in_docking_mode_ = false;
+        
+        // Stop movement
+        geometry_msgs::msg::TwistStamped stop_cmd;
+        stop_cmd.header.stamp = node_->now();
+        stop_cmd.header.frame_id = "base_footprint";
+        stop_cmd.twist.linear.x = 0.0;
+        stop_cmd.twist.angular.z = 0.0;
+        recovery_cmd_vel_pub_->publish(stop_cmd);
+        return;
+    }
+    
     // Calculate direction to home
     double dx = home_position_.x - current_pose.position.x;
     double dy = home_position_.y - current_pose.position.y;
