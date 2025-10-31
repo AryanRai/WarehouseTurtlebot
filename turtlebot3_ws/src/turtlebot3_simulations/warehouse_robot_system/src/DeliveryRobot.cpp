@@ -268,63 +268,30 @@ void DeliveryRobot::update() {
     
     // Check if we've completed all deliveries
     if (current_delivery_index_ >= optimized_route_.size()) {
-        // Return to home position (0, 0)
-        auto current_pose = slam_controller_->getCurrentPose();
-        double dx = -current_pose.position.x;  // Home is at (0, 0)
-        double dy = -current_pose.position.y;
-        double distance_to_home = std::sqrt(dx*dx + dy*dy);
-        
-        // Check if already at home
-        if (distance_to_home < ZONE_REACHED_THRESHOLD) {
-            RCLCPP_INFO(node_->get_logger(), "All deliveries completed! Robot at home.");
-            stopDeliveries();
-            return;
-        }
-        
-        // Plan path home if we don't have one
-        if (!motion_controller_->hasPath()) {
-            RCLCPP_INFO(node_->get_logger(), "All deliveries completed! Returning home...");
-            
-            auto current_map = slam_controller_->getCurrentMap();
-            geometry_msgs::msg::Point home_position;
-            home_position.x = 0.0;
-            home_position.y = 0.0;
-            home_position.z = 0.0;
-            
-            GridCell start = PathPlanner::worldToGrid(*current_map, current_pose.position);
-            GridCell goal = PathPlanner::worldToGrid(*current_map, home_position);
-            
-            auto [cspace, cspace_cells] = PathPlanner::calcCSpace(*current_map, false);
-            cv::Mat cost_map = PathPlanner::calcCostMap(*current_map);
-            
-            auto [path, cost, actual_start, actual_goal] = 
-                PathPlanner::aStar(cspace, cost_map, start, goal);
-            
-            if (!path.empty()) {
-                auto path_msg = PathPlanner::pathToMessage(*current_map, path);
-                motion_controller_->setPath(path_msg);
-                RCLCPP_INFO(node_->get_logger(), "Navigating home (%.2fm)", distance_to_home);
-                publishStatus("Returning home");
-            } else {
-                RCLCPP_ERROR(node_->get_logger(), "Failed to plan path home!");
-                stopDeliveries();
-            }
-        }
-        
-        // Continue navigating home
-        if (motion_controller_->hasPath()) {
-            auto current_map = slam_controller_->getCurrentMap();
-            motion_controller_->computeVelocityCommand(current_pose, *current_map);
-        }
-        
+        returnToHome();
         return;
     }
     
     auto& current_zone = optimized_route_[current_delivery_index_];
     
-    // Check if we've reached the current zone
-    if (isAtZone(current_zone)) {
-        RCLCPP_INFO(node_->get_logger(), "Reached zone: %s", current_zone.name.c_str());
+    // Execute motion if we have a path
+    if (motion_controller_->hasPath()) {
+        auto current_map = slam_controller_->getCurrentMap();
+        auto current_pose = slam_controller_->getCurrentPose();
+        motion_controller_->computeVelocityCommand(current_pose, *current_map);
+        return;  // Continue following path
+    }
+    
+    // No path - check if we just finished navigating to this zone
+    auto current_pose = slam_controller_->getCurrentPose();
+    double dx = current_zone.position.x - current_pose.position.x;
+    double dy = current_zone.position.y - current_pose.position.y;
+    double distance_to_zone = std::sqrt(dx*dx + dy*dy);
+    
+    // If we're close to the zone and have no path, we must have just arrived
+    if (distance_to_zone < ZONE_REACHED_THRESHOLD * 2.0) {  // Use 2x threshold for adjusted positions
+        RCLCPP_INFO(node_->get_logger(), "Reached zone: %s (%.2fm)", 
+                   current_zone.name.c_str(), distance_to_zone);
         
         // Save delivery record
         DeliveryRecord record;
@@ -340,14 +307,13 @@ void DeliveryRobot::update() {
         
         // Move to next zone
         current_delivery_index_++;
-        motion_controller_->clearPath();
         
         publishStatus("Reached: " + current_zone.name);
         
         return;
     }
     
-    // Navigate to current zone if we don't have a path
+    // No path and not at zone - need to plan a path
     if (!motion_controller_->hasPath()) {
         auto current_map = slam_controller_->getCurrentMap();
         auto current_pose = slam_controller_->getCurrentPose();
@@ -364,8 +330,8 @@ void DeliveryRobot::update() {
         
         // If path planning fails, try to find nearest accessible point
         if (path.empty()) {
-            RCLCPP_WARN_THROTTLE(node_->get_logger(), *node_->get_clock(), 5000,
-                                "Cannot reach exact zone position, searching for nearest accessible point...");
+            RCLCPP_WARN(node_->get_logger(),
+                       "Cannot reach exact zone position, searching for nearest accessible point...");
             
             // Search in expanding radius around goal
             bool found_goal = false;
@@ -401,6 +367,29 @@ void DeliveryRobot::update() {
                     }
                 }
             }
+            
+            // If we still can't find a path, skip this zone
+            if (!found_goal) {
+                RCLCPP_ERROR(node_->get_logger(),
+                            "Failed to plan path to %s - zone unreachable, skipping...", 
+                            current_zone.name.c_str());
+                
+                // Save failed delivery record
+                DeliveryRecord record;
+                record.timestamp = getCurrentTimestamp();
+                record.from_zone = current_delivery_index_ > 0 ? 
+                    optimized_route_[current_delivery_index_ - 1].name : "Start";
+                record.to_zone = current_zone.name;
+                record.distance_traveled = total_distance_;
+                record.success = false;
+                record.notes = "Zone unreachable - no valid path found";
+                saveDeliveryRecord(record);
+                
+                // Move to next zone
+                current_delivery_index_++;
+                publishStatus("Skipped unreachable: " + current_zone.name);
+                return;
+            }
         }
         
         if (!path.empty()) {
@@ -409,18 +398,7 @@ void DeliveryRobot::update() {
             
             RCLCPP_INFO(node_->get_logger(), "Navigating to %s", current_zone.name.c_str());
             publishStatus("Navigating to: " + current_zone.name);
-        } else {
-            RCLCPP_ERROR_THROTTLE(node_->get_logger(), *node_->get_clock(), 5000,
-                                 "Failed to plan path to %s - zone may be unreachable", 
-                                 current_zone.name.c_str());
         }
-    }
-    
-    // Execute motion
-    if (motion_controller_->hasPath()) {
-        auto current_map = slam_controller_->getCurrentMap();
-        auto current_pose = slam_controller_->getCurrentPose();
-        motion_controller_->computeVelocityCommand(current_pose, *current_map);
     }
 }
 
@@ -447,4 +425,177 @@ std::string DeliveryRobot::getCurrentTimestamp() {
     std::stringstream ss;
     ss << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S");
     return ss.str();
+}
+
+bool DeliveryRobot::hasValidMap() const {
+    return slam_controller_ && slam_controller_->hasValidMap();
+}
+
+void DeliveryRobot::returnToHome() {
+    if (!slam_controller_->hasValidMap() || !slam_controller_->hasValidPose()) {
+        RCLCPP_WARN_THROTTLE(node_->get_logger(), *node_->get_clock(), 5000,
+                            "Waiting for valid map and pose to return home...");
+        return;
+    }
+    
+    auto current_map = slam_controller_->getCurrentMap();
+    auto current_pose = slam_controller_->getCurrentPose();
+    
+    geometry_msgs::msg::Point home_position;
+    home_position.x = 0.0;
+    home_position.y = 0.0;
+    home_position.z = 0.0;
+    
+    // Check distance to home
+    double dx = home_position.x - current_pose.position.x;
+    double dy = home_position.y - current_pose.position.y;
+    double distance_to_home = std::sqrt(dx * dx + dy * dy);
+    
+    // Check if reached home with tight tolerance (5cm)
+    if (distance_to_home < HOME_TOLERANCE) {
+        RCLCPP_INFO(node_->get_logger(), "✓ All deliveries completed! Robot at home (%.3fm).", distance_to_home);
+        
+        // Create completion marker file for script
+        std::ofstream marker("/tmp/delivery_complete.marker");
+        marker << "Delivery completed at " << getCurrentTimestamp() << std::endl;
+        marker.close();
+        
+        stopDeliveries();
+        return;
+    }
+    
+    // Enter precise docking mode when close to home (within 50cm)
+    if (distance_to_home < DOCKING_DISTANCE) {
+        if (!in_docking_mode_) {
+            RCLCPP_INFO(node_->get_logger(), "Entering precise docking mode (%.3fm from home)", distance_to_home);
+            in_docking_mode_ = true;
+            motion_controller_->clearPath();  // Stop using path planner
+        }
+        
+        // Use precise docking control
+        preciseDocking(current_pose, distance_to_home);
+        return;
+    }
+    
+    // Reset docking mode if we're far from home
+    if (in_docking_mode_ && distance_to_home >= DOCKING_DISTANCE) {
+        in_docking_mode_ = false;
+    }
+    
+    // Execute motion if we have a path
+    if (motion_controller_->hasPath()) {
+        motion_controller_->computeVelocityCommand(current_pose, *current_map);
+        RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 3000,
+                            "Returning home: %.2fm remaining", distance_to_home);
+        return;
+    }
+    
+    // Need to plan path home
+    RCLCPP_INFO(node_->get_logger(), "All deliveries completed! Returning home (%.2fm)...", distance_to_home);
+    
+    GridCell start = PathPlanner::worldToGrid(*current_map, current_pose.position);
+    GridCell goal = PathPlanner::worldToGrid(*current_map, home_position);
+    
+    auto [cspace, cspace_cells] = PathPlanner::calcCSpace(*current_map, false);
+    cv::Mat cost_map = PathPlanner::calcCostMap(*current_map);
+    
+    auto [path, cost, actual_start, actual_goal] = 
+        PathPlanner::aStar(cspace, cost_map, start, goal);
+    
+    // If direct path fails, search for nearest accessible point
+    if (path.empty()) {
+        RCLCPP_WARN(node_->get_logger(), "Cannot reach exact home position with path planner, will use docking mode when close");
+        
+        bool found_goal = false;
+        std::vector<std::pair<int,int>> directions = {
+            {1,0}, {-1,0}, {0,1}, {0,-1},  // Cardinal
+            {1,1}, {1,-1}, {-1,1}, {-1,-1}  // Diagonal
+        };
+        
+        for (int radius = 1; radius <= 30 && !found_goal; radius++) {
+            for (const auto& [dx_unit, dy_unit] : directions) {
+                GridCell candidate = {
+                    goal.first + dx_unit * radius, 
+                    goal.second + dy_unit * radius
+                };
+                
+                if (PathPlanner::isCellInBounds(*current_map, candidate) &&
+                    PathPlanner::isCellWalkable(*current_map, candidate)) {
+                    
+                    auto [alt_path, alt_cost, alt_start, alt_goal] = 
+                        PathPlanner::aStar(cspace, cost_map, start, candidate);
+                    
+                    if (!alt_path.empty()) {
+                        path = alt_path;
+                        found_goal = true;
+                        geometry_msgs::msg::Point alt_home = PathPlanner::gridToWorld(*current_map, candidate);
+                        RCLCPP_INFO(node_->get_logger(), 
+                                   "Found accessible point near home at (%.2f, %.2f), will dock from there",
+                                   alt_home.x, alt_home.y);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
+    if (!path.empty()) {
+        auto path_msg = PathPlanner::pathToMessage(*current_map, path);
+        motion_controller_->setPath(path_msg);
+        RCLCPP_INFO(node_->get_logger(), "Path to home planned with %zu waypoints", path_msg.poses.size());
+        publishStatus("Returning home");
+    } else {
+        RCLCPP_ERROR(node_->get_logger(), "Cannot find any path home! Stopping deliveries.");
+        stopDeliveries();
+    }
+}
+
+void DeliveryRobot::preciseDocking(const geometry_msgs::msg::Pose& current_pose, double distance_to_home) {
+    geometry_msgs::msg::Point home_position;
+    home_position.x = 0.0;
+    home_position.y = 0.0;
+    
+    // Calculate direction to home
+    double dx = home_position.x - current_pose.position.x;
+    double dy = home_position.y - current_pose.position.y;
+    double angle_to_home = std::atan2(dy, dx);
+    
+    // Get current robot orientation
+    tf2::Quaternion q(
+        current_pose.orientation.x,
+        current_pose.orientation.y,
+        current_pose.orientation.z,
+        current_pose.orientation.w
+    );
+    tf2::Matrix3x3 m(q);
+    double roll, pitch, yaw;
+    m.getRPY(roll, pitch, yaw);
+    
+    // Calculate angle difference
+    double angle_diff = angle_to_home - yaw;
+    // Normalize to [-pi, pi]
+    while (angle_diff > M_PI) angle_diff -= 2.0 * M_PI;
+    while (angle_diff < -M_PI) angle_diff += 2.0 * M_PI;
+    
+    geometry_msgs::msg::TwistStamped cmd_vel;
+    cmd_vel.header.stamp = node_->now();
+    cmd_vel.header.frame_id = "base_footprint";
+    
+    // If angle is off by more than 10 degrees, rotate first
+    if (std::abs(angle_diff) > 0.175) {  // ~10 degrees
+        cmd_vel.twist.linear.x = 0.0;
+        cmd_vel.twist.angular.z = (angle_diff > 0) ? DOCKING_ANGULAR_SPEED : -DOCKING_ANGULAR_SPEED;
+        RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
+                            "Docking: Aligning (angle error: %.1f°)", angle_diff * 180.0 / M_PI);
+    } else {
+        // Move forward slowly toward home
+        cmd_vel.twist.linear.x = DOCKING_LINEAR_SPEED;
+        cmd_vel.twist.angular.z = angle_diff * 0.5;  // Gentle correction
+        RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
+                            "Docking: Moving forward (%.3fm remaining)", distance_to_home);
+    }
+    
+    // Publish directly (bypass motion controller during docking)
+    auto cmd_vel_pub = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
+    cmd_vel_pub->publish(cmd_vel);
 }

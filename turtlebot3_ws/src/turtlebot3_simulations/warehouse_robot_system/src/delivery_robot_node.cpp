@@ -64,15 +64,37 @@ int main(int argc, char** argv) {
     
     RCLCPP_INFO(node->get_logger(), "Added 2 delivery requests");
     
-    // Auto-start deliveries after 5 seconds (one-shot timer)
+    // Wait for map to be available before starting deliveries
+    RCLCPP_INFO(node->get_logger(), "Waiting for map to be available...");
+    
+    // Auto-start deliveries after map is ready (check every second)
     auto start_timer = node->create_wall_timer(
-        std::chrono::seconds(5),
+        std::chrono::seconds(1),
         [&, node]() {
             static bool started = false;
+            static int wait_count = 0;
+            
             if (!started) {
-                RCLCPP_INFO(node->get_logger(), "Auto-starting deliveries...");
-                g_robot->startDeliveries();
-                started = true;
+                // Check if we have a valid map
+                if (g_robot && g_robot->hasValidMap()) {
+                    RCLCPP_INFO(node->get_logger(), "Map is ready! Auto-starting deliveries...");
+                    g_robot->startDeliveries();
+                    started = true;
+                } else {
+                    wait_count++;
+                    if (wait_count % 5 == 0) {
+                        RCLCPP_INFO(node->get_logger(), "Still waiting for map... (%ds)", wait_count);
+                    }
+                    
+                    // Timeout after 30 seconds
+                    if (wait_count >= 30) {
+                        RCLCPP_ERROR(node->get_logger(), 
+                                    "Timeout waiting for map! Cannot start deliveries.");
+                        RCLCPP_ERROR(node->get_logger(), 
+                                    "Check that SLAM Toolbox is running and publishing /map");
+                        started = true;  // Stop trying
+                    }
+                }
             }
         });
     

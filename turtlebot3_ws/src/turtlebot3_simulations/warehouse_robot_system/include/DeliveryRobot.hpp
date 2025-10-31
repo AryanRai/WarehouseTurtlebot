@@ -26,6 +26,7 @@ public:
     void startDeliveries();
     void stopDeliveries();
     bool isDelivering() const { return is_delivering_; }
+    bool hasValidMap() const;
     
     // Zone management
     void loadZonesFromFile(const std::string& filename);
@@ -90,6 +91,7 @@ private:
     DeliveryZone* findZone(const std::string& zone_name);
     bool navigateToZone(const DeliveryZone& zone);
     bool isAtZone(const DeliveryZone& zone);
+    void returnToHome();
     void publishStatus(const std::string& status);
     std::string getCurrentTimestamp();
 };

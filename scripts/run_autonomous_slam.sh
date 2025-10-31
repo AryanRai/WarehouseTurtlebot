@@ -222,7 +222,13 @@ offer_mode_selection() {
             MAP_FILE_BASE="$(pwd)/warehouse_map_complete"
         fi
         
-        if [ ! -f "${MAP_FILE_BASE}.yaml" ]; then
+        # Check if we're already in preload mode (SLAM already in localization)
+        if [ "$PRELOAD_MAP" = true ]; then
+            echo "   ✓ Already in localization mode (preload)"
+            echo "   ✓ SLAM Toolbox running with loaded map"
+            echo "   ✓ Skipping SLAM restart to preserve TF tree"
+            echo ""
+        elif [ ! -f "${MAP_FILE_BASE}.yaml" ]; then
             echo "   ⚠️  No saved map found, continuing with current SLAM state"
             echo "   SLAM Toolbox will continue in mapping mode"
         else
@@ -335,6 +341,35 @@ EOF
             fi
         fi
         
+        # Wait for SLAM to be ready (check if /map topic is publishing)
+        echo "   Waiting for SLAM to be ready..."
+        WAIT_COUNT=0
+        MAX_WAIT=30
+        MAP_READY=false
+        
+        while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
+            if ros2 topic info /map > /dev/null 2>&1; then
+                # Topic exists, now check if it's publishing
+                if timeout 2s ros2 topic echo /map --once > /dev/null 2>&1; then
+                    MAP_READY=true
+                    echo "   ✅ Map is being published"
+                    break
+                fi
+            fi
+            sleep 1
+            WAIT_COUNT=$((WAIT_COUNT + 1))
+            if [ $((WAIT_COUNT % 5)) -eq 0 ]; then
+                echo "   Still waiting for map... ($WAIT_COUNT/${MAX_WAIT}s)"
+            fi
+        done
+        
+        if [ "$MAP_READY" = false ]; then
+            echo "   ⚠️  WARNING: Map not ready after ${MAX_WAIT}s"
+            echo "   The delivery robot may not work correctly without a map!"
+            echo "   Check SLAM Toolbox logs: tail -f /tmp/slam_toolbox.log"
+            sleep 2
+        fi
+        
         # Start delivery robot node
         echo "   Starting Delivery Robot node..."
         ros2 run warehouse_robot_system delivery_robot_node &
@@ -386,9 +421,25 @@ EOF
         trap 'cleanup_delivery_mode' SIGINT SIGTERM
         
         # Wait in delivery mode
+        DELIVERY_COMPLETE=false
         while true; do
+            # Check for delivery completion marker
+            if [ -f "/tmp/delivery_complete.marker" ]; then
+                echo ""
+                echo "✅ Delivery system completed all tasks!"
+                rm -f "/tmp/delivery_complete.marker"
+                DELIVERY_COMPLETE=true
+                break
+            fi
+            
             if ! ps -p $DELIVERY_PID > /dev/null 2>&1; then
-                echo "❌ Delivery Robot process died!"
+                echo ""
+                echo "ℹ️  Delivery Robot process exited"
+                # Check if it was a clean completion
+                if [ -f "/tmp/delivery_complete.marker" ]; then
+                    DELIVERY_COMPLETE=true
+                    rm -f "/tmp/delivery_complete.marker"
+                fi
                 break
             fi
             
@@ -412,6 +463,15 @@ EOF
             echo "   Stopping Delivery Robot..."
             kill -TERM $DELIVERY_PID 2>/dev/null
             sleep 0.5
+        fi
+        
+        # If deliveries completed successfully, offer mode selection again
+        if [ "$DELIVERY_COMPLETE" = true ]; then
+            echo ""
+            echo "   Deliveries completed successfully!"
+            echo "   Returning to mode selection..."
+            sleep 2
+            offer_mode_selection
         fi
         
     elif [[ "$response" == "2" ]]; then
