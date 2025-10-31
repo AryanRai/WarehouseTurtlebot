@@ -90,7 +90,8 @@ private:
     void returnToHome();
     void performAdvancedReturnHomeRecovery(const geometry_msgs::msg::Pose& current_pose, double current_distance);
     void preciseDocking(const geometry_msgs::msg::Pose& current_pose, double distance_to_home);
-    bool isObstacleAhead(double min_distance = 0.3);  // Check if obstacle within distance
+    bool isObstacleAhead(double min_distance = 0.3);  // Check if obstacle within distance ahead
+    bool isObstacleBehind(double min_distance = 0.3);  // Check if obstacle within distance behind
     bool hasLineOfSight(const geometry_msgs::msg::Point& from, 
                        const geometry_msgs::msg::Point& to,
                        const nav_msgs::msg::OccupancyGrid& map);  // Check clear path with robot footprint

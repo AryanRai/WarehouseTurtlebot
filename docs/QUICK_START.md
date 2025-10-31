@@ -1,5 +1,23 @@
 # Quick Start Guide - Autonomous SLAM System
 
+## ✅ White Robot Issue - FIXED!
+
+**The white robot issue when selecting Exploration Mode has been fixed!**
+
+Simply run:
+```bash
+./launch_warehouse.sh
+./scripts/run_autonomous_slam.sh
+# Select option 1: Exploration Mode
+# ✅ Works immediately!
+```
+
+See [WHITE_ROBOT_FIX_COMPLETE.md](WHITE_ROBOT_FIX_COMPLETE.md) for details.
+
+**Note:** If you started with `-preload` flag, you may still need to restart. Best practice: Don't use `-preload` if you want to explore!
+
+---
+
 ## Prerequisites
 
 - ROS 2 Jazzy installed

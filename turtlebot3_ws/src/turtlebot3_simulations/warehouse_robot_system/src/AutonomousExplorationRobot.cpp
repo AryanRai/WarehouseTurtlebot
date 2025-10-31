@@ -83,10 +83,33 @@ bool AutonomousExplorationRobot::isObstacleAhead(double min_distance) {
     return false;
 }
 
+bool AutonomousExplorationRobot::isObstacleBehind(double min_distance) {
+    if (!current_scan_ || current_scan_->ranges.empty()) {
+        return false;  // No scan data, assume clear
+    }
+    
+    // Check rear 60 degrees (30 degrees on each side of back)
+    int num_ranges = current_scan_->ranges.size();
+    int rear_range = num_ranges / 6;  // 60 degrees out of 360
+    
+    // Check rear center ranges (opposite side from front)
+    for (int i = -rear_range/2; i < rear_range/2; i++) {
+        int idx = (i + num_ranges) % num_ranges;  // Back is at index 0
+        float range = current_scan_->ranges[idx];
+        
+        // Check if valid range and too close
+        if (std::isfinite(range) && range > 0.0 && range < min_distance) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
 void AutonomousExplorationRobot::performRecovery() {
     // Recovery behavior: forward, backward, then forward+rotate pattern
     // This helps discover new frontiers and break oscillation loops
-    // Now with obstacle avoidance!
+    // Now with comprehensive obstacle avoidance!
     
     if (!in_recovery_) {
         int pattern = recovery_attempt_ % 3;
@@ -110,7 +133,7 @@ void AutonomousExplorationRobot::performRecovery() {
         
         if (pattern == 0) {
             // Forward - but stop if obstacle ahead
-            if (!isObstacleAhead(0.3)) {
+            if (!isObstacleAhead(0.4)) {  // Check 40cm ahead
                 linear_speed = 0.1;
                 angular_speed = 0.0;
             } else {
@@ -120,12 +143,19 @@ void AutonomousExplorationRobot::performRecovery() {
                 RCLCPP_DEBUG(node_->get_logger(), "Obstacle detected during forward recovery, rotating instead");
             }
         } else if (pattern == 1) {
-            // Backward - always safe
-            linear_speed = -0.1;
-            angular_speed = 0.0;
+            // Backward - check behind using map-based obstacle detection
+            if (!isObstacleBehind(0.4)) {  // Check 40cm behind
+                linear_speed = -0.1;
+                angular_speed = 0.0;
+            } else {
+                // Obstacle behind, just rotate in place
+                linear_speed = 0.0;
+                angular_speed = 0.5;
+                RCLCPP_DEBUG(node_->get_logger(), "Obstacle detected during backward recovery, rotating instead");
+            }
         } else {
             // Forward + rotate (to break oscillation)
-            if (!isObstacleAhead(0.3)) {
+            if (!isObstacleAhead(0.4)) {  // Check 40cm ahead
                 linear_speed = 0.1;
                 angular_speed = 0.5;
             } else {
@@ -193,7 +223,7 @@ void AutonomousExplorationRobot::performAdvancedReturnHomeRecovery(
         
         switch (return_home_recovery_step_) {
             case 0:  // Forward
-                if (!isObstacleAhead(0.3)) {
+                if (!isObstacleAhead(0.4)) {  // Check 40cm ahead
                     cmd_vel.twist.linear.x = 0.15;
                     cmd_vel.twist.angular.z = 0.0;
                     RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
@@ -207,14 +237,21 @@ void AutonomousExplorationRobot::performAdvancedReturnHomeRecovery(
                 break;
                 
             case 1:  // Backward
-                cmd_vel.twist.linear.x = -0.15;
-                cmd_vel.twist.angular.z = 0.0;
-                RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
-                                    "Recovery step 2/4: Moving backward");
+                if (!isObstacleBehind(0.4)) {  // Check 40cm behind
+                    cmd_vel.twist.linear.x = -0.15;
+                    cmd_vel.twist.angular.z = 0.0;
+                    RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
+                                        "Recovery step 2/4: Moving backward");
+                } else {
+                    cmd_vel.twist.linear.x = 0.0;
+                    cmd_vel.twist.angular.z = 0.5;
+                    RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
+                                        "Recovery step 2/4: Obstacle behind, rotating");
+                }
                 break;
                 
             case 2:  // Forward + rotate left
-                if (!isObstacleAhead(0.3)) {
+                if (!isObstacleAhead(0.4)) {  // Check 40cm ahead
                     cmd_vel.twist.linear.x = 0.15;
                     cmd_vel.twist.angular.z = 0.5;
                     RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
@@ -228,7 +265,7 @@ void AutonomousExplorationRobot::performAdvancedReturnHomeRecovery(
                 break;
                 
             case 3:  // Forward + rotate right
-                if (!isObstacleAhead(0.3)) {
+                if (!isObstacleAhead(0.4)) {  // Check 40cm ahead
                     cmd_vel.twist.linear.x = 0.15;
                     cmd_vel.twist.angular.z = -0.5;
                     RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,

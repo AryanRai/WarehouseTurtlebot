@@ -309,26 +309,64 @@ offer_mode_selection() {
         echo "🔄 Switching to exploration mode..."
         echo ""
         
-        # Stop SLAM Toolbox (localization mode)
-        if [ ! -z "$SLAM_TOOLBOX_PID" ] && ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
-            echo "   Stopping SLAM Toolbox (localization)..."
-            kill -TERM $SLAM_TOOLBOX_PID 2>/dev/null
-            sleep 2
+        # Check if SLAM Toolbox is already in mapping mode
+        SLAM_IN_MAPPING_MODE=false
+        if [ "$PRELOAD_MAP" = false ] && [ ! -z "$SLAM_TOOLBOX_PID" ] && ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
+            # SLAM Toolbox is already running in mapping mode (started at script launch)
+            SLAM_IN_MAPPING_MODE=true
+            echo "   ✓ SLAM Toolbox already running in mapping mode"
         fi
         
-        # Start SLAM Toolbox in mapping mode
-        echo "   Starting SLAM Toolbox in MAPPING mode..."
-        ros2 launch slam_toolbox online_async_launch.py use_sim_time:=$USE_SIM_TIME > /tmp/slam_toolbox.log 2>&1 &
-        SLAM_TOOLBOX_PID=$!
-        sleep 3
-        
-        if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
-            echo "   ❌ Failed to start SLAM Toolbox in mapping mode"
-            offer_mode_selection
-            return
+        # Only restart SLAM if we need to switch from localization to mapping
+        if [ "$SLAM_IN_MAPPING_MODE" = false ]; then
+            echo "   ⚠️  Need to switch SLAM Toolbox from localization to mapping mode"
+            echo "   This may cause TF transform issues (white robot)"
+            echo ""
+            echo "   RECOMMENDED: Restart the entire system for clean TF tree"
+            echo "   1. Press Ctrl+C to exit this script"
+            echo "   2. Stop Gazebo (Ctrl+C in Gazebo terminal)"
+            echo "   3. Restart: ./launch_warehouse.sh"
+            echo "   4. Run this script WITHOUT -preload flag"
+            echo ""
+            echo -n "   Continue anyway? (yes/no): "
+            read -r tf_confirm
+            
+            if [[ "$tf_confirm" != "yes" ]]; then
+                echo "   Returning to menu..."
+                sleep 1
+                offer_mode_selection
+                return
+            fi
+            
+            echo ""
+            echo "   Attempting mode switch (may have TF issues)..."
+            echo ""
+            
+            # Stop SLAM Toolbox (localization mode)
+            if [ ! -z "$SLAM_TOOLBOX_PID" ] && ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
+                echo "   Stopping SLAM Toolbox (localization)..."
+                kill -TERM $SLAM_TOOLBOX_PID 2>/dev/null
+                sleep 2
+            fi
+            
+            # Give extra time for TF to clear
+            echo "   Waiting for TF transforms to clear..."
+            sleep 3
+            
+            # Start SLAM Toolbox in mapping mode
+            echo "   Starting SLAM Toolbox in MAPPING mode..."
+            ros2 launch slam_toolbox online_async_launch.py use_sim_time:=$USE_SIM_TIME > /tmp/slam_toolbox.log 2>&1 &
+            SLAM_TOOLBOX_PID=$!
+            sleep 5
+            
+            if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
+                echo "   ❌ Failed to start SLAM Toolbox in mapping mode"
+                offer_mode_selection
+                return
+            fi
+            
+            echo "   ✓ SLAM Toolbox started in mapping mode"
         fi
-        
-        echo "   ✓ SLAM Toolbox started in mapping mode"
         
         # Start exploration node
         echo "   Starting Autonomous SLAM Controller..."

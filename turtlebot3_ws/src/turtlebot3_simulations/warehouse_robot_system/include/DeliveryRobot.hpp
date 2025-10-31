@@ -144,6 +144,8 @@ private:
     bool hasLineOfSight(const geometry_msgs::msg::Point& from, 
                        const geometry_msgs::msg::Point& to,
                        const nav_msgs::msg::OccupancyGrid& map);
+    double checkMinDistanceToWalls(const geometry_msgs::msg::Point& position,
+                                   const nav_msgs::msg::OccupancyGrid& map);
     void publishStatus(const std::string& status);
     std::string getCurrentTimestamp();
 };

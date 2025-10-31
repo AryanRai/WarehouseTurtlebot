@@ -265,6 +265,7 @@ void DeliveryRobot::update() {
     // Perform relocalization spin at the start
     if (!has_relocalized_) {
         auto current_pose = slam_controller_->getCurrentPose();
+        auto current_map = slam_controller_->getCurrentMap();
         
         double elapsed = (node_->now() - relocalization_start_time_).seconds();
         
@@ -279,6 +280,19 @@ void DeliveryRobot::update() {
             tf2::Matrix3x3 m(q);
             double roll, pitch;
             m.getRPY(roll, pitch, initial_yaw_);
+            
+            // Check if we're too close to walls before starting relocalization
+            if (current_map) {
+                double min_distance_to_wall = checkMinDistanceToWalls(current_pose.position, *current_map);
+                
+                if (min_distance_to_wall < 0.5) {  // Less than 50cm from wall
+                    RCLCPP_WARN(node_->get_logger(), 
+                               "Too close to wall (%.2fm) for safe relocalization spin - skipping", 
+                               min_distance_to_wall);
+                    has_relocalized_ = true;  // Skip relocalization
+                    return;
+                }
+            }
             
             RCLCPP_INFO(node_->get_logger(), "Starting relocalization spin (360°)...");
             relocalization_start_time_ = node_->now();
@@ -910,6 +924,44 @@ void DeliveryRobot::preciseDocking(const geometry_msgs::msg::Pose& current_pose,
     // Publish directly (bypass motion controller during docking)
     auto cmd_vel_pub = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
     cmd_vel_pub->publish(cmd_vel);
+}
+
+// Check minimum distance to walls in all directions
+double DeliveryRobot::checkMinDistanceToWalls(const geometry_msgs::msg::Point& position,
+                                               const nav_msgs::msg::OccupancyGrid& map) {
+    GridCell center = PathPlanner::worldToGrid(map, position);
+    
+    double min_distance = std::numeric_limits<double>::max();
+    
+    // Check in 8 directions around the robot
+    std::vector<std::pair<int, int>> directions = {
+        {1, 0}, {-1, 0}, {0, 1}, {0, -1},  // Cardinal
+        {1, 1}, {1, -1}, {-1, 1}, {-1, -1}  // Diagonal
+    };
+    
+    for (const auto& [dx, dy] : directions) {
+        // Cast ray in this direction until we hit an obstacle
+        for (int step = 1; step < 100; ++step) {  // Max 100 cells (~5m at 0.05m resolution)
+            GridCell check_cell = {center.first + dx * step, center.second + dy * step};
+            
+            if (!PathPlanner::isCellInBounds(map, check_cell)) {
+                break;  // Hit map boundary
+            }
+            
+            if (!PathPlanner::isCellWalkable(map, check_cell)) {
+                // Found obstacle - calculate distance
+                geometry_msgs::msg::Point obstacle_pos = PathPlanner::gridToWorld(map, check_cell);
+                double dist_x = obstacle_pos.x - position.x;
+                double dist_y = obstacle_pos.y - position.y;
+                double distance = std::sqrt(dist_x * dist_x + dist_y * dist_y);
+                
+                min_distance = std::min(min_distance, distance);
+                break;
+            }
+        }
+    }
+    
+    return min_distance;
 }
 
 // TSP-based route optimization using A* distance matrix and Simulated Annealing
