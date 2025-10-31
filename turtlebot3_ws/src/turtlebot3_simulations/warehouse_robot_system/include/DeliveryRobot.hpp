@@ -33,6 +33,7 @@ public:
     void saveZonesToFile(const std::string& filename);
     void addZone(const DeliveryZone& zone);
     void clearZones();
+    std::vector<DeliveryZone> getZones() const { return zones_; }
     
     // Delivery management
     void addDeliveryRequest(const DeliveryRequest& request);

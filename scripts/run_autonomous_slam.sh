@@ -187,36 +187,71 @@ offer_mode_selection() {
     echo ""
     echo "   Choose which robot mode to activate:"
     echo ""
-    echo "   [1] 📍 DEFINE DELIVERY ZONES"
+    echo "   [1] 🗺️  EXPLORATION MODE"
+    echo "       • Autonomous frontier exploration"
+    echo "       • Create new map from scratch"
+    echo "       • SLAM mapping mode"
+    echo "       • Replaces existing map"
+    echo ""
+    echo "   [2] 📍 DEFINE DELIVERY ZONES"
     echo "       • Click points in RViz to mark zones"
     echo "       • Visualize zones on map"
     echo "       • Save zones for delivery mode"
     echo "       • Edit existing zones"
     echo ""
-    echo "   [2] 📦 DELIVERY MODE"
+    echo "   [3] 📦 DELIVERY MODE"
     echo "       • Multi-point delivery operations"
     echo "       • Uses saved delivery zones"
     echo "       • Route optimization (TSP)"
     echo "       • Delivery logging to CSV"
     echo ""
-    echo "   [3] 🔍 INSPECTION MODE (Coming Soon)"
+    echo "   [4] 🔍 INSPECTION MODE (Coming Soon)"
     echo "       • Damage detection with camera"
     echo "       • Inspection point navigation"
     echo "       • Damage report generation"
     echo ""
-    echo "   [4] ❌ EXIT"
+    echo "   [5] ❌ EXIT"
     echo "       • Shutdown system"
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    echo "   Enter your choice [1/2/3/4]"
+    echo "   Enter your choice [1/2/3/4/5]"
     echo "   (You have 60 seconds to respond)"
     echo ""
     echo -n "   👉 Your choice: "
-    read -r -t 60 response || response="4"
+    read -r -t 60 response || response="5"
     echo ""
     
     if [[ "$response" == "1" ]]; then
+        echo ""
+        echo "🗺️  Exploration Mode - Creating New Map"
+        echo "========================================"
+        echo ""
+        echo "⚠️  WARNING: This will replace your existing map!"
+        echo ""
+        echo -n "Are you sure you want to start exploration? (yes/no): "
+        read -r confirm
+        
+        if [[ "$confirm" != "yes" ]]; then
+            echo "Exploration cancelled. Returning to menu..."
+            sleep 1
+            offer_mode_selection
+            return
+        fi
+        
+        echo ""
+        echo "🔄 Restarting system in exploration mode..."
+        echo ""
+        
+        # Cleanup current processes
+        cleanup
+        
+        # Restart without preload flag to trigger exploration
+        echo "Please run: ./scripts/run_autonomous_slam.sh"
+        echo "(without -preload flag for exploration mode)"
+        exit 0
+        
+    elif [[ "$response" == "2" ]]; then
         echo ""
         echo "📍 Zone Definition Mode"
         echo "======================="
@@ -287,7 +322,7 @@ offer_mode_selection() {
         sleep 1
         offer_mode_selection
         
-    elif [[ "$response" == "2" ]]; then
+    elif [[ "$response" == "3" ]]; then
         echo ""
         echo "🔄 Switching to Delivery Mode..."
         echo "================================"
@@ -551,7 +586,7 @@ EOF
             offer_mode_selection
         fi
         
-    elif [[ "$response" == "3" ]]; then
+    elif [[ "$response" == "4" ]]; then
         echo ""
         echo "🔄 Switching to Inspection Mode..."
         echo "================================"

@@ -43,26 +43,27 @@ int main(int argc, char** argv) {
     // Create delivery robot
     g_robot = std::make_shared<DeliveryRobot>(node);
     
-    // Add delivery requests programmatically
-    DeliveryRequest req1;
-    req1.id = "DEL001";
-    req1.from_zone = "Zone_1";
-    req1.to_zone = "Zone_2";
-    req1.item_description = "Package A";
-    req1.priority = 1;
+    // Generate delivery requests for all zones
+    // Creates a sequential path: Zone_1 -> Zone_2 -> Zone_3 -> ... -> Zone_N -> Home
+    auto zones = g_robot->getZones();
     
-    DeliveryRequest req2;
-    req2.id = "DEL002";
-    req2.from_zone = "Zone_2";
-    req2.to_zone = "Zone_1";
-    req2.item_description = "Package B";
-    req2.priority = 2;
-    
-    // Add the requests
-    g_robot->addDeliveryRequest(req1);
-    g_robot->addDeliveryRequest(req2);
-    
-    RCLCPP_INFO(node->get_logger(), "Added 2 delivery requests");
+    if (zones.size() >= 2) {
+        // Create delivery chain through all zones (no return to first zone)
+        for (size_t i = 0; i < zones.size() - 1; i++) {
+            DeliveryRequest req;
+            req.id = "DEL" + std::to_string(i + 1);
+            req.from_zone = zones[i].name;
+            req.to_zone = zones[i + 1].name;  // Next zone in sequence
+            req.item_description = "Package " + std::to_string(i + 1);
+            req.priority = i + 1;
+            
+            g_robot->addDeliveryRequest(req);
+        }
+        
+        RCLCPP_INFO(node->get_logger(), "Added %zu delivery requests for sequential path through all zones", zones.size() - 1);
+    } else {
+        RCLCPP_WARN(node->get_logger(), "Need at least 2 zones to create deliveries. Please define zones first.");
+    }
     
     // Wait for map to be available before starting deliveries
     RCLCPP_INFO(node->get_logger(), "Waiting for map to be available...");
