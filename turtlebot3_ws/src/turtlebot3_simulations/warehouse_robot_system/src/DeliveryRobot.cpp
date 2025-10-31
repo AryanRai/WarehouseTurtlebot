@@ -575,16 +575,29 @@ void DeliveryRobot::returnToHome() {
     }
     
     // Enter precise docking mode when close to home (within 50cm)
+    // BUT only if there's a clear line of sight to home
     if (distance_to_home < DOCKING_DISTANCE) {
-        if (!in_docking_mode_) {
-            RCLCPP_INFO(node_->get_logger(), "Entering precise docking mode (%.3fm from home)", distance_to_home);
-            in_docking_mode_ = true;
-            motion_controller_->clearPath();  // Stop using path planner
-        }
+        // Check if there's a clear path to home (no obstacles in the way)
+        bool has_clear_path = hasLineOfSight(current_pose.position, home_position, *current_map);
         
-        // Use precise docking control
-        preciseDocking(current_pose, distance_to_home);
-        return;
+        if (has_clear_path) {
+            if (!in_docking_mode_) {
+                RCLCPP_INFO(node_->get_logger(), "Entering precise docking mode (%.3fm from home, clear path)", distance_to_home);
+                in_docking_mode_ = true;
+                motion_controller_->clearPath();  // Stop using path planner
+            }
+            
+            // Use precise docking control
+            preciseDocking(current_pose, distance_to_home);
+            return;
+        } else {
+            // Close to home but obstacle in the way - keep using path planner
+            RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 2000,
+                                "Close to home (%.2fm) but obstacle detected - continuing with path planner", 
+                                distance_to_home);
+            in_docking_mode_ = false;  // Make sure we're not in docking mode
+            // Fall through to path planning logic below
+        }
     }
     
     // Reset docking mode if we're far from home
@@ -670,6 +683,50 @@ void DeliveryRobot::returnToHome() {
         RCLCPP_ERROR(node_->get_logger(), "Cannot find any path home! Stopping deliveries.");
         stopDeliveries();
     }
+}
+
+bool DeliveryRobot::hasLineOfSight(const geometry_msgs::msg::Point& from, 
+                                   const geometry_msgs::msg::Point& to,
+                                   const nav_msgs::msg::OccupancyGrid& map) {
+    // Use Bresenham's line algorithm to check if path is clear
+    GridCell start = PathPlanner::worldToGrid(map, from);
+    GridCell goal = PathPlanner::worldToGrid(map, to);
+    
+    int x0 = start.first;
+    int y0 = start.second;
+    int x1 = goal.first;
+    int y1 = goal.second;
+    
+    int dx = std::abs(x1 - x0);
+    int dy = std::abs(y1 - y0);
+    int sx = (x0 < x1) ? 1 : -1;
+    int sy = (y0 < y1) ? 1 : -1;
+    int err = dx - dy;
+    
+    while (true) {
+        // Check if current cell is walkable
+        GridCell current = {x0, y0};
+        if (!PathPlanner::isCellInBounds(map, current) || 
+            !PathPlanner::isCellWalkable(map, current)) {
+            return false;  // Obstacle in the way
+        }
+        
+        if (x0 == x1 && y0 == y1) {
+            break;  // Reached goal
+        }
+        
+        int e2 = 2 * err;
+        if (e2 > -dy) {
+            err -= dy;
+            x0 += sx;
+        }
+        if (e2 < dx) {
+            err += dx;
+            y0 += sy;
+        }
+    }
+    
+    return true;  // Clear path
 }
 
 void DeliveryRobot::preciseDocking(const geometry_msgs::msg::Pose& current_pose, double distance_to_home) {

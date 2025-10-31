@@ -45,8 +45,15 @@ public:
         loadZones();
         
         RCLCPP_INFO(this->get_logger(), "Zone Marker Node started");
+        RCLCPP_INFO(this->get_logger(), "Publishing markers to: /delivery_zones/markers");
         RCLCPP_INFO(this->get_logger(), "Click points in RViz to add delivery zones");
         RCLCPP_INFO(this->get_logger(), "Currently have %zu zones", zones_.size());
+        
+        // Publish existing zones immediately
+        if (!zones_.empty()) {
+            publishMarkers();
+            RCLCPP_INFO(this->get_logger(), "Published %zu existing zone markers", zones_.size());
+        }
     }
     
 private:
