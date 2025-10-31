@@ -86,8 +86,8 @@ private:
     double initial_yaw_;  // Store initial orientation to return to
     bool has_relocalized_;  // Track if we've done initial spin
     rclcpp::Time relocalization_start_time_;
-    static constexpr double RELOCALIZATION_DURATION = 4.0;  // 4 seconds for full 360° spin
-    static constexpr double RELOCALIZATION_SPEED = 0.5;  // rad/s (slow spin)
+    static constexpr double RELOCALIZATION_DURATION = 8.0;  // 8 seconds for 2 full rotations
+    static constexpr double RELOCALIZATION_SPEED = 1.57;  // rad/s (~90°/s, 2 full rotations in 8s)
     
     // Helper methods
     void onPointClicked(const geometry_msgs::msg::PointStamped::SharedPtr msg);

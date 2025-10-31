@@ -187,30 +187,104 @@ offer_mode_selection() {
     echo ""
     echo "   Choose which robot mode to activate:"
     echo ""
-    echo "   [1] 📦 DELIVERY MODE"
+    echo "   [1] 📍 DEFINE DELIVERY ZONES"
+    echo "       • Click points in RViz to mark zones"
+    echo "       • Visualize zones on map"
+    echo "       • Save zones for delivery mode"
+    echo "       • Edit existing zones"
+    echo ""
+    echo "   [2] 📦 DELIVERY MODE"
     echo "       • Multi-point delivery operations"
-    echo "       • Define zones via RViz clicks"
+    echo "       • Uses saved delivery zones"
     echo "       • Route optimization (TSP)"
     echo "       • Delivery logging to CSV"
     echo ""
-    echo "   [2] 🔍 INSPECTION MODE (Coming Soon)"
+    echo "   [3] 🔍 INSPECTION MODE (Coming Soon)"
     echo "       • Damage detection with camera"
     echo "       • Inspection point navigation"
     echo "       • Damage report generation"
     echo ""
-    echo "   [3] ❌ EXIT"
+    echo "   [4] ❌ EXIT"
     echo "       • Shutdown system"
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    echo "   Enter your choice [1/2/3]"
+    echo "   Enter your choice [1/2/3/4]"
     echo "   (You have 60 seconds to respond)"
     echo ""
     echo -n "   👉 Your choice: "
-    read -r -t 60 response || response="3"
+    read -r -t 60 response || response="4"
     echo ""
     
     if [[ "$response" == "1" ]]; then
+        echo ""
+        echo "📍 Zone Definition Mode"
+        echo "======================="
+        echo ""
+        echo "   Starting zone marker visualization..."
+        echo ""
+        
+        # Start zone marker node
+        ros2 run warehouse_robot_system zone_marker_node &
+        ZONE_MARKER_PID=$!
+        sleep 2
+        
+        echo "✅ Zone Definition Mode Active!"
+        echo ""
+        echo "📋 Instructions:"
+        echo "   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "   1️⃣  Open RViz (should already be open)"
+        echo "   2️⃣  Use 'Publish Point' tool (top toolbar)"
+        echo "   3️⃣  Click on the map to add delivery zones"
+        echo "   4️⃣  Each click creates a new zone (Zone_1, Zone_2, etc.)"
+        echo "   5️⃣  Zones appear as colored markers on the map"
+        echo "   6️⃣  Press Ctrl+C when done to save and return to menu"
+        echo ""
+        echo "💡 Tips:"
+        echo "   • Click on accessible (white) areas only"
+        echo "   • Avoid obstacles (black areas)"
+        echo "   • Zones are automatically saved"
+        echo "   • You can run this mode again to add more zones"
+        echo ""
+        echo "📁 Zones saved to: $(pwd)/delivery_zones.yaml"
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "Commands:"
+        echo "  • Press ENTER to finish and return to menu"
+        echo "  • Type 'clear' to delete all zones and start over"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo -n "👉 "
+        read -r user_input
+        
+        # Check if user wants to clear zones
+        if [[ "$user_input" == "clear" ]]; then
+            echo ""
+            echo "🗑️  Clearing all zones..."
+            
+            # Call service to clear zones
+            ros2 service call /clear_zones std_srvs/srv/Trigger
+            
+            echo "✅ All zones cleared! You can now add new zones."
+            echo ""
+            echo "Press ENTER when done to return to menu..."
+            read -r
+        fi
+        
+        # Cleanup zone marker node
+        if [ ! -z "$ZONE_MARKER_PID" ] && ps -p $ZONE_MARKER_PID > /dev/null 2>&1; then
+            echo ""
+            echo "💾 Saving zones and stopping marker node..."
+            kill -TERM $ZONE_MARKER_PID 2>/dev/null
+            sleep 1
+        fi
+        
+        echo ""
+        echo "✅ Zones saved! Returning to mode selection..."
+        sleep 1
+        offer_mode_selection
+        
+    elif [[ "$response" == "2" ]]; then
         echo ""
         echo "🔄 Switching to Delivery Mode..."
         echo "================================"
@@ -474,7 +548,7 @@ EOF
             offer_mode_selection
         fi
         
-    elif [[ "$response" == "2" ]]; then
+    elif [[ "$response" == "3" ]]; then
         echo ""
         echo "🔄 Switching to Inspection Mode..."
         echo "================================"

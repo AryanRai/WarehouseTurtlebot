@@ -34,10 +34,11 @@ DeliveryRobot::DeliveryRobot(rclcpp::Node::SharedPtr node)
         log.close();
     }
     
-    // Subscribe to RViz clicked points
-    clicked_point_sub_ = node_->create_subscription<geometry_msgs::msg::PointStamped>(
-        "/clicked_point", 10,
-        std::bind(&DeliveryRobot::onPointClicked, this, std::placeholders::_1));
+    // NOTE: Clicked point subscription removed - use zone_marker_node instead
+    // This prevents duplicate zone creation when both nodes are running
+    // clicked_point_sub_ = node_->create_subscription<geometry_msgs::msg::PointStamped>(
+    //     "/clicked_point", 10,
+    //     std::bind(&DeliveryRobot::onPointClicked, this, std::placeholders::_1));
     
     // Create services
     start_delivery_srv_ = node_->create_service<std_srvs::srv::Trigger>(
@@ -62,9 +63,8 @@ DeliveryRobot::DeliveryRobot(rclcpp::Node::SharedPtr node)
     }
     
     RCLCPP_INFO(node_->get_logger(), "Delivery Robot initialized");
-    RCLCPP_INFO(node_->get_logger(), "Click points in RViz to add delivery zones");
-    RCLCPP_INFO(node_->get_logger(), "Call /save_delivery_zones service to save zones");
-    RCLCPP_INFO(node_->get_logger(), "Call /start_deliveries service to begin deliveries");
+    RCLCPP_INFO(node_->get_logger(), "Using %zu pre-defined delivery zones", zones_.size());
+    RCLCPP_INFO(node_->get_logger(), "Use 'Define Delivery Zones' mode to add/edit zones");
 }
 
 void DeliveryRobot::onPointClicked(const geometry_msgs::msg::PointStamped::SharedPtr msg) {
@@ -276,8 +276,10 @@ void DeliveryRobot::update() {
     if (!has_relocalized_) {
         auto current_pose = slam_controller_->getCurrentPose();
         
-        // Store initial orientation on first call
-        if (relocalization_start_time_ == node_->now()) {
+        double elapsed = (node_->now() - relocalization_start_time_).seconds();
+        
+        // Store initial orientation on first call (when elapsed is very small)
+        if (elapsed < 0.1) {
             tf2::Quaternion q(
                 current_pose.orientation.x,
                 current_pose.orientation.y,
@@ -290,9 +292,8 @@ void DeliveryRobot::update() {
             
             RCLCPP_INFO(node_->get_logger(), "Starting relocalization spin (360°)...");
             relocalization_start_time_ = node_->now();
+            elapsed = 0.0;  // Reset elapsed for this iteration
         }
-        
-        double elapsed = (node_->now() - relocalization_start_time_).seconds();
         
         if (elapsed < RELOCALIZATION_DURATION) {
             // Spin in place for relocalization

@@ -19,6 +19,7 @@ find_package(std_srvs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
@@ -247,6 +248,20 @@ ament_target_dependencies(twist_stamped_bridge
   geometry_msgs
 )
 
+# Zone Marker Node (for interactive zone definition)
+add_executable(zone_marker_node
+  src/zone_marker_node.cpp
+)
+ament_target_dependencies(zone_marker_node
+  rclcpp
+  geometry_msgs
+  visualization_msgs
+  std_srvs
+)
+target_link_libraries(zone_marker_node
+  yaml-cpp
+)
+
 # ============================================================================
 # INSTALL
 # ============================================================================
@@ -257,6 +272,7 @@ install(TARGETS
   autonomous_slam_node
   delivery_robot_node
   twist_stamped_bridge
+  zone_marker_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

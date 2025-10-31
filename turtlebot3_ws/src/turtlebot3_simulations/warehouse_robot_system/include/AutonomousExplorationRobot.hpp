@@ -96,8 +96,8 @@ private:
     static constexpr double HOME_TOLERANCE = 0.05;   // Success within 5cm
     static constexpr double DOCKING_LINEAR_SPEED = 0.05;  // Slow speed for docking
     static constexpr double DOCKING_ANGULAR_SPEED = 0.3;  // Moderate rotation for alignment
-    static constexpr double RELOCALIZATION_DURATION = 4.0;  // 4 seconds for full 360° spin
-    static constexpr double RELOCALIZATION_SPEED = 0.5;  // rad/s (slow spin)
+    static constexpr double RELOCALIZATION_DURATION = 8.0;  // 8 seconds for 2 full rotations
+    static constexpr double RELOCALIZATION_SPEED = 1.57;  // rad/s (~90°/s, 2 full rotations in 8s)
 };
 
 #endif // AUTONOMOUS_EXPLORATION_ROBOT_HPP
