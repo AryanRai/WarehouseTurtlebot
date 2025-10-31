@@ -99,3 +99,20 @@ Timestamp,RequestID,FromZone,ToZone,Distance(m),Time(s),Status,Notes
 2025-11-01 03:54:21,,Zone_4,Zone_5,0.000000,0.000000,SUCCESS,Delivery completed successfully
 2025-11-01 03:54:38,,Zone_5,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
 2025-11-01 03:54:51,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:02:13,,Start,Zone_3,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:07:01,,Start,Zone_3,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:07:04,,Zone_3,Zone_4,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:07:04,,Zone_4,Zone_4,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:07:18,,Zone_4,Zone_5,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:07:34,,Zone_5,Zone_1,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:07:53,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:07:53,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:08:02,,Zone_2,Zone_3,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:09:38,,Start,Zone_3,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:09:41,,Zone_3,Zone_4,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:09:42,,Zone_4,Zone_4,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:09:53,,Zone_4,Zone_5,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:10:10,,Zone_5,Zone_1,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:10:23,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:10:23,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:10:35,,Zone_2,Zone_3,0.000000,0.000000,SUCCESS,Reached nearest accessible point

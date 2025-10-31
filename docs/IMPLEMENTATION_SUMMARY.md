@@ -283,6 +283,37 @@ RViz
 
 ---
 
+### 8. ✅ Precise Zone Docking for Delivery Robot
+
+**Problem:** Pure Pursuit controller has 18cm lookahead distance, causing robot to stop ~18cm away from delivery zones instead of reaching exact location.
+
+**Solution:**
+- Two-stage navigation: Path following (far) + Precise docking (near)
+- Switches to direct control when within 25cm of zone
+- Aligns robot to face zone, then moves slowly forward
+- Stops within 8cm of target (vs 18cm before)
+
+**Implementation:**
+- Added `in_zone_docking_mode_` flag and `preciseZoneDocking()` method
+- Line-of-sight checks before entering docking mode
+- Smooth transition from Pure Pursuit to direct control
+- Similar to home docking behavior
+
+**Files Modified:**
+- `include/DeliveryRobot.hpp` - Added zone docking parameters and method
+- `src/DeliveryRobot.cpp` - Implemented precise zone docking logic
+
+**Documentation:**
+- `docs/ZONE_PRECISE_DOCKING.md` - Detailed explanation
+
+**Benefits:**
+- Precise positioning within 8cm (vs 18cm)
+- Reliable delivery at exact locations
+- Safe operation with obstacle detection
+- Robust fallback to path planning if needed
+
+---
+
 ## Future Enhancements
 
 ### Potential Improvements

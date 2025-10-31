@@ -16,7 +16,9 @@ DeliveryRobot::DeliveryRobot(rclcpp::Node::SharedPtr node)
       is_delivering_(false),
       current_delivery_index_(0),
       total_distance_(0.0),
+      zone_path_completed_(false),
       in_docking_mode_(false),
+      in_zone_docking_mode_(false),
       initial_yaw_(0.0),
       has_relocalized_(false),
       relocalization_start_time_(node->now()),
@@ -344,25 +346,31 @@ void DeliveryRobot::update() {
     }
     
     auto& current_zone = optimized_route_[current_delivery_index_];
-    
-    // Execute motion if we have a path
-    if (motion_controller_->hasPath()) {
-        auto current_map = slam_controller_->getCurrentMap();
-        auto current_pose = slam_controller_->getCurrentPose();
-        motion_controller_->computeVelocityCommand(current_pose, *current_map);
-        return;  // Continue following path
-    }
-    
-    // No path - check if we just finished navigating to this zone
     auto current_pose = slam_controller_->getCurrentPose();
+    auto current_map = slam_controller_->getCurrentMap();
+    
+    // Calculate distance to current zone
     double dx = current_zone.position.x - current_pose.position.x;
     double dy = current_zone.position.y - current_pose.position.y;
     double distance_to_zone = std::sqrt(dx*dx + dy*dy);
     
-    // If we're close to the zone and have no path, we must have just arrived
-    if (distance_to_zone < ZONE_REACHED_THRESHOLD * 2.0) {  // Use 2x threshold for adjusted positions
-        RCLCPP_INFO(node_->get_logger(), "Reached zone: %s (%.2fm)", 
+    // Check if we've reached the zone with tight tolerance OR if path is complete and we're close
+    bool zone_reached = (distance_to_zone < ZONE_TOLERANCE) || 
+                       (zone_path_completed_ && distance_to_zone < ZONE_REACHED_THRESHOLD);
+    
+    if (zone_reached) {
+        RCLCPP_INFO(node_->get_logger(), "✓ Reached zone: %s (%.3fm)", 
                    current_zone.name.c_str(), distance_to_zone);
+        
+        // Stop all motion
+        geometry_msgs::msg::TwistStamped stop_cmd;
+        stop_cmd.header.stamp = node_->now();
+        stop_cmd.header.frame_id = "base_footprint";
+        stop_cmd.twist.linear.x = 0.0;
+        stop_cmd.twist.angular.z = 0.0;
+        
+        auto cmd_vel_pub = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
+        cmd_vel_pub->publish(stop_cmd);
         
         // Save delivery record
         DeliveryRecord record;
@@ -376,15 +384,133 @@ void DeliveryRobot::update() {
         
         saveDeliveryRecord(record);
         
-        // Move to next zone
+        // Reset docking mode and flags, move to next zone
+        in_zone_docking_mode_ = false;
+        zone_path_completed_ = false;
         current_delivery_index_++;
         
         publishStatus("Reached: " + current_zone.name);
         
+        // Small pause at delivery zone (simulate unloading)
+        rclcpp::sleep_for(std::chrono::milliseconds(500));
+        
         return;
     }
     
-    // No path and not at zone - need to plan a path
+    // Enter precise docking mode when close to zone (within 25cm)
+    // BUT only if there's a clear line of sight to zone
+    if (distance_to_zone < ZONE_DOCKING_DISTANCE) {
+        // Check if there's a clear path to zone
+        bool has_clear_path = hasLineOfSight(current_pose.position, current_zone.position, *current_map);
+        
+        if (has_clear_path) {
+            if (!in_zone_docking_mode_) {
+                RCLCPP_INFO(node_->get_logger(), "Entering precise zone docking mode (%.3fm from %s, clear path)", 
+                           distance_to_zone, current_zone.name.c_str());
+                in_zone_docking_mode_ = true;
+                motion_controller_->clearPath();  // Stop using path planner
+            }
+            
+            // Use precise docking control
+            preciseZoneDocking(current_pose, current_zone, distance_to_zone);
+            return;
+        } else {
+            // Close to zone but obstacle in the way - keep using path planner
+            RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 2000,
+                                "Close to zone (%.2fm) but obstacle detected - continuing with path planner", 
+                                distance_to_zone);
+            in_zone_docking_mode_ = false;  // Make sure we're not in docking mode
+            // Fall through to path planning logic below
+        }
+    }
+    
+    // Reset docking mode if we're far from zone
+    if (in_zone_docking_mode_ && distance_to_zone >= ZONE_DOCKING_DISTANCE) {
+        in_zone_docking_mode_ = false;
+    }
+    
+    // Execute motion if we have a path
+    if (motion_controller_->hasPath()) {
+        motion_controller_->computeVelocityCommand(current_pose, *current_map);
+        
+        // Check if we've reached the path goal
+        if (motion_controller_->isAtGoal() && !zone_path_completed_) {
+            zone_path_completed_ = true;
+            RCLCPP_INFO(node_->get_logger(), 
+                       "Path complete to %s (%.3fm from exact position)", 
+                       current_zone.name.c_str(), distance_to_zone);
+        }
+        
+        return;  // Continue following path
+    }
+    
+    // No path - check if we've already completed a path to this zone
+    if (zone_path_completed_) {
+        // We've reached as close as we can get via path planning
+        // Check if we're close enough to switch to docking or just accept this position
+        if (distance_to_zone < ZONE_DOCKING_DISTANCE * 1.5) {  // Within 37.5cm
+            // Check line of sight before switching to docking
+            bool has_clear_path = hasLineOfSight(current_pose.position, current_zone.position, *current_map);
+            
+            if (has_clear_path) {
+                RCLCPP_INFO(node_->get_logger(), 
+                           "Path complete, %.2fm from zone with clear line of sight - switching to docking mode", 
+                           distance_to_zone);
+                in_zone_docking_mode_ = true;
+                motion_controller_->clearPath();
+                preciseZoneDocking(current_pose, current_zone, distance_to_zone);
+                return;
+            } else {
+                // Close but obstacle in way - accept this as "reached"
+                RCLCPP_INFO(node_->get_logger(),
+                           "Path complete, %.2fm from zone but obstacle detected - accepting position", 
+                           distance_to_zone);
+                
+                // Mark as reached even though not at exact position
+                zone_path_completed_ = false;  // Reset for next zone
+                
+                // Save delivery record
+                DeliveryRecord record;
+                record.timestamp = getCurrentTimestamp();
+                record.from_zone = current_delivery_index_ > 0 ? 
+                    optimized_route_[current_delivery_index_ - 1].name : "Start";
+                record.to_zone = current_zone.name;
+                record.distance_traveled = total_distance_;
+                record.success = true;
+                record.notes = "Reached nearest accessible point (obstacle at exact location)";
+                
+                saveDeliveryRecord(record);
+                
+                current_delivery_index_++;
+                publishStatus("Reached: " + current_zone.name + " (nearest point)");
+                return;
+            }
+        } else {
+            // Path complete but still far from zone - this shouldn't happen, but handle it
+            RCLCPP_WARN(node_->get_logger(),
+                       "Path complete but still %.2fm from zone - accepting position", 
+                       distance_to_zone);
+            
+            zone_path_completed_ = false;
+            
+            DeliveryRecord record;
+            record.timestamp = getCurrentTimestamp();
+            record.from_zone = current_delivery_index_ > 0 ? 
+                optimized_route_[current_delivery_index_ - 1].name : "Start";
+            record.to_zone = current_zone.name;
+            record.distance_traveled = total_distance_;
+            record.success = true;
+            record.notes = "Reached nearest accessible point";
+            
+            saveDeliveryRecord(record);
+            
+            current_delivery_index_++;
+            publishStatus("Reached: " + current_zone.name + " (nearest point)");
+            return;
+        }
+    }
+    
+    // No path and not at zone - need to plan a path (first time or replanning)
     if (!motion_controller_->hasPath()) {
         auto current_map = slam_controller_->getCurrentMap();
         auto current_pose = slam_controller_->getCurrentPose();
@@ -1044,4 +1170,55 @@ double DeliveryRobot::calculateTourCost(
     total_cost += distance_matrix[tour.back()][tour[0]];
     
     return total_cost;
+}
+
+// Precise docking for delivery zones (similar to home docking)
+void DeliveryRobot::preciseZoneDocking(const geometry_msgs::msg::Pose& current_pose, 
+                                       const DeliveryZone& zone, 
+                                       double distance_to_zone) {
+    // Calculate direction to zone
+    double dx = zone.position.x - current_pose.position.x;
+    double dy = zone.position.y - current_pose.position.y;
+    double angle_to_zone = std::atan2(dy, dx);
+    
+    // Get current robot orientation
+    tf2::Quaternion q(
+        current_pose.orientation.x,
+        current_pose.orientation.y,
+        current_pose.orientation.z,
+        current_pose.orientation.w
+    );
+    tf2::Matrix3x3 m(q);
+    double roll, pitch, yaw;
+    m.getRPY(roll, pitch, yaw);
+    
+    // Calculate angle difference
+    double angle_diff = angle_to_zone - yaw;
+    // Normalize to [-pi, pi]
+    while (angle_diff > M_PI) angle_diff -= 2.0 * M_PI;
+    while (angle_diff < -M_PI) angle_diff += 2.0 * M_PI;
+    
+    geometry_msgs::msg::TwistStamped cmd_vel;
+    cmd_vel.header.stamp = node_->now();
+    cmd_vel.header.frame_id = "base_footprint";
+    
+    // If angle is off by more than 10 degrees, rotate first
+    if (std::abs(angle_diff) > 0.175) {  // ~10 degrees
+        cmd_vel.twist.linear.x = 0.0;
+        cmd_vel.twist.angular.z = (angle_diff > 0) ? DOCKING_ANGULAR_SPEED : -DOCKING_ANGULAR_SPEED;
+        RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
+                            "Zone Docking: Aligning to %s (angle error: %.1f°)", 
+                            zone.name.c_str(), angle_diff * 180.0 / M_PI);
+    } else {
+        // Move forward slowly toward zone
+        cmd_vel.twist.linear.x = DOCKING_LINEAR_SPEED;
+        cmd_vel.twist.angular.z = angle_diff * 0.5;  // Gentle correction
+        RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
+                            "Zone Docking: Moving to %s (%.3fm remaining)", 
+                            zone.name.c_str(), distance_to_zone);
+    }
+    
+    // Publish directly (bypass motion controller during docking)
+    auto cmd_vel_pub = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
+    cmd_vel_pub->publish(cmd_vel);
 }

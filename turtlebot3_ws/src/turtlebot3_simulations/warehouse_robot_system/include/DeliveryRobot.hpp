@@ -67,6 +67,7 @@ private:
     std::chrono::steady_clock::time_point delivery_start_time_;
     geometry_msgs::msg::Point delivery_start_position_;
     double total_distance_;
+    bool zone_path_completed_;  // Track if we've completed path to current zone
     
     // ROS interfaces
     rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr clicked_point_sub_;
@@ -83,11 +84,14 @@ private:
     // Docking parameters (same as exploration robot)
     static constexpr double DOCKING_DISTANCE = 0.5;  // Enter docking mode within 50cm
     static constexpr double HOME_TOLERANCE = 0.05;   // Success within 5cm
+    static constexpr double ZONE_TOLERANCE = 0.08;   // Success within 8cm for delivery zones
     static constexpr double DOCKING_LINEAR_SPEED = 0.05;  // Slow speed for docking
     static constexpr double DOCKING_ANGULAR_SPEED = 0.3;  // Moderate rotation for alignment
+    static constexpr double ZONE_DOCKING_DISTANCE = 0.25;  // Enter zone docking within 25cm (larger than lookahead)
     
     // Docking state
     bool in_docking_mode_;
+    bool in_zone_docking_mode_;  // Separate flag for zone docking
     double initial_yaw_;  // Store initial orientation to return to
     bool has_relocalized_;  // Track if we've done initial spin
     rclcpp::Time relocalization_start_time_;
@@ -134,6 +138,9 @@ private:
     bool isAtZone(const DeliveryZone& zone);
     void returnToHome();
     void preciseDocking(const geometry_msgs::msg::Pose& current_pose, double distance_to_home);
+    void preciseZoneDocking(const geometry_msgs::msg::Pose& current_pose, 
+                           const DeliveryZone& zone, 
+                           double distance_to_zone);
     bool hasLineOfSight(const geometry_msgs::msg::Point& from, 
                        const geometry_msgs::msg::Point& to,
                        const nav_msgs::msg::OccupancyGrid& map);
