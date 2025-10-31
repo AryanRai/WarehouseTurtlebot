@@ -94,6 +94,67 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 cd "$(dirname "$0")/../turtlebot3_ws"
 
+# Map selection for preload mode
+if [ "$PRELOAD_MAP" = true ]; then
+    MAPS_DIR="$(pwd)/saved_maps"
+    
+    # Check if there are saved maps
+    if [ -d "$MAPS_DIR" ] && [ "$(ls -A $MAPS_DIR 2>/dev/null)" ]; then
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "📁 MAP SELECTION"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "   Available maps:"
+        echo ""
+        
+        # List maps with numbers
+        map_count=0
+        declare -a map_names
+        for map_dir in "$MAPS_DIR"/*; do
+            if [ -d "$map_dir" ]; then
+                map_count=$((map_count + 1))
+                map_name=$(basename "$map_dir")
+                map_names[$map_count]="$map_name"
+                
+                echo "   [$map_count] $map_name"
+                if [ -f "$map_dir/info.txt" ]; then
+                    echo "       $(head -n 1 $map_dir/info.txt)"
+                fi
+                
+                if [ -f "$map_dir/delivery_zones.yaml" ]; then
+                    zone_count=$(grep -c "^  - name:" "$map_dir/delivery_zones.yaml" 2>/dev/null || echo "0")
+                    echo "       Zones: $zone_count"
+                fi
+            fi
+        done
+        
+        echo ""
+        echo "   [0] Use current/default map"
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo -n "   Select map [0-$map_count]: "
+        read -r -t 30 map_choice || map_choice="0"
+        echo ""
+        
+        if [ "$map_choice" -gt 0 ] && [ "$map_choice" -le "$map_count" ]; then
+            selected_map="${map_names[$map_choice]}"
+            echo "   Loading map: $selected_map"
+            
+            # Load the selected map
+            "$SCRIPT_DIR/map_manager.sh" load "$selected_map"
+            
+            echo ""
+        elif [ "$map_choice" = "0" ]; then
+            echo "   Using current/default map"
+            echo ""
+        else
+            echo "   Invalid selection, using current/default map"
+            echo ""
+        fi
+    fi
+fi
+
 # Check if workspace is built
 if [ ! -d "install" ]; then
     echo "❌ Workspace not built! Please run './scripts/build_project.sh' first."
@@ -205,21 +266,26 @@ offer_mode_selection() {
     echo "       • Route optimization (TSP)"
     echo "       • Delivery logging to CSV"
     echo ""
-    echo "   [4] 🔍 INSPECTION MODE (Coming Soon)"
+    echo "   [4] 💾 SAVE CURRENT MAP"
+    echo "       • Save map with custom name"
+    echo "       • Includes zones and robot pose"
+    echo "       • Can be loaded later"
+    echo ""
+    echo "   [5] 🔍 INSPECTION MODE (Coming Soon)"
     echo "       • Damage detection with camera"
     echo "       • Inspection point navigation"
     echo "       • Damage report generation"
     echo ""
-    echo "   [5] ❌ EXIT"
+    echo "   [6] ❌ EXIT"
     echo "       • Shutdown system"
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    echo "   Enter your choice [1/2/3/4/5]"
+    echo "   Enter your choice [1/2/3/4/5/6]"
     echo "   (You have 60 seconds to respond)"
     echo ""
     echo -n "   👉 Your choice: "
-    read -r -t 60 response || response="5"
+    read -r -t 60 response || response="6"
     echo ""
     
     if [[ "$response" == "1" ]]; then
@@ -243,13 +309,38 @@ offer_mode_selection() {
         echo "🔄 Restarting system in exploration mode..."
         echo ""
         
-        # Cleanup current processes
-        cleanup
+        # Cleanup current processes (but don't exit)
+        echo "   Stopping current processes..."
         
-        # Restart without preload flag to trigger exploration
-        echo "Please run: ./scripts/run_autonomous_slam.sh"
-        echo "(without -preload flag for exploration mode)"
-        exit 0
+        if [ ! -z "$RSP_PID" ] && ps -p $RSP_PID > /dev/null 2>&1; then
+            kill -TERM $RSP_PID 2>/dev/null
+        fi
+        
+        if [ ! -z "$SLAM_TOOLBOX_PID" ] && ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
+            kill -TERM $SLAM_TOOLBOX_PID 2>/dev/null
+        fi
+        
+        if [ ! -z "$BATTERY_PID" ] && ps -p $BATTERY_PID > /dev/null 2>&1; then
+            kill -TERM $BATTERY_PID 2>/dev/null
+        fi
+        
+        if [ ! -z "$ROSBRIDGE_PID" ] && ps -p $ROSBRIDGE_PID > /dev/null 2>&1; then
+            kill -TERM $ROSBRIDGE_PID 2>/dev/null
+        fi
+        
+        if [ ! -z "$RVIZ_PID" ] && ps -p $RVIZ_PID > /dev/null 2>&1; then
+            kill -TERM $RVIZ_PID 2>/dev/null
+        fi
+        
+        sleep 2
+        
+        echo "   ✓ Processes stopped"
+        echo ""
+        echo "   Launching exploration mode..."
+        sleep 1
+        
+        # Re-execute script without -preload flag
+        exec "$SCRIPT_DIR/run_autonomous_slam.sh"
         
     elif [[ "$response" == "2" ]]; then
         echo ""
@@ -622,6 +713,31 @@ EOF
         fi
         
     elif [[ "$response" == "4" ]]; then
+        echo ""
+        echo "💾 Save Current Map"
+        echo "==================="
+        echo ""
+        echo -n "   Enter map name: "
+        read -r map_name
+        
+        if [ -z "$map_name" ]; then
+            echo "   ❌ Map name cannot be empty"
+            sleep 2
+            offer_mode_selection
+            return
+        fi
+        
+        echo -n "   Enter description (optional): "
+        read -r map_desc
+        
+        echo ""
+        "$SCRIPT_DIR/map_manager.sh" save "$map_name" "$map_desc"
+        
+        echo "   Press ENTER to return to menu..."
+        read -r
+        offer_mode_selection
+        
+    elif [[ "$response" == "5" ]]; then
         echo ""
         echo "🔄 Switching to Inspection Mode..."
         echo "================================"
