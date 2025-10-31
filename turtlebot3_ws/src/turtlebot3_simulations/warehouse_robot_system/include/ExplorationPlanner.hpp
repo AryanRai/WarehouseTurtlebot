@@ -29,6 +29,7 @@ public:
     bool isExplorationComplete() const;
     int getNoFrontiersCounter() const;
     int getNoPathCounter() const;
+    bool isReducingLookahead() const;  // Check if actively reducing distance for same goal
     
 private:
     rclcpp::Node::SharedPtr node_;
@@ -52,9 +53,19 @@ private:
     bool is_finished_exploring_;
     bool debug_mode_;
     
+    // Dynamic lookahead distance
+    geometry_msgs::msg::Point last_rejected_goal_;
+    int consecutive_rejections_;
+    double current_min_distance_;
+    static constexpr double INITIAL_MIN_DISTANCE = 0.20;  // 20cm
+    static constexpr double MINIMUM_MIN_DISTANCE = 0.05;  // 5cm absolute minimum
+    static constexpr double DISTANCE_REDUCTION_STEP = 0.03;  // Reduce by 3cm each time
+    
     // Helper functions
     std::vector<Frontier> getTopFrontiers(const std::vector<Frontier>& frontiers, int n);
     void publishCostMap(const nav_msgs::msg::OccupancyGrid& mapdata, const cv::Mat& cost_map);
+    void updateDynamicLookahead(const geometry_msgs::msg::Point& rejected_goal);
+    void resetDynamicLookahead();
 };
 
 #endif // EXPLORATION_PLANNER_HPP

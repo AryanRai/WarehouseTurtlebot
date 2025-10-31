@@ -918,16 +918,25 @@ void AutonomousExplorationRobot::update() {
             RCLCPP_INFO(node_->get_logger(), "New path planned with %zu waypoints", 
                        new_path.poses.size());
         } else {
+            // Check if dynamic lookahead is actively working
+            bool is_reducing_lookahead = exploration_planner_->isReducingLookahead();
+            
             // Track if this is due to no frontiers
             if (exploration_planner_->getNoFrontiersCounter() > 0) {
                 consecutive_no_frontiers_count_++;
             }
             
-            RCLCPP_WARN_THROTTLE(node_->get_logger(), *node_->get_clock(), 2000,
-                                "No valid exploration path found (%d/%d attempts, %d no-frontiers)", 
-                                consecutive_no_path_count_ + 1, MAX_NO_PATH_BEFORE_RECOVERY,
-                                consecutive_no_frontiers_count_);
-            consecutive_no_path_count_++;
+            // Only count as failure if NOT actively reducing lookahead
+            if (!is_reducing_lookahead) {
+                RCLCPP_WARN_THROTTLE(node_->get_logger(), *node_->get_clock(), 2000,
+                                    "No valid exploration path found (%d/%d attempts, %d no-frontiers)", 
+                                    consecutive_no_path_count_ + 1, MAX_NO_PATH_BEFORE_RECOVERY,
+                                    consecutive_no_frontiers_count_);
+                consecutive_no_path_count_++;
+            } else {
+                RCLCPP_DEBUG_THROTTLE(node_->get_logger(), *node_->get_clock(), 2000,
+                                     "No path yet, but dynamic lookahead is reducing distance - not counting as failure");
+            }
             
             // If we've had many "no frontiers" results, reduce recovery attempts
             int max_recovery = MAX_RECOVERY_ATTEMPTS;

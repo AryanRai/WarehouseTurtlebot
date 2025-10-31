@@ -58,7 +58,7 @@ private:
     // Configuration
     static constexpr double UPDATE_RATE = 20.0;  // Hz
     static constexpr double MIN_REPLAN_INTERVAL = 2.0;  // seconds - minimum time between replans
-    static constexpr int MAX_NO_PATH_BEFORE_RECOVERY = 5;  // attempts before recovery
+    static constexpr int MAX_NO_PATH_BEFORE_RECOVERY = 8;  // attempts before recovery (matches dynamic lookahead cycle time)
     static constexpr double RECOVERY_DURATION = 3.0;  // seconds to rotate during recovery
     static constexpr int MAX_RECOVERY_ATTEMPTS = 15;  // max recovery attempts before giving up (increased from 3)
     

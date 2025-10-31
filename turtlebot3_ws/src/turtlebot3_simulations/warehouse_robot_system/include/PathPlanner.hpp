@@ -65,7 +65,7 @@ public:
 
 private:
     static constexpr int WALKABLE_THRESHOLD = 50;
-    static constexpr int CSPACE_PADDING = 5;
+    static constexpr int CSPACE_PADDING = 3;  // Reduced from 5 to 3 (15cm vs 25cm inflation)
     static constexpr double COST_MAP_WEIGHT = 1000.0;
     static constexpr int MIN_PATH_LENGTH = 12;
     static constexpr int POSES_TO_TRUNCATE = 8;

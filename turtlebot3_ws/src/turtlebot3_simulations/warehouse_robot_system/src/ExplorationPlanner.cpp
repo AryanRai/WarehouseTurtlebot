@@ -6,7 +6,13 @@ ExplorationPlanner::ExplorationPlanner(rclcpp::Node::SharedPtr node)
       no_frontiers_found_counter_(0),
       no_path_found_counter_(0),
       is_finished_exploring_(false),
-      debug_mode_(false) {
+      debug_mode_(false),
+      consecutive_rejections_(0),
+      current_min_distance_(INITIAL_MIN_DISTANCE) {
+    
+    last_rejected_goal_.x = 0.0;
+    last_rejected_goal_.y = 0.0;
+    last_rejected_goal_.z = 0.0;
     
     // Check if debug mode is enabled
     if (!node_->has_parameter("debug")) {
@@ -140,8 +146,11 @@ nav_msgs::msg::Path ExplorationPlanner::planExplorationPath(
     std::vector<GridCell> best_path;
     std::vector<GridCell> starts, goals;
     
-    // Minimum distance to frontier (in meters) to avoid planning to current location
-    const double MIN_FRONTIER_DISTANCE = 0.20;  // 20cm minimum - increased from 15cm
+    // Use dynamic minimum distance (starts at 20cm, can reduce to 5cm)
+    const double MIN_FRONTIER_DISTANCE = current_min_distance_;
+    
+    // Also skip frontiers within goal tolerance (robot is already there)
+    const double GOAL_TOLERANCE = 0.10;  // 10cm - same as MotionController
     
     int frontiers_checked = 0;
     int frontiers_too_close = 0;
@@ -154,9 +163,18 @@ nav_msgs::msg::Path ExplorationPlanner::planExplorationPath(
         double dy = frontier.centroid.y - current_pose.position.y;
         double distance_to_frontier = std::sqrt(dx * dx + dy * dy);
         
+        // Skip if within goal tolerance (robot is already there - frontier should be explored)
+        if (distance_to_frontier < GOAL_TOLERANCE) {
+            RCLCPP_DEBUG(node_->get_logger(), 
+                        "Skipping frontier at (%.2f, %.2f) - within goal tolerance (%.3fm < %.2fm)", 
+                        frontier.centroid.x, frontier.centroid.y, distance_to_frontier, GOAL_TOLERANCE);
+            continue;
+        }
+        
+        // Skip if too close for current dynamic threshold
         if (distance_to_frontier < MIN_FRONTIER_DISTANCE) {
             frontiers_too_close++;
-            RCLCPP_INFO(node_->get_logger(), 
+            RCLCPP_DEBUG(node_->get_logger(), 
                         "Skipping frontier at (%.2f, %.2f) - too close (%.3fm < %.2fm)", 
                         frontier.centroid.x, frontier.centroid.y, distance_to_frontier, MIN_FRONTIER_DISTANCE);
             continue;
@@ -219,10 +237,22 @@ nav_msgs::msg::Path ExplorationPlanner::planExplorationPath(
             double dy = goal_pos.y - current_pose.position.y;
             double goal_distance = std::sqrt(dx * dx + dy * dy);
             
+            // Skip if within goal tolerance (robot is already there)
+            if (goal_distance < GOAL_TOLERANCE) {
+                RCLCPP_INFO(node_->get_logger(), 
+                           "Best path goal at (%.2f, %.2f) is within goal tolerance (%.3fm < %.2fm) - skipping (frontier already explored)", 
+                           goal_pos.x, goal_pos.y, goal_distance, GOAL_TOLERANCE);
+                return empty_path;
+            }
+            
             if (goal_distance < MIN_FRONTIER_DISTANCE) {
                 RCLCPP_WARN(node_->get_logger(), 
-                           "Best path goal at (%.2f, %.2f) is too close (%.3fm) - rejecting", 
-                           goal_pos.x, goal_pos.y, goal_distance);
+                           "Best path goal at (%.2f, %.2f) is too close (%.3fm < %.3fm) - will reduce threshold if repeated", 
+                           goal_pos.x, goal_pos.y, goal_distance, MIN_FRONTIER_DISTANCE);
+                
+                // Update dynamic lookahead - will reduce threshold if same goal keeps getting rejected
+                updateDynamicLookahead(goal_pos);
+                
                 // Don't count as failure - just wait for better frontiers
                 return empty_path;
             }
@@ -230,6 +260,17 @@ nav_msgs::msg::Path ExplorationPlanner::planExplorationPath(
         
         RCLCPP_INFO(node_->get_logger(), "Found best path with cost %.2f", lowest_cost);
         no_path_found_counter_ = 0;
+        
+        // Only reset dynamic lookahead if path is long enough (robot will actually move)
+        // If path is very short (< 3 waypoints), keep reduced threshold to explore past this point
+        if (path_msg.poses.size() >= 5) {
+            resetDynamicLookahead();
+        } else {
+            RCLCPP_DEBUG(node_->get_logger(), 
+                        "Path is short (%zu waypoints) - keeping reduced lookahead threshold (%.3fm)",
+                        path_msg.poses.size(), current_min_distance_);
+        }
+        
         return path_msg;
     } else {
         // Don't count "all frontiers too close" as a failure - just wait for map to update
@@ -260,4 +301,44 @@ int ExplorationPlanner::getNoFrontiersCounter() const {
 
 int ExplorationPlanner::getNoPathCounter() const {
     return no_path_found_counter_;
+}
+
+bool ExplorationPlanner::isReducingLookahead() const {
+    // Return true if we're actively reducing lookahead (have consecutive rejections)
+    return consecutive_rejections_ > 0;
+}
+
+void ExplorationPlanner::updateDynamicLookahead(const geometry_msgs::msg::Point& rejected_goal) {
+    // Check if this is the same goal as last time
+    double dx = rejected_goal.x - last_rejected_goal_.x;
+    double dy = rejected_goal.y - last_rejected_goal_.y;
+    double distance_to_last = std::sqrt(dx * dx + dy * dy);
+    
+    if (distance_to_last < 0.05) {  // Same goal (within 5cm)
+        consecutive_rejections_++;
+        
+        // Reduce minimum distance every 2 rejections
+        if (consecutive_rejections_ % 2 == 0) {
+            double new_min_distance = current_min_distance_ - DISTANCE_REDUCTION_STEP;
+            current_min_distance_ = std::max(new_min_distance, MINIMUM_MIN_DISTANCE);
+            
+            RCLCPP_INFO(node_->get_logger(), 
+                       "Reducing minimum frontier distance to %.3fm (rejection #%d for same goal)",
+                       current_min_distance_, consecutive_rejections_);
+        }
+    } else {
+        // Different goal - reset counter but keep current distance for a bit
+        consecutive_rejections_ = 1;
+    }
+    
+    // Store this goal
+    last_rejected_goal_ = rejected_goal;
+}
+
+void ExplorationPlanner::resetDynamicLookahead() {
+    consecutive_rejections_ = 0;
+    current_min_distance_ = INITIAL_MIN_DISTANCE;
+    last_rejected_goal_.x = 0.0;
+    last_rejected_goal_.y = 0.0;
+    last_rejected_goal_.z = 0.0;
 }
