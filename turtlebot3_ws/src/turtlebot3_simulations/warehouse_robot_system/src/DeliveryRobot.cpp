@@ -217,41 +217,18 @@ std::vector<DeliveryZone> DeliveryRobot::optimizeRoute(
     const geometry_msgs::msg::Point& start,
     const std::vector<DeliveryRequest>& requests) {
     
-    // Simple nearest neighbor TSP
+    // Ordered mode: Follow requests in sequential order (no optimization)
     std::vector<DeliveryZone> route;
-    std::vector<DeliveryRequest> remaining = requests;
-    auto current_pos = start;
     
-    while (!remaining.empty()) {
-        double min_dist = std::numeric_limits<double>::max();
-        size_t nearest_idx = 0;
-        
-        // Find nearest unvisited zone
-        for (size_t i = 0; i < remaining.size(); ++i) {
-            auto* from_zone = findZone(remaining[i].from_zone);
-            if (!from_zone) continue;
-            
-            double dx = from_zone->position.x - current_pos.x;
-            double dy = from_zone->position.y - current_pos.y;
-            double dist = std::sqrt(dx*dx + dy*dy);
-            
-            if (dist < min_dist) {
-                min_dist = dist;
-                nearest_idx = i;
-            }
-        }
-        
-        // Add from and to zones to route
-        auto* from_zone = findZone(remaining[nearest_idx].from_zone);
-        auto* to_zone = findZone(remaining[nearest_idx].to_zone);
+    for (const auto& request : requests) {
+        // Add from and to zones in order
+        auto* from_zone = findZone(request.from_zone);
+        auto* to_zone = findZone(request.to_zone);
         
         if (from_zone && to_zone) {
             route.push_back(*from_zone);
             route.push_back(*to_zone);
-            current_pos = to_zone->position;
         }
-        
-        remaining.erase(remaining.begin() + nearest_idx);
     }
     
     return route;
