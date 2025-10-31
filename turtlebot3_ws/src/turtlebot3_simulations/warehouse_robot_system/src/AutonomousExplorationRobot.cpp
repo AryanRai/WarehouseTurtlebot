@@ -15,6 +15,7 @@ AutonomousExplorationRobot::AutonomousExplorationRobot(rclcpp::Node::SharedPtr n
       recovery_attempt_(0),
       returning_home_(false),
       at_home_(false),
+      home_path_completed_(false),
       consecutive_no_frontiers_count_(0),
       return_home_failures_(0),
       last_return_home_progress_(node->now()),
@@ -332,6 +333,62 @@ void AutonomousExplorationRobot::preciseDocking(const geometry_msgs::msg::Pose& 
     recovery_cmd_vel_pub_->publish(cmd_vel);
 }
 
+bool AutonomousExplorationRobot::hasLineOfSight(const geometry_msgs::msg::Point& from, 
+                                                const geometry_msgs::msg::Point& to,
+                                                const nav_msgs::msg::OccupancyGrid& map) {
+    // Use Bresenham's line algorithm to check if path is clear
+    // Also check cells around the line to account for robot width
+    GridCell start = PathPlanner::worldToGrid(map, from);
+    GridCell goal = PathPlanner::worldToGrid(map, to);
+    
+    int x0 = start.first;
+    int y0 = start.second;
+    int x1 = goal.first;
+    int y1 = goal.second;
+    
+    int dx = std::abs(x1 - x0);
+    int dy = std::abs(y1 - y0);
+    int sx = (x0 < x1) ? 1 : -1;
+    int sy = (y0 < y1) ? 1 : -1;
+    int err = dx - dy;
+    
+    // Robot radius in grid cells (TurtleBot3 is ~0.178m diameter, so ~0.09m radius)
+    // With 0.05m resolution, that's ~2 cells radius
+    const int robot_radius_cells = 2;
+    
+    while (true) {
+        // Check if current cell and surrounding cells are walkable (robot footprint)
+        for (int dx_check = -robot_radius_cells; dx_check <= robot_radius_cells; ++dx_check) {
+            for (int dy_check = -robot_radius_cells; dy_check <= robot_radius_cells; ++dy_check) {
+                // Only check cells within robot's circular footprint
+                if (dx_check * dx_check + dy_check * dy_check <= robot_radius_cells * robot_radius_cells) {
+                    GridCell check_cell = {x0 + dx_check, y0 + dy_check};
+                    if (!PathPlanner::isCellInBounds(map, check_cell) || 
+                        !PathPlanner::isCellWalkable(map, check_cell)) {
+                        return false;  // Obstacle would hit robot body
+                    }
+                }
+            }
+        }
+        
+        if (x0 == x1 && y0 == y1) {
+            break;  // Reached goal
+        }
+        
+        int e2 = 2 * err;
+        if (e2 > -dy) {
+            err -= dy;
+            x0 += sx;
+        }
+        if (e2 < dx) {
+            err += dx;
+            y0 += sy;
+        }
+    }
+    
+    return true;  // Clear path with robot footprint considered
+}
+
 void AutonomousExplorationRobot::returnToHome() {
     // If already at home, do nothing
     if (at_home_) {
@@ -415,17 +472,36 @@ void AutonomousExplorationRobot::returnToHome() {
         return;
     }
     
-    // Enter precise docking mode when close to home
-    if (distance_to_home < DOCKING_DISTANCE) {
-        if (!in_docking_mode_) {
-            RCLCPP_INFO(node_->get_logger(), "Entering precise docking mode (%.3fm from home)", distance_to_home);
-            in_docking_mode_ = true;
-            motion_controller_->clearPath();  // Stop using path planner
-        }
+    // Enter precise docking mode when reasonably close to home (within 1m)
+    // BUT only if there's a clear line of sight to home
+    if (distance_to_home < 1.0) {  // Increased from 0.5m to 1.0m for more aggressive docking
+        // Check if there's a clear path to home
+        bool has_clear_path = hasLineOfSight(current_pose.position, home_position_, *current_map);
         
-        // Use precise docking control
-        preciseDocking(current_pose, distance_to_home);
-        return;
+        if (has_clear_path) {
+            if (!in_docking_mode_) {
+                RCLCPP_INFO(node_->get_logger(), "Entering precise docking mode (%.3fm from home, clear path)", 
+                           distance_to_home);
+                in_docking_mode_ = true;
+                motion_controller_->clearPath();  // Stop using path planner
+            }
+            
+            // Use precise docking control
+            preciseDocking(current_pose, distance_to_home);
+            return;
+        } else {
+            // Close to home but obstacle in the way - keep using path planner
+            RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 2000,
+                                "Close to home (%.2fm) but obstacle detected - continuing with path planner", 
+                                distance_to_home);
+            in_docking_mode_ = false;  // Make sure we're not in docking mode
+            // Fall through to path planning logic below
+        }
+    }
+    
+    // Reset docking mode if we're far from home
+    if (in_docking_mode_ && distance_to_home >= 1.2) {  // Increased threshold
+        in_docking_mode_ = false;
     }
     
     // Plan path to home if we don't have one or if goal doesn't match home
@@ -536,6 +612,15 @@ void AutonomousExplorationRobot::returnToHome() {
     // Follow path home
     if (motion_controller_->hasPath()) {
         auto cmd_vel = motion_controller_->computeVelocityCommand(current_pose, *current_map);
+        
+        // Check if we've reached the path goal
+        if (motion_controller_->isAtGoal() && !home_path_completed_) {
+            home_path_completed_ = true;
+            RCLCPP_INFO(node_->get_logger(), 
+                       "Path complete to home (%.3fm from exact position)", 
+                       distance_to_home);
+        }
+        
         RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 3000,
                             "Returning home: %.2fm remaining", distance_to_home);
         
@@ -543,6 +628,70 @@ void AutonomousExplorationRobot::returnToHome() {
         if (cmd_vel.linear.x == 0.0 && cmd_vel.angular.z == 0.0 && distance_to_home > 0.5) {
             RCLCPP_DEBUG(node_->get_logger(), "Path following returned zero velocity, clearing path");
             motion_controller_->clearPath();
+        }
+        return;  // Continue following path
+    }
+    
+    // No path - check if we've already completed a path to home
+    if (home_path_completed_) {
+        // We've reached as close as we can get via path planning
+        // Always try docking if there's line of sight, regardless of distance
+        bool has_clear_path = hasLineOfSight(current_pose.position, home_position_, *current_map);
+        
+        if (has_clear_path && distance_to_home < 1.0) {  // Within 1m and clear path
+            RCLCPP_INFO(node_->get_logger(), 
+                       "Path complete, %.2fm from home with clear line of sight - switching to docking mode", 
+                       distance_to_home);
+            in_docking_mode_ = true;
+            motion_controller_->clearPath();
+            preciseDocking(current_pose, distance_to_home);
+            return;
+        } else if (!has_clear_path) {
+            // Obstacle in way - accept this as close enough
+            RCLCPP_INFO(node_->get_logger(),
+                       "Path complete, %.2fm from home but obstacle detected - accepting position", 
+                       distance_to_home);
+            
+            // Mark as home and complete
+            at_home_ = true;
+            home_path_completed_ = false;
+            
+            // Stop all motion
+            geometry_msgs::msg::TwistStamped stop_cmd;
+            stop_cmd.header.stamp = node_->now();
+            stop_cmd.header.frame_id = "base_footprint";
+            stop_cmd.twist.linear.x = 0.0;
+            stop_cmd.twist.angular.z = 0.0;
+            recovery_cmd_vel_pub_->publish(stop_cmd);
+            
+            RCLCPP_INFO(node_->get_logger(), "✓ Reached nearest accessible point to home");
+            RCLCPP_INFO(node_->get_logger(), "Exploration complete - saving final map");
+            saveMap("warehouse_map_final");
+            
+            slam_controller_->setExplorationComplete(true);
+            stopExploration();
+            return;
+        } else {
+            // Path complete but too far from home (>1m) - accept position
+            RCLCPP_WARN(node_->get_logger(),
+                       "Path complete but %.2fm from home (too far for docking) - accepting position", 
+                       distance_to_home);
+            
+            at_home_ = true;
+            home_path_completed_ = false;
+            
+            geometry_msgs::msg::TwistStamped stop_cmd;
+            stop_cmd.header.stamp = node_->now();
+            stop_cmd.header.frame_id = "base_footprint";
+            stop_cmd.twist.linear.x = 0.0;
+            stop_cmd.twist.angular.z = 0.0;
+            recovery_cmd_vel_pub_->publish(stop_cmd);
+            
+            RCLCPP_INFO(node_->get_logger(), "✓ Reached nearest accessible point to home");
+            saveMap("warehouse_map_final");
+            slam_controller_->setExplorationComplete(true);
+            stopExploration();
+            return;
         }
     }
 }

@@ -91,6 +91,9 @@ private:
     void performAdvancedReturnHomeRecovery(const geometry_msgs::msg::Pose& current_pose, double current_distance);
     void preciseDocking(const geometry_msgs::msg::Pose& current_pose, double distance_to_home);
     bool isObstacleAhead(double min_distance = 0.3);  // Check if obstacle within distance
+    bool hasLineOfSight(const geometry_msgs::msg::Point& from, 
+                       const geometry_msgs::msg::Point& to,
+                       const nav_msgs::msg::OccupancyGrid& map);  // Check clear path with robot footprint
     
     // Docking thresholds
     static constexpr double DOCKING_DISTANCE = 0.5;  // Enter docking mode within 50cm
