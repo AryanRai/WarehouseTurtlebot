@@ -83,6 +83,11 @@ private:
     
     // Docking state
     bool in_docking_mode_;
+    double initial_yaw_;  // Store initial orientation to return to
+    bool has_relocalized_;  // Track if we've done initial spin
+    rclcpp::Time relocalization_start_time_;
+    static constexpr double RELOCALIZATION_DURATION = 4.0;  // 4 seconds for full 360° spin
+    static constexpr double RELOCALIZATION_SPEED = 0.5;  // rad/s (slow spin)
     
     // Helper methods
     void onPointClicked(const geometry_msgs::msg::PointStamped::SharedPtr msg);

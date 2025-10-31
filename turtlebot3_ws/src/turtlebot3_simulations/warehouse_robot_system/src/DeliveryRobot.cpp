@@ -13,7 +13,10 @@ DeliveryRobot::DeliveryRobot(rclcpp::Node::SharedPtr node)
       is_delivering_(false),
       current_delivery_index_(0),
       total_distance_(0.0),
-      in_docking_mode_(false) {
+      in_docking_mode_(false),
+      initial_yaw_(0.0),
+      has_relocalized_(false),
+      relocalization_start_time_(node->now()) {
     
     // Initialize SLAM components
     slam_controller_ = std::make_unique<SlamController>(node);
@@ -269,6 +272,59 @@ void DeliveryRobot::update() {
         return;
     }
     
+    // Perform relocalization spin at the start
+    if (!has_relocalized_) {
+        auto current_pose = slam_controller_->getCurrentPose();
+        
+        // Store initial orientation on first call
+        if (relocalization_start_time_ == node_->now()) {
+            tf2::Quaternion q(
+                current_pose.orientation.x,
+                current_pose.orientation.y,
+                current_pose.orientation.z,
+                current_pose.orientation.w
+            );
+            tf2::Matrix3x3 m(q);
+            double roll, pitch;
+            m.getRPY(roll, pitch, initial_yaw_);
+            
+            RCLCPP_INFO(node_->get_logger(), "Starting relocalization spin (360°)...");
+            relocalization_start_time_ = node_->now();
+        }
+        
+        double elapsed = (node_->now() - relocalization_start_time_).seconds();
+        
+        if (elapsed < RELOCALIZATION_DURATION) {
+            // Spin in place for relocalization
+            geometry_msgs::msg::TwistStamped cmd_vel;
+            cmd_vel.header.stamp = node_->now();
+            cmd_vel.header.frame_id = "base_footprint";
+            cmd_vel.twist.linear.x = 0.0;
+            cmd_vel.twist.angular.z = RELOCALIZATION_SPEED;
+            
+            auto cmd_vel_pub = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
+            cmd_vel_pub->publish(cmd_vel);
+            
+            RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
+                                "Relocalizing... %.1fs remaining", RELOCALIZATION_DURATION - elapsed);
+            return;
+        } else {
+            // Stop spinning
+            geometry_msgs::msg::TwistStamped stop_cmd;
+            stop_cmd.header.stamp = node_->now();
+            stop_cmd.header.frame_id = "base_footprint";
+            stop_cmd.twist.linear.x = 0.0;
+            stop_cmd.twist.angular.z = 0.0;
+            
+            auto cmd_vel_pub = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
+            cmd_vel_pub->publish(stop_cmd);
+            
+            has_relocalized_ = true;
+            RCLCPP_INFO(node_->get_logger(), "✓ Relocalization complete! Starting deliveries...");
+            return;
+        }
+    }
+    
     // Check if we've completed all deliveries
     if (current_delivery_index_ >= optimized_route_.size()) {
         returnToHome();
@@ -456,7 +512,57 @@ void DeliveryRobot::returnToHome() {
     
     // Check if reached home with tight tolerance (5cm)
     if (distance_to_home < HOME_TOLERANCE) {
-        RCLCPP_INFO(node_->get_logger(), "✓ All deliveries completed! Robot at home (%.3fm).", distance_to_home);
+        // Get current orientation
+        tf2::Quaternion q(
+            current_pose.orientation.x,
+            current_pose.orientation.y,
+            current_pose.orientation.z,
+            current_pose.orientation.w
+        );
+        tf2::Matrix3x3 m(q);
+        double roll, pitch, current_yaw;
+        m.getRPY(roll, pitch, current_yaw);
+        
+        // Calculate angle difference from initial orientation
+        double angle_diff = initial_yaw_ - current_yaw;
+        while (angle_diff > M_PI) angle_diff -= 2.0 * M_PI;
+        while (angle_diff < -M_PI) angle_diff += 2.0 * M_PI;
+        
+        // If not aligned with initial orientation, rotate to match
+        if (std::abs(angle_diff) > 0.05) {  // ~3 degrees tolerance
+            geometry_msgs::msg::TwistStamped cmd_vel;
+            cmd_vel.header.stamp = node_->now();
+            cmd_vel.header.frame_id = "base_footprint";
+            cmd_vel.twist.linear.x = 0.0;
+            cmd_vel.twist.angular.z = (angle_diff > 0) ? 0.2 : -0.2;
+            
+            auto cmd_vel_pub = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
+            cmd_vel_pub->publish(cmd_vel);
+            
+            RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 500,
+                                "Aligning to initial orientation (%.1f° remaining)", 
+                                std::abs(angle_diff) * 180.0 / M_PI);
+            return;
+        }
+        
+        // Stop all motion completely
+        geometry_msgs::msg::TwistStamped stop_cmd;
+        stop_cmd.header.stamp = node_->now();
+        stop_cmd.header.frame_id = "base_footprint";
+        stop_cmd.twist.linear.x = 0.0;
+        stop_cmd.twist.linear.y = 0.0;
+        stop_cmd.twist.linear.z = 0.0;
+        stop_cmd.twist.angular.x = 0.0;
+        stop_cmd.twist.angular.y = 0.0;
+        stop_cmd.twist.angular.z = 0.0;
+        
+        auto cmd_vel_pub = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
+        cmd_vel_pub->publish(stop_cmd);
+        
+        // Give time for stop command to take effect
+        rclcpp::sleep_for(std::chrono::milliseconds(200));
+        
+        RCLCPP_INFO(node_->get_logger(), "✓ All deliveries completed! Robot at home (%.3fm, aligned).", distance_to_home);
         
         // Create completion marker file for script
         std::ofstream marker("/tmp/delivery_complete.marker");

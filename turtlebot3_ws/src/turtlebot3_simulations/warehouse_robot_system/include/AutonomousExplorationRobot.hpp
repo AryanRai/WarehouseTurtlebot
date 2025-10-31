@@ -70,6 +70,9 @@ private:
     rclcpp::Time last_return_home_progress_;
     double last_distance_to_home_;
     bool in_docking_mode_;  // Precise docking mode when close to home
+    double initial_yaw_;  // Store initial orientation to return to
+    bool has_relocalized_;  // Track if we've done initial spin
+    rclcpp::Time relocalization_start_time_;
     
     // Advanced recovery state
     bool in_return_home_recovery_;
@@ -93,6 +96,8 @@ private:
     static constexpr double HOME_TOLERANCE = 0.05;   // Success within 5cm
     static constexpr double DOCKING_LINEAR_SPEED = 0.05;  // Slow speed for docking
     static constexpr double DOCKING_ANGULAR_SPEED = 0.3;  // Moderate rotation for alignment
+    static constexpr double RELOCALIZATION_DURATION = 4.0;  // 4 seconds for full 360° spin
+    static constexpr double RELOCALIZATION_SPEED = 0.5;  // rad/s (slow spin)
 };
 
 #endif // AUTONOMOUS_EXPLORATION_ROBOT_HPP

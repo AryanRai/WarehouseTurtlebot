@@ -23,7 +23,10 @@ AutonomousExplorationRobot::AutonomousExplorationRobot(rclcpp::Node::SharedPtr n
       in_return_home_recovery_(false),
       return_home_recovery_step_(0),
       return_home_recovery_start_(node->now()),
-      distance_before_recovery_(0.0) {
+      distance_before_recovery_(0.0),
+      initial_yaw_(0.0),
+      has_relocalized_(false),
+      relocalization_start_time_(node->now()) {
     
     // Initialize SLAM components
     slam_controller_ = std::make_unique<SlamController>(node);
@@ -351,19 +354,58 @@ void AutonomousExplorationRobot::returnToHome() {
     
     // Check if reached home with tighter tolerance
     if (distance_to_home < HOME_TOLERANCE) {  // Within 5cm of home
+        // Get current orientation
+        tf2::Quaternion q(
+            current_pose.orientation.x,
+            current_pose.orientation.y,
+            current_pose.orientation.z,
+            current_pose.orientation.w
+        );
+        tf2::Matrix3x3 m(q);
+        double roll, pitch, current_yaw;
+        m.getRPY(roll, pitch, current_yaw);
+        
+        // Calculate angle difference from initial orientation
+        double angle_diff = initial_yaw_ - current_yaw;
+        while (angle_diff > M_PI) angle_diff -= 2.0 * M_PI;
+        while (angle_diff < -M_PI) angle_diff += 2.0 * M_PI;
+        
+        // If not aligned with initial orientation, rotate to match
+        if (std::abs(angle_diff) > 0.05) {  // ~3 degrees tolerance
+            geometry_msgs::msg::TwistStamped cmd_vel;
+            cmd_vel.header.stamp = node_->now();
+            cmd_vel.header.frame_id = "base_footprint";
+            cmd_vel.twist.linear.x = 0.0;
+            cmd_vel.twist.angular.z = (angle_diff > 0) ? 0.2 : -0.2;
+            
+            recovery_cmd_vel_pub_->publish(cmd_vel);
+            
+            RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 500,
+                                "Aligning to initial orientation (%.1f° remaining)", 
+                                std::abs(angle_diff) * 180.0 / M_PI);
+            return;
+        }
+        
         at_home_ = true;
         in_docking_mode_ = false;
         motion_controller_->clearPath();
         
-        // Send zero velocity to stop the robot
+        // Stop all motion completely
         geometry_msgs::msg::TwistStamped stop_cmd;
         stop_cmd.header.stamp = node_->now();
         stop_cmd.header.frame_id = "base_footprint";
         stop_cmd.twist.linear.x = 0.0;
+        stop_cmd.twist.linear.y = 0.0;
+        stop_cmd.twist.linear.z = 0.0;
+        stop_cmd.twist.angular.x = 0.0;
+        stop_cmd.twist.angular.y = 0.0;
         stop_cmd.twist.angular.z = 0.0;
         recovery_cmd_vel_pub_->publish(stop_cmd);
         
-        RCLCPP_INFO(node_->get_logger(), "Successfully returned to home position! (distance: %.3fm)", distance_to_home);
+        // Give time for stop command to take effect
+        rclcpp::sleep_for(std::chrono::milliseconds(200));
+        
+        RCLCPP_INFO(node_->get_logger(), "✓ Successfully returned to home position! (distance: %.3fm, aligned)", distance_to_home);
         RCLCPP_INFO(node_->get_logger(), "Exploration complete - saving final map");
         saveMap("warehouse_map_final");
         
@@ -567,6 +609,57 @@ void AutonomousExplorationRobot::update() {
     // If not exploring or paused, do nothing
     if (!is_exploring_ || is_paused_) {
         return;
+    }
+    
+    // Perform relocalization spin at the start
+    if (!has_relocalized_ && slam_controller_->hasValidPose()) {
+        auto current_pose = slam_controller_->getCurrentPose();
+        
+        // Store initial orientation on first call
+        if ((current_time - relocalization_start_time_).seconds() < 0.1) {
+            tf2::Quaternion q(
+                current_pose.orientation.x,
+                current_pose.orientation.y,
+                current_pose.orientation.z,
+                current_pose.orientation.w
+            );
+            tf2::Matrix3x3 m(q);
+            double roll, pitch;
+            m.getRPY(roll, pitch, initial_yaw_);
+            
+            RCLCPP_INFO(node_->get_logger(), "Starting relocalization spin (360°)...");
+            relocalization_start_time_ = current_time;
+        }
+        
+        double elapsed = (current_time - relocalization_start_time_).seconds();
+        
+        if (elapsed < RELOCALIZATION_DURATION) {
+            // Spin in place for relocalization
+            geometry_msgs::msg::TwistStamped cmd_vel;
+            cmd_vel.header.stamp = current_time;
+            cmd_vel.header.frame_id = "base_footprint";
+            cmd_vel.twist.linear.x = 0.0;
+            cmd_vel.twist.angular.z = RELOCALIZATION_SPEED;
+            
+            recovery_cmd_vel_pub_->publish(cmd_vel);
+            
+            RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
+                                "Relocalizing... %.1fs remaining", RELOCALIZATION_DURATION - elapsed);
+            return;
+        } else {
+            // Stop spinning
+            geometry_msgs::msg::TwistStamped stop_cmd;
+            stop_cmd.header.stamp = current_time;
+            stop_cmd.header.frame_id = "base_footprint";
+            stop_cmd.twist.linear.x = 0.0;
+            stop_cmd.twist.angular.z = 0.0;
+            
+            recovery_cmd_vel_pub_->publish(stop_cmd);
+            
+            has_relocalized_ = true;
+            RCLCPP_INFO(node_->get_logger(), "✓ Relocalization complete! Starting exploration...");
+            return;
+        }
     }
     
     // Check if exploration is complete
