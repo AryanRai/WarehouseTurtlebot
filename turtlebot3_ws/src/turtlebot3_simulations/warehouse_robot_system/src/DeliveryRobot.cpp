@@ -374,9 +374,9 @@ void DeliveryRobot::update() {
         return;
     }
     
-    // Enter precise docking mode when close to zone (within 25cm)
+    // Enter precise docking mode when reasonably close to zone (within 1m)
     // BUT only if there's a clear line of sight to zone
-    if (distance_to_zone < ZONE_DOCKING_DISTANCE) {
+    if (distance_to_zone < 1.0) {  // Increased from 0.25m to 1.0m for more aggressive docking
         // Check if there's a clear path to zone
         bool has_clear_path = hasLineOfSight(current_pose.position, current_zone.position, *current_map);
         
@@ -402,7 +402,7 @@ void DeliveryRobot::update() {
     }
     
     // Reset docking mode if we're far from zone
-    if (in_zone_docking_mode_ && distance_to_zone >= ZONE_DOCKING_DISTANCE) {
+    if (in_zone_docking_mode_ && distance_to_zone >= 1.2) {  // Increased threshold
         in_zone_docking_mode_ = false;
     }
     
@@ -424,48 +424,45 @@ void DeliveryRobot::update() {
     // No path - check if we've already completed a path to this zone
     if (zone_path_completed_) {
         // We've reached as close as we can get via path planning
-        // Check if we're close enough to switch to docking or just accept this position
-        if (distance_to_zone < ZONE_DOCKING_DISTANCE * 1.5) {  // Within 37.5cm
-            // Check line of sight before switching to docking
-            bool has_clear_path = hasLineOfSight(current_pose.position, current_zone.position, *current_map);
+        // Always try docking if there's line of sight, regardless of distance
+        bool has_clear_path = hasLineOfSight(current_pose.position, current_zone.position, *current_map);
+        
+        if (has_clear_path && distance_to_zone < 1.0) {  // Within 1m and clear path
+            RCLCPP_INFO(node_->get_logger(), 
+                       "Path complete, %.2fm from zone with clear line of sight - switching to docking mode", 
+                       distance_to_zone);
+            in_zone_docking_mode_ = true;
+            motion_controller_->clearPath();
+            preciseZoneDocking(current_pose, current_zone, distance_to_zone);
+            return;
+        } else if (!has_clear_path) {
+            // Obstacle in way - accept this as "reached"
+            RCLCPP_INFO(node_->get_logger(),
+                       "Path complete, %.2fm from zone but obstacle detected - accepting position", 
+                       distance_to_zone);
             
-            if (has_clear_path) {
-                RCLCPP_INFO(node_->get_logger(), 
-                           "Path complete, %.2fm from zone with clear line of sight - switching to docking mode", 
-                           distance_to_zone);
-                in_zone_docking_mode_ = true;
-                motion_controller_->clearPath();
-                preciseZoneDocking(current_pose, current_zone, distance_to_zone);
-                return;
-            } else {
-                // Close but obstacle in way - accept this as "reached"
-                RCLCPP_INFO(node_->get_logger(),
-                           "Path complete, %.2fm from zone but obstacle detected - accepting position", 
-                           distance_to_zone);
-                
-                // Mark as reached even though not at exact position
-                zone_path_completed_ = false;  // Reset for next zone
-                
-                // Save delivery record
-                DeliveryRecord record;
-                record.timestamp = getCurrentTimestamp();
-                record.from_zone = current_delivery_index_ > 0 ? 
-                    optimized_route_[current_delivery_index_ - 1].name : "Start";
-                record.to_zone = current_zone.name;
-                record.distance_traveled = total_distance_;
-                record.success = true;
-                record.notes = "Reached nearest accessible point (obstacle at exact location)";
-                
-                saveDeliveryRecord(record);
-                
-                current_delivery_index_++;
-                publishStatus("Reached: " + current_zone.name + " (nearest point)");
-                return;
-            }
+            // Mark as reached even though not at exact position
+            zone_path_completed_ = false;  // Reset for next zone
+            
+            // Save delivery record
+            DeliveryRecord record;
+            record.timestamp = getCurrentTimestamp();
+            record.from_zone = current_delivery_index_ > 0 ? 
+                optimized_route_[current_delivery_index_ - 1].name : "Start";
+            record.to_zone = current_zone.name;
+            record.distance_traveled = total_distance_;
+            record.success = true;
+            record.notes = "Reached nearest accessible point (obstacle at exact location)";
+            
+            saveDeliveryRecord(record);
+            
+            current_delivery_index_++;
+            publishStatus("Reached: " + current_zone.name + " (nearest point)");
+            return;
         } else {
-            // Path complete but still far from zone - this shouldn't happen, but handle it
+            // Path complete but too far from zone (>1m) - accept position
             RCLCPP_WARN(node_->get_logger(),
-                       "Path complete but still %.2fm from zone - accepting position", 
+                       "Path complete but %.2fm from zone (too far for docking) - accepting position", 
                        distance_to_zone);
             
             zone_path_completed_ = false;
@@ -813,6 +810,7 @@ bool DeliveryRobot::hasLineOfSight(const geometry_msgs::msg::Point& from,
                                    const geometry_msgs::msg::Point& to,
                                    const nav_msgs::msg::OccupancyGrid& map) {
     // Use Bresenham's line algorithm to check if path is clear
+    // Also check cells around the line to account for robot width
     GridCell start = PathPlanner::worldToGrid(map, from);
     GridCell goal = PathPlanner::worldToGrid(map, to);
     
@@ -827,12 +825,23 @@ bool DeliveryRobot::hasLineOfSight(const geometry_msgs::msg::Point& from,
     int sy = (y0 < y1) ? 1 : -1;
     int err = dx - dy;
     
+    // Robot radius in grid cells (TurtleBot3 is ~0.178m diameter, so ~0.09m radius)
+    // With 0.05m resolution, that's ~2 cells radius
+    const int robot_radius_cells = 2;
+    
     while (true) {
-        // Check if current cell is walkable
-        GridCell current = {x0, y0};
-        if (!PathPlanner::isCellInBounds(map, current) || 
-            !PathPlanner::isCellWalkable(map, current)) {
-            return false;  // Obstacle in the way
+        // Check if current cell and surrounding cells are walkable (robot footprint)
+        for (int dx_check = -robot_radius_cells; dx_check <= robot_radius_cells; ++dx_check) {
+            for (int dy_check = -robot_radius_cells; dy_check <= robot_radius_cells; ++dy_check) {
+                // Only check cells within robot's circular footprint
+                if (dx_check * dx_check + dy_check * dy_check <= robot_radius_cells * robot_radius_cells) {
+                    GridCell check_cell = {x0 + dx_check, y0 + dy_check};
+                    if (!PathPlanner::isCellInBounds(map, check_cell) || 
+                        !PathPlanner::isCellWalkable(map, check_cell)) {
+                        return false;  // Obstacle would hit robot body
+                    }
+                }
+            }
         }
         
         if (x0 == x1 && y0 == y1) {
@@ -850,7 +859,7 @@ bool DeliveryRobot::hasLineOfSight(const geometry_msgs::msg::Point& from,
         }
     }
     
-    return true;  // Clear path
+    return true;  // Clear path with robot footprint considered
 }
 
 void DeliveryRobot::preciseDocking(const geometry_msgs::msg::Pose& current_pose, double distance_to_home) {
