@@ -485,7 +485,36 @@ void InspectionRobot::update() {
                 // Clear the path
                 motion_controller_->clearPath();
                 
-                // Pause briefly to allow AprilTag detection
+                // Perform 360° scan to detect AprilTags
+                RCLCPP_INFO(node_->get_logger(), "🔄 Performing 360° scan for AprilTags...");
+                
+                double scan_duration = 4.0;  // 4 seconds for full rotation
+                double scan_speed = (2.0 * M_PI) / scan_duration;  // rad/s for 360° in 4s
+                
+                auto scan_start = node_->now();
+                while ((node_->now() - scan_start).seconds() < scan_duration) {
+                    geometry_msgs::msg::TwistStamped cmd_vel;
+                    cmd_vel.header.stamp = node_->now();
+                    cmd_vel.header.frame_id = "base_footprint";
+                    cmd_vel.twist.linear.x = 0.0;
+                    cmd_vel.twist.angular.z = scan_speed;
+                    
+                    auto cmd_vel_pub = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
+                    cmd_vel_pub->publish(cmd_vel);
+                    
+                    rclcpp::sleep_for(std::chrono::milliseconds(100));
+                }
+                
+                // Stop rotation
+                geometry_msgs::msg::TwistStamped stop_cmd;
+                stop_cmd.header.stamp = node_->now();
+                stop_cmd.header.frame_id = "base_footprint";
+                auto cmd_vel_pub = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
+                cmd_vel_pub->publish(stop_cmd);
+                
+                RCLCPP_INFO(node_->get_logger(), "✓ Scan complete");
+                
+                // Pause briefly to process any final detections
                 rclcpp::sleep_for(std::chrono::milliseconds(500));
                 
                 // Move to next patrol point
