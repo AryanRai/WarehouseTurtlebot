@@ -281,9 +281,8 @@ ament_target_dependencies(colour_detector_node
   std_msgs
 )
 
-# Add executable for independent AprilTag detector
+# Add executable for independent AprilTag detector (main() is now in AprilTagDetector.cpp)
 add_executable(apriltag_detector_node 
-  src/apriltag_detector_main.cpp
   src/AprilTagDetector.cpp
   src/ImageProcessor_Node.cpp
 )

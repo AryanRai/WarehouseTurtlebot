@@ -35,11 +35,12 @@ enum eDamageType
 // Complete damage report including location, type, and identification data.
 struct SDamageReport
 {
-    int mTagId;                     // AprilTag ID marking damage location
-    geometry_msgs::msg::Pose mPose; // 3D pose of damage in world frame
-    eDamageType mDamageType;        // Classification of damage type
-    rclcpp::Time mTimestamp;        // Time of detection
-    double mConfidence;             // Detection confidence [0.0 to 1.0]
+    int mTagId;                               // AprilTag ID marking damage location
+    geometry_msgs::msg::Pose mLocalPose;     // Pose relative to robot when detected
+    geometry_msgs::msg::Pose mGlobalPose;    // Global world frame pose (updated by robot)
+    eDamageType mDamageType;                  // Classification of damage type
+    rclcpp::Time mTimestamp;                  // Time of detection
+    double mConfidence;                       // Detection confidence [0.0 to 1.0]
 };
 
 // CColourDetector
@@ -196,15 +197,26 @@ class CColourDetector : public CImageProcessorNode
 
         const int kQueueSize = 10;
 
-        const int kSamplingOffset = 20;
+        const int kSamplingOffset = 10;
 
-        const int kSamplingWidth = 30;
+        const int kSamplingWidth = 20;
 
-        const int kSamplingHeight = 30;
-        const cv::Scalar kGreenLower = cv::Scalar(35, 40, 40);        const cv::Scalar kGreenUpper = cv::Scalar(85, 255, 255);
-        const cv::Scalar kBlueLower = cv::Scalar(90, 50, 50);        const cv::Scalar kBlueUpper = cv::Scalar(130, 255, 255);
-        const cv::Scalar kRedLower1 = cv::Scalar(0, 50, 50);        const cv::Scalar kRedUpper1 = cv::Scalar(10, 255, 255);        const cv::Scalar kRedLower2 = cv::Scalar(170, 50, 50);        const cv::Scalar kRedUpper2 = cv::Scalar(180, 255, 255);
-        const double kMinConfidenceThreshold = 0.3;
+        const int kSamplingHeight = 20;
+
+        const double kColourZoneScale = 0.4; // Zone size relative to tag size
+        
+        const cv::Scalar kGreenLower = cv::Scalar(35, 40, 40);        
+        const cv::Scalar kGreenUpper = cv::Scalar(85, 255, 255);
+
+        const cv::Scalar kBlueLower = cv::Scalar(90, 50, 50);        
+        const cv::Scalar kBlueUpper = cv::Scalar(130, 255, 255);
+
+        const cv::Scalar kRedLower1 = cv::Scalar(0, 50, 50);        
+        const cv::Scalar kRedUpper1 = cv::Scalar(10, 255, 255);        
+        const cv::Scalar kRedLower2 = cv::Scalar(170, 50, 50);        
+        const cv::Scalar kRedUpper2 = cv::Scalar(180, 255, 255);
+
+        const double kMinConfidenceThreshold = 0.5;
 
         const int kMinPixelCount = 50;
 };

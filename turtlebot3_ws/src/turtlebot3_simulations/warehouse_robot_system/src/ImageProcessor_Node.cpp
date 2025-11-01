@@ -40,7 +40,8 @@ void CImageProcessorNode::ImageCallback(const sensor_msgs::msg::Image::SharedPtr
     cv_bridge::CvImagePtr cvPointer;
     try {
         cvPointer = cv_bridge::toCvCopy(aMsg, sensor_msgs::image_encodings::BGR8);
-    } catch (const cv_bridge::Exception &aException) {
+    } 
+    catch (const cv_bridge::Exception &aException) {
         RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", aException.what());
         return;
     }

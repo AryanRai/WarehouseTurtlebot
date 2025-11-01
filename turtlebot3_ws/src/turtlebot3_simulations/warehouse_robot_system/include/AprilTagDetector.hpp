@@ -133,7 +133,7 @@ class CAprilTagDetector : public CImageProcessorNode
         // Constants
         const std::string kDetectionOutputTopic = "/apriltag_detections";
         const int kQueueSize = 10;
-        const double kTagSize = 0.162; // Tag size in meters (162mm standard)
+        const double kTagSize = 0.0778; // Tag size in meters (77.8mm standard)
         const double kDecimation = 2.0; // Image decimation for performance
         const double kBlur = 0.0; // Gaussian blur sigma (0 = disabled)
         const int kThreads = 1; // Number of detection threads

@@ -8,7 +8,7 @@
 // Last Edited: 2025-10-27
 // ============================================================================
 
-#include "Camera_Node.h"
+#include "Camera_Node.hpp"
 
 CCameraNode::CCameraNode()
     : rclcpp::Node("camera_node")
@@ -42,7 +42,8 @@ void CCameraNode::LoadCameraTopics()
     
     if (this->has_parameter("camera_topics")) {
         paramTopics = this->get_parameter("camera_topics").as_string_array();
-    } else {
+    } 
+    else {
         // Declare parameter with default value
         paramTopics = this->declare_parameter<std::vector<std::string>>(
             "camera_topics",
@@ -54,9 +55,11 @@ void CCameraNode::LoadCameraTopics()
     if (paramTopics.empty()) {
         RCLCPP_WARN(this->get_logger(), "No camera topics specified, using default");
         mCameraTopics.push_back("/camera/image_raw");
-    } else {
+    } 
+    else {
         mCameraTopics = paramTopics;
         RCLCPP_INFO(this->get_logger(), "Loaded %zu camera topics", mCameraTopics.size());
+        
         for (const auto &topic : mCameraTopics) {
             RCLCPP_INFO(this->get_logger(), "  - %s", topic.c_str());
         }

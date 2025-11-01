@@ -181,6 +181,9 @@ zarray_t* CAprilTagDetector::DetectTagsNative(const cv::Mat &aGrayImage)
 
 image_u8_t* CAprilTagDetector::ConvertToImageU8(const cv::Mat &aGrayImage)
 {
+    // Converts OpenCV grayscale image to apriltag image_u8 format.
+    // aGrayImage: OpenCV grayscale image
+    // Returns image_u8 structure
     if (aGrayImage.empty() || aGrayImage.type() != CV_8UC1) {
         return nullptr;
     }
@@ -214,6 +217,17 @@ apriltag_msgs::msg::AprilTagDetection CAprilTagDetector::ConvertDetectionToROS(
     for (int i = 0; i < 4; i++) {
         detection.corners[i].x = aDetection->p[i][0];
         detection.corners[i].y = aDetection->p[i][1];
+    }
+    
+    // Set confidence metrics
+    detection.decision_margin = aDetection->decision_margin;
+    detection.goodness = aDetection->decision_margin / 100.0f; // Normalize to 0-1
+    detection.hamming = aDetection->hamming;
+    detection.family = "16h5";
+    
+    // Copy homography matrix
+    for (int i = 0; i < 9; i++) {
+        detection.homography[i] = MATD_EL(aDetection->H, i/3, i%3);
     }
     
     return detection;
@@ -335,4 +349,30 @@ void CAprilTagDetector::PublishDetections(
     mpDetectionPublisher->publish(msgArray);
     
     RCLCPP_DEBUG(GetLogger(), "Published %zu AprilTag detections", aDetections.size());
+}
+
+// ============================================================================
+// Main entry point for AprilTag detector node
+// ============================================================================
+int main(int argc, char** argv)
+{
+    // Initialize ROS2
+    rclcpp::init(argc, argv);
+    
+    // Create AprilTag detector node
+    auto node = std::make_shared<CAprilTagDetector>();
+    
+    // Log startup
+    RCLCPP_INFO(node->get_logger(), "🏷️ Starting independent AprilTag 16h5 detector...");
+    
+    try {
+        // Spin the node
+        rclcpp::spin(node);
+    } catch (const std::exception &e) {
+        RCLCPP_ERROR(node->get_logger(), "Exception in AprilTag detector: %s", e.what());
+    }
+    
+    // Cleanup
+    rclcpp::shutdown();
+    return 0;
 }

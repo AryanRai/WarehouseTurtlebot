@@ -152,8 +152,18 @@ void CColourDetector::TagDetectionCallback(
     // Show camera feed with AprilTag detection overlays in normal mode too
     cv::Mat display_image = mLatestImage.clone();
     
-    // Draw detection overlays for normal mode
+    // Draw detection overlays for normal mode (only high confidence tags)
+    const double kMinConfidence = 0.5; // 50% confidence threshold
+    
     for (const auto &detection : aMsg->detections) {
+        // Get confidence from goodness field (normalized decision margin)
+        double confidence = detection.goodness;
+        
+        // Skip low-confidence detections in visualization
+        if (confidence < kMinConfidence) {
+            continue;
+        }
+        
         int centerX = static_cast<int>(detection.centre.x);
         int centerY = static_cast<int>(detection.centre.y);
         
@@ -175,8 +185,64 @@ void CColourDetector::TagDetectionCallback(
                      cv::Scalar(255, 0, 0), 2); // Blue border for normal mode
         }
         
-        // Draw ID label
-        std::string id_text = "ID:" + std::to_string(detection.id);
+        // Extract and analyze color sampling regions around the tag
+        std::vector<cv::Rect> samplingRegions = ExtractSamplingRegions(
+            centerX, centerY, tagSize, display_image.cols, display_image.rows);
+        
+        // Analyze each region and draw with detected color
+        const std::vector<std::string> regionLabels = {"TOP", "BOTTOM", "LEFT", "RIGHT"};
+        
+        for (size_t i = 0; i < samplingRegions.size() && i < regionLabels.size(); ++i) {
+            const cv::Rect& region = samplingRegions[i];
+            
+            // Skip invalid regions
+            if (region.x < 0 || region.y < 0 || 
+                region.x + region.width > display_image.cols ||
+                region.y + region.height > display_image.rows) {
+                continue;
+            }
+            
+            // Extract and classify color in this region
+            cv::Mat regionImage = display_image(region);
+            eDamageType detectedColor = ClassifyColour(regionImage);
+            
+            // Choose box color and label based on what was actually detected
+            cv::Scalar boxColor;
+            std::string colorLabel;
+            
+            switch (detectedColor) {
+                case DAMAGE_MOULD:
+                    boxColor = cv::Scalar(0, 255, 0); // Green
+                    colorLabel = "MOULD";
+                    break;
+                case DAMAGE_WATER:
+                    boxColor = cv::Scalar(255, 0, 0); // Blue
+                    colorLabel = "WATER";
+                    break;
+                case DAMAGE_BLOOD:
+                    boxColor = cv::Scalar(0, 0, 255); // Red
+                    colorLabel = "BLOOD";
+                    break;
+                case DAMAGE_NONE:
+                case DAMAGE_UNKNOWN:
+                default:
+                    boxColor = cv::Scalar(128, 128, 128); // Gray for no detection
+                    colorLabel = "NONE";
+                    break;
+            }
+            
+            // Draw the region box with detected color
+            cv::rectangle(display_image, region, boxColor, 2);
+            
+            // Add label showing detected damage type
+            cv::putText(display_image, colorLabel, 
+                       cv::Point(region.x, region.y - 5),
+                       cv::FONT_HERSHEY_SIMPLEX, 0.4, boxColor, 1);
+        }
+        
+        // Draw ID label with confidence
+        std::string id_text = "ID:" + std::to_string(detection.id) + 
+                             " (" + std::to_string(static_cast<int>(confidence * 100)) + "%)";
         cv::putText(display_image, id_text, 
                    cv::Point(centerX - 20, centerY - tagSize/2 - 15), 
                    cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(255, 255, 0), 2);
@@ -218,13 +284,10 @@ void CColourDetector::TagDetectionCallback(
             sReport.mTagId = detection.id;
             
             // Create pose from centre point (2D detection in image plane)
-            sReport.mPose.position.x = detection.centre.x;
-            sReport.mPose.position.y = detection.centre.y;
-            sReport.mPose.position.z = 0.0;
-            sReport.mPose.orientation.x = 0.0;
-            sReport.mPose.orientation.y = 0.0;
-            sReport.mPose.orientation.z = 0.0;
-            sReport.mPose.orientation.w = 1.0;
+            sReport.mLocalPose.position.x = static_cast<double>(tagCenterX);
+            sReport.mLocalPose.position.y = static_cast<double>(tagCenterY);
+            sReport.mLocalPose.position.z = 0.0; // Assume planar detection
+            sReport.mLocalPose.orientation.w = 1.0; // No rotation data available
             
             sReport.mDamageType = damageType;
             sReport.mTimestamp = this->now();
@@ -330,7 +393,7 @@ std::vector<cv::Rect> CColourDetector::ExtractSamplingRegions(int aTagCenterX,
     adaptive_width = std::max(adaptive_width, 20);
     adaptive_height = std::max(adaptive_height, 20);
     
-    // Region above tag (GREEN area - for mould detection)
+    // Region above tag 
     int topX = aTagCenterX - adaptive_width / 2;
     int topY = aTagCenterY - halfSize - adaptive_offset - adaptive_height;
     if (topX >= 0 && topY >= 0 && 
@@ -339,7 +402,7 @@ std::vector<cv::Rect> CColourDetector::ExtractSamplingRegions(int aTagCenterX,
         regions.push_back(cv::Rect(topX, topY, adaptive_width, adaptive_height));
     }
 
-    // Region below tag (BLUE area - for water damage detection)
+    // Region below tag 
     int bottomX = aTagCenterX - adaptive_width / 2;
     int bottomY = aTagCenterY + halfSize + adaptive_offset;
     if (bottomX >= 0 && bottomY >= 0 && 
@@ -348,7 +411,7 @@ std::vector<cv::Rect> CColourDetector::ExtractSamplingRegions(int aTagCenterX,
         regions.push_back(cv::Rect(bottomX, bottomY, adaptive_width, adaptive_height));
     }
 
-    // Region left of tag (RED area - for blood damage detection)
+    // Region left of tag 
     int leftX = aTagCenterX - halfSize - adaptive_offset - adaptive_width;
     int leftY = aTagCenterY - adaptive_height / 2;
     if (leftX >= 0 && leftY >= 0 && 
@@ -357,7 +420,7 @@ std::vector<cv::Rect> CColourDetector::ExtractSamplingRegions(int aTagCenterX,
         regions.push_back(cv::Rect(leftX, leftY, adaptive_width, adaptive_height));
     }
 
-    // Region right of tag (RED area - for blood damage detection)
+    // Region right of tag 
     int rightX = aTagCenterX + halfSize + adaptive_offset;
     int rightY = aTagCenterY - adaptive_height / 2;
     if (rightX >= 0 && rightY >= 0 && 
@@ -426,10 +489,15 @@ void CColourDetector::PublishDamageReport(const SDamageReport &aReport)
     jsonStream << "{";
     jsonStream << "\"tag_id\": " << aReport.mTagId << ", ";
     jsonStream << "\"damage_type\": \"" << DamageTypeToString(aReport.mDamageType) << "\", ";
-    jsonStream << "\"position\": {";
-    jsonStream << "\"x\": " << aReport.mPose.position.x << ", ";
-    jsonStream << "\"y\": " << aReport.mPose.position.y << ", ";
-    jsonStream << "\"z\": " << aReport.mPose.position.z;
+    jsonStream << "\"local_position\": {";
+    jsonStream << "\"x\": " << aReport.mLocalPose.position.x << ", ";
+    jsonStream << "\"y\": " << aReport.mLocalPose.position.y << ", ";
+    jsonStream << "\"z\": " << aReport.mLocalPose.position.z;
+    jsonStream << "}, ";
+    jsonStream << "\"global_position\": {";
+    jsonStream << "\"x\": " << aReport.mGlobalPose.position.x << ", ";
+    jsonStream << "\"y\": " << aReport.mGlobalPose.position.y << ", ";
+    jsonStream << "\"z\": " << aReport.mGlobalPose.position.z;
     jsonStream << "}, ";
     jsonStream << "\"confidence\": " << aReport.mConfidence;
     jsonStream << "}";
@@ -452,9 +520,18 @@ void CColourDetector::DisplayCalibrationWindow(
     }
 
     cv::Mat annotated = aImage.clone();
+    const double kMinConfidence = 0.5; // 50% confidence threshold for calibration too
 
     // For each detection, extract centre and tag size directly from message
     for (const auto &detection : aDetections) {
+        // Get confidence from goodness field (normalized decision margin)
+        double confidence = detection.goodness;
+        
+        // Skip low-confidence detections in calibration mode too
+        if (confidence < kMinConfidence) {
+            continue;
+        }
+        
         // Extract center from centre field (in pixels)
         int centerX = static_cast<int>(detection.centre.x);
         int centerY = static_cast<int>(detection.centre.y);
@@ -482,8 +559,9 @@ void CColourDetector::DisplayCalibrationWindow(
                      cv::Scalar(0, 255, 0), 3); // Green thick border
         }
         
-        // Draw AprilTag ID label with background
-        std::string id_text = "ID:" + std::to_string(detection.id);
+        // Draw AprilTag ID label with confidence
+        std::string id_text = "ID:" + std::to_string(detection.id) + 
+                             " (" + std::to_string(static_cast<int>(confidence * 100)) + "%)";
         cv::Size text_size = cv::getTextSize(id_text, cv::FONT_HERSHEY_SIMPLEX, 0.8, 2, nullptr);
         cv::Point text_pos(centerX - text_size.width/2, centerY - tagSize/2 - 10);
         
@@ -552,18 +630,37 @@ void CColourDetector::DrawSamplingRegions(cv::Mat &aImage,
         cv::Mat sub = aImage(roi);
         eDamageType cls = ClassifyColour(sub);
 
-        // Choose border colour (BGR) by class
-        cv::Scalar border = cv::Scalar(255, 255, 255); // default white
+        // Choose border colour (BGR) by detected class
+        cv::Scalar border;
+        std::string label;
         switch (cls) {
-            case DAMAGE_MOULD: border = cv::Scalar(0, 255, 0); break;   // green
-            case DAMAGE_WATER: border = cv::Scalar(255, 0, 0); break;   // blue
-            case DAMAGE_BLOOD: border = cv::Scalar(0, 0, 255); break;   // red
+            case DAMAGE_MOULD: 
+                border = cv::Scalar(0, 255, 0);   // green
+                label = "MOULD";
+                break;
+            case DAMAGE_WATER: 
+                border = cv::Scalar(255, 0, 0);   // blue
+                label = "WATER";
+                break;
+            case DAMAGE_BLOOD: 
+                border = cv::Scalar(0, 0, 255);   // red
+                label = "BLOOD";
+                break;
             case DAMAGE_NONE:
             case DAMAGE_UNKNOWN:
-            default: border = cv::Scalar(255, 255, 255); break;
+            default: 
+                border = cv::Scalar(128, 128, 128); // gray
+                label = "NONE";
+                break;
         }
 
+        // Draw rectangle with detected color
         cv::rectangle(aImage, roi, border, 2);
+        
+        // Add label showing what was detected
+        cv::putText(aImage, label, 
+                   cv::Point(roi.x, roi.y - 5),
+                   cv::FONT_HERSHEY_SIMPLEX, 0.4, border, 1);
     }
 }
 

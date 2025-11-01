@@ -68,6 +68,7 @@ class CImageProcessorNode : public rclcpp::Node
 
         const std::string kCameraTopicName = "/camera/image_raw";
         // Input topic for camera data [string constant]
+        // Note: For unified camera system, use "/camera/unified" instead
 
         const int kQueueSize = 10;
         // Subscriber queue depth [messages]
