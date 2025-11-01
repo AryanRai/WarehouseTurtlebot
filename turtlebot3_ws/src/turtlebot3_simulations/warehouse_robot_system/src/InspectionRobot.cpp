@@ -320,18 +320,143 @@ void InspectionRobot::update() {
         // Process any AprilTag detections
         processAprilTagDetections();
         
+        // Check if we recently detected an AprilTag and should dock to it for better inspection
+        if (last_detected_tag_id_ >= 0) {
+            double time_since_detection = (node_->now() - last_tag_detection_time_).seconds();
+            
+            // If tag was detected recently (within 2 seconds) and we haven't saved it yet
+            if (time_since_detection < 2.0) {
+                auto current_pose = slam_controller_->getCurrentPose();
+                
+                // Check if this tag is already discovered
+                bool already_discovered = false;
+                for (const auto& site : damage_sites_) {
+                    if (site.apriltag_id == last_detected_tag_id_) {
+                        double dx = site.position.x - current_pose.position.x;
+                        double dy = site.position.y - current_pose.position.y;
+                        double distance = std::sqrt(dx*dx + dy*dy);
+                        
+                        if (distance < 1.0) {
+                            already_discovered = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (!already_discovered) {
+                    RCLCPP_INFO(node_->get_logger(), "🎯 AprilTag ID %d detected! Pausing for better inspection...",
+                               last_detected_tag_id_);
+                    
+                    // Pause briefly for better detection
+                    rclcpp::sleep_for(std::chrono::milliseconds(1000));
+                    
+                    // The onAprilTagDetection callback will save it
+                }
+            }
+        }
+        
         // Check if we've completed all patrol points
         if (current_patrol_index_ >= patrol_points_.size()) {
-            RCLCPP_INFO(node_->get_logger(), "✓ Systematic patrol complete! Returning home...");
+            auto current_pose = slam_controller_->getCurrentPose();
+            double dx = 0.0 - current_pose.position.x;
+            double dy = 0.0 - current_pose.position.y;
+            double distance_to_home = std::sqrt(dx*dx + dy*dy);
+            
+            // Check if we're already home (5cm tolerance)
+            if (distance_to_home < 0.05) {
+                // Check alignment
+                tf2::Quaternion q(
+                    current_pose.orientation.x,
+                    current_pose.orientation.y,
+                    current_pose.orientation.z,
+                    current_pose.orientation.w
+                );
+                tf2::Matrix3x3 m(q);
+                double roll, pitch, current_yaw;
+                m.getRPY(roll, pitch, current_yaw);
+                
+                double angle_diff = initial_yaw_ - current_yaw;
+                while (angle_diff > M_PI) angle_diff -= 2.0 * M_PI;
+                while (angle_diff < -M_PI) angle_diff += 2.0 * M_PI;
+                
+                if (std::abs(angle_diff) > 0.05) {
+                    // Align to initial orientation
+                    geometry_msgs::msg::TwistStamped cmd_vel;
+                    cmd_vel.header.stamp = node_->now();
+                    cmd_vel.header.frame_id = "base_footprint";
+                    cmd_vel.twist.linear.x = 0.0;
+                    cmd_vel.twist.angular.z = (angle_diff > 0) ? 0.2 : -0.2;
+                    
+                    auto cmd_vel_pub = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
+                    cmd_vel_pub->publish(cmd_vel);
+                    
+                    RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 500,
+                                        "Aligning to initial orientation (%.1f° remaining)", 
+                                        std::abs(angle_diff) * 180.0 / M_PI);
+                    return;
+                }
+                
+                RCLCPP_INFO(node_->get_logger(), "✅ Patrol complete and robot at home (aligned)!");
+                
+                // Stop all motion
+                geometry_msgs::msg::TwistStamped stop_cmd;
+                stop_cmd.header.stamp = node_->now();
+                stop_cmd.header.frame_id = "base_footprint";
+                auto cmd_vel_pub = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
+                cmd_vel_pub->publish(stop_cmd);
+                
+                // Create completion marker
+                std::ofstream marker("/tmp/inspection_exploration_complete.marker");
+                marker << "complete";
+                marker.close();
+                
+                publishStatus("Patrol complete - at home");
+                is_inspecting_ = false;
+                return;
+            }
+            
+            // Return home with precise docking
+            RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 2000,
+                                "Patrol complete! Returning home (%.2fm away)...", distance_to_home);
+            
+            geometry_msgs::msg::Point home_position;
+            home_position.x = 0.0;
+            home_position.y = 0.0;
+            home_position.z = 0.0;
+            
+            // Enter precise docking mode when close to home (within 50cm)
+            if (distance_to_home < DOCKING_DISTANCE) {
+                bool has_clear_path = hasLineOfSight(current_pose.position, home_position, *current_map);
+                
+                if (has_clear_path) {
+                    if (!in_docking_mode_) {
+                        RCLCPP_INFO(node_->get_logger(), "Entering home docking mode (%.3fm, clear path)", 
+                                   distance_to_home);
+                        in_docking_mode_ = true;
+                        motion_controller_->clearPath();
+                    }
+                    
+                    preciseDocking(current_pose, distance_to_home);
+                    return;
+                } else {
+                    in_docking_mode_ = false;
+                }
+            }
+            
+            // Reset docking if far from home
+            if (in_docking_mode_ && distance_to_home >= DOCKING_DISTANCE) {
+                in_docking_mode_ = false;
+            }
+            
+            // Execute motion if we have a path
+            if (motion_controller_->hasPath()) {
+                motion_controller_->computeVelocityCommand(current_pose, *current_map);
+                return;
+            }
+            
+            // No path - plan one to home
             returnToHome();
-            
-            // Create completion marker
-            std::ofstream marker("/tmp/inspection_exploration_complete.marker");
-            marker << "complete";
-            marker.close();
-            
-            publishStatus("Patrol complete - returning home");
-            is_inspecting_ = false;
+            publishStatus("Returning home");
             return;
         }
         
@@ -343,20 +468,35 @@ void InspectionRobot::update() {
         double dy = current_point.y - current_pose.position.y;
         double distance = std::sqrt(dx*dx + dy*dy);
         
-        // Check if we've reached the current patrol point
-        if (distance < 0.5) {  // 50cm tolerance for patrol points
-            RCLCPP_INFO(node_->get_logger(), "✓ Reached patrol point %zu/%zu", 
-                       current_patrol_index_ + 1, patrol_points_.size());
+        RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 2000,
+                            "Patrol point %zu/%zu: target=(%.2f, %.2f), distance=%.2fm",
+                            current_patrol_index_ + 1, patrol_points_.size(),
+                            current_point.x, current_point.y, distance);
+        
+        // Execute motion if we have a path
+        if (motion_controller_->hasPath()) {
+            motion_controller_->computeVelocityCommand(current_pose, *current_map);
             
-            // Pause briefly to allow AprilTag detection
-            rclcpp::sleep_for(std::chrono::milliseconds(500));
+            // Check if we've reached the path goal
+            if (motion_controller_->isAtGoal()) {
+                RCLCPP_INFO(node_->get_logger(), "✓ Reached patrol point %zu/%zu (%.2fm from target)", 
+                           current_patrol_index_ + 1, patrol_points_.size(), distance);
+                
+                // Clear the path
+                motion_controller_->clearPath();
+                
+                // Pause briefly to allow AprilTag detection
+                rclcpp::sleep_for(std::chrono::milliseconds(500));
+                
+                // Move to next patrol point
+                current_patrol_index_++;
+                publishStatus("Moving to next patrol point");
+            }
             
-            current_patrol_index_++;
-            publishStatus("Moving to next patrol point");
-            return;
+            return;  // Continue following path
         }
         
-        // Navigate to current patrol point
+        // No path - need to plan one
         if (!navigateToPatrolPoint(current_point)) {
             RCLCPP_WARN(node_->get_logger(), "Failed to navigate to patrol point %zu, skipping...", 
                        current_patrol_index_);
@@ -1164,8 +1304,8 @@ void InspectionRobot::startExploration() {
 void InspectionRobot::generatePatrolPoints(const nav_msgs::msg::OccupancyGrid& map) {
     patrol_points_.clear();
     
-    // Grid-based patrol pattern
-    double grid_spacing = 1.5;  // 1.5 meter spacing between patrol points
+    // Grid-based patrol pattern - smaller spacing for thorough coverage
+    double grid_spacing = 0.8;  // 0.8 meter spacing for better coverage
     
     // Get map bounds
     double map_width = map.info.width * map.info.resolution;
@@ -1173,12 +1313,16 @@ void InspectionRobot::generatePatrolPoints(const nav_msgs::msg::OccupancyGrid& m
     double origin_x = map.info.origin.position.x;
     double origin_y = map.info.origin.position.y;
     
-    RCLCPP_INFO(node_->get_logger(), "Map bounds: %.2f x %.2f, origin: (%.2f, %.2f)", 
+    RCLCPP_INFO(node_->get_logger(), "🗺️  Map bounds: %.2f x %.2f meters, origin: (%.2f, %.2f)", 
                map_width, map_height, origin_x, origin_y);
+    RCLCPP_INFO(node_->get_logger(), "📐 Grid spacing: %.1fm", grid_spacing);
     
-    // Generate grid points
-    for (double y = origin_y + 0.5; y < origin_y + map_height - 0.5; y += grid_spacing) {
-        for (double x = origin_x + 0.5; x < origin_x + map_width - 0.5; x += grid_spacing) {
+    // Generate grid points with smaller footprint check
+    int points_generated = 0;
+    int points_rejected = 0;
+    
+    for (double y = origin_y + 0.3; y < origin_y + map_height - 0.3; y += grid_spacing) {
+        for (double x = origin_x + 0.3; x < origin_x + map_width - 0.3; x += grid_spacing) {
             geometry_msgs::msg::Point point;
             point.x = x;
             point.y = y;
@@ -1186,30 +1330,42 @@ void InspectionRobot::generatePatrolPoints(const nav_msgs::msg::OccupancyGrid& m
             
             // Check if point is in free space
             GridCell cell = PathPlanner::worldToGrid(map, point);
-            if (PathPlanner::isCellInBounds(map, cell) && 
-                PathPlanner::isCellWalkable(map, cell)) {
-                
-                // Check surrounding area is also free (robot footprint)
-                bool area_clear = true;
-                for (int dx = -2; dx <= 2 && area_clear; dx++) {
-                    for (int dy = -2; dy <= 2 && area_clear; dy++) {
-                        GridCell check_cell = {cell.first + dx, cell.second + dy};
-                        if (!PathPlanner::isCellInBounds(map, check_cell) ||
-                            !PathPlanner::isCellWalkable(map, check_cell)) {
-                            area_clear = false;
-                        }
+            if (!PathPlanner::isCellInBounds(map, cell) || 
+                !PathPlanner::isCellWalkable(map, cell)) {
+                points_rejected++;
+                continue;
+            }
+            
+            // Check surrounding area is also free (smaller robot footprint check)
+            bool area_clear = true;
+            for (int dx = -1; dx <= 1 && area_clear; dx++) {
+                for (int dy = -1; dy <= 1 && area_clear; dy++) {
+                    GridCell check_cell = {cell.first + dx, cell.second + dy};
+                    if (!PathPlanner::isCellInBounds(map, check_cell) ||
+                        !PathPlanner::isCellWalkable(map, check_cell)) {
+                        area_clear = false;
                     }
                 }
-                
-                if (area_clear) {
-                    patrol_points_.push_back(point);
-                }
+            }
+            
+            if (area_clear) {
+                patrol_points_.push_back(point);
+                points_generated++;
+            } else {
+                points_rejected++;
             }
         }
     }
     
-    RCLCPP_INFO(node_->get_logger(), "Generated %zu patrol points with %.1fm spacing", 
-               patrol_points_.size(), grid_spacing);
+    RCLCPP_INFO(node_->get_logger(), "✅ Generated %d patrol points (rejected %d due to obstacles)", 
+               points_generated, points_rejected);
+    
+    if (patrol_points_.empty()) {
+        RCLCPP_ERROR(node_->get_logger(), "❌ No valid patrol points generated! Map may be too constrained.");
+    } else {
+        RCLCPP_INFO(node_->get_logger(), "🎯 Patrol coverage: ~%.1f square meters", 
+                   points_generated * grid_spacing * grid_spacing);
+    }
 }
 
 bool InspectionRobot::navigateToPatrolPoint(const geometry_msgs::msg::Point& point) {

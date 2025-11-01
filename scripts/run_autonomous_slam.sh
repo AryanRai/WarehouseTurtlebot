@@ -886,8 +886,9 @@ EOF
             
             # Start inspection robot in exploration mode
             echo "   Starting Inspection Robot in exploration mode..."
+            echo ""
             export INSPECTION_MODE="exploration"
-            ros2 run warehouse_robot_system inspection_robot_node > /tmp/inspection_exploration.log 2>&1 &
+            ros2 run warehouse_robot_system inspection_robot_node &
             INSPECTION_PID=$!
             sleep 3
             
