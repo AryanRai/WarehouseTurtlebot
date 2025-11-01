@@ -355,15 +355,20 @@ void InspectionRobot::update() {
             }
         }
         
-        // Check if we've completed all patrol points
+        // Check if we've completed all patrol points - RETURN HOME
         if (current_patrol_index_ >= patrol_points_.size()) {
             auto current_pose = slam_controller_->getCurrentPose();
-            double dx = 0.0 - current_pose.position.x;
-            double dy = 0.0 - current_pose.position.y;
+            geometry_msgs::msg::Point home_position;
+            home_position.x = 0.0;
+            home_position.y = 0.0;
+            home_position.z = 0.0;
+            
+            double dx = home_position.x - current_pose.position.x;
+            double dy = home_position.y - current_pose.position.y;
             double distance_to_home = std::sqrt(dx*dx + dy*dy);
             
-            // Check if we're already home (5cm tolerance)
-            if (distance_to_home < 0.05) {
+            // Check if reached home (5cm tolerance)
+            if (distance_to_home < HOME_TOLERANCE) {
                 // Check alignment
                 tf2::Quaternion q(
                     current_pose.orientation.x,
@@ -396,14 +401,14 @@ void InspectionRobot::update() {
                     return;
                 }
                 
-                RCLCPP_INFO(node_->get_logger(), "✅ Patrol complete and robot at home (aligned)!");
-                
                 // Stop all motion
                 geometry_msgs::msg::TwistStamped stop_cmd;
                 stop_cmd.header.stamp = node_->now();
                 stop_cmd.header.frame_id = "base_footprint";
                 auto cmd_vel_pub = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
                 cmd_vel_pub->publish(stop_cmd);
+                
+                RCLCPP_INFO(node_->get_logger(), "✅ Patrol complete! Robot at home (%.3fm, aligned)", distance_to_home);
                 
                 // Create completion marker
                 std::ofstream marker("/tmp/inspection_exploration_complete.marker");
@@ -414,15 +419,6 @@ void InspectionRobot::update() {
                 is_inspecting_ = false;
                 return;
             }
-            
-            // Return home with precise docking
-            RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 2000,
-                                "Patrol complete! Returning home (%.2fm away)...", distance_to_home);
-            
-            geometry_msgs::msg::Point home_position;
-            home_position.x = 0.0;
-            home_position.y = 0.0;
-            home_position.z = 0.0;
             
             // Enter precise docking mode when close to home (within 50cm)
             if (distance_to_home < DOCKING_DISTANCE) {
@@ -439,6 +435,9 @@ void InspectionRobot::update() {
                     preciseDocking(current_pose, distance_to_home);
                     return;
                 } else {
+                    RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 2000,
+                                        "Close to home (%.2fm) but obstacle - using path planner", 
+                                        distance_to_home);
                     in_docking_mode_ = false;
                 }
             }
@@ -451,11 +450,34 @@ void InspectionRobot::update() {
             // Execute motion if we have a path
             if (motion_controller_->hasPath()) {
                 motion_controller_->computeVelocityCommand(current_pose, *current_map);
+                RCLCPP_INFO_THROTTLE(node_->get_logger(), *node_->get_clock(), 3000,
+                                    "Returning home: %.2fm remaining", distance_to_home);
                 return;
             }
             
             // No path - plan one to home
-            returnToHome();
+            RCLCPP_INFO(node_->get_logger(), "Planning path home from (%.2f, %.2f)...",
+                       current_pose.position.x, current_pose.position.y);
+            
+            GridCell start = PathPlanner::worldToGrid(*current_map, current_pose.position);
+            GridCell goal = PathPlanner::worldToGrid(*current_map, home_position);
+            
+            auto [cspace, cspace_cells] = PathPlanner::calcCSpace(*current_map, false);
+            cv::Mat cost_map = PathPlanner::calcCostMap(*current_map);
+            
+            auto [path, cost, actual_start, actual_goal] = 
+                PathPlanner::aStar(cspace, cost_map, start, goal);
+            
+            if (path.empty()) {
+                RCLCPP_ERROR(node_->get_logger(), "Cannot plan path home!");
+                is_inspecting_ = false;
+                return;
+            }
+            
+            auto path_msg = PathPlanner::pathToMessage(*current_map, path);
+            motion_controller_->setPath(path_msg);
+            
+            RCLCPP_INFO(node_->get_logger(), "Path to home planned with %zu waypoints", path.size());
             publishStatus("Returning home");
             return;
         }

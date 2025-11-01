@@ -867,6 +867,23 @@ EOF
                 APRILTAG_PID=$(pgrep -f "apriltag_detector_node")
             fi
             
+            # Start camera node
+            if ! pgrep -f "camera_node" > /dev/null; then
+                echo "   Starting Camera node..."
+                ros2 run warehouse_robot_system camera_node > /tmp/camera_node.log 2>&1 &
+                CAMERA_PID=$!
+                sleep 2
+                
+                if ps -p $CAMERA_PID > /dev/null 2>&1; then
+                    echo "   ✅ Camera node started"
+                else
+                    echo "   ⚠️  Failed to start Camera node"
+                fi
+            else
+                echo "   ✓ Camera node already running"
+                CAMERA_PID=$(pgrep -f "camera_node")
+            fi
+            
             # Start color detector for enhanced detection
             if ! pgrep -f "colour_detector_node" > /dev/null; then
                 echo "   Starting Color detector..."
@@ -961,6 +978,12 @@ EOF
             if [ ! -z "$APRILTAG_PID" ] && ps -p $APRILTAG_PID > /dev/null 2>&1; then
                 echo "   Stopping AprilTag detector..."
                 kill -TERM $APRILTAG_PID 2>/dev/null
+                sleep 0.5
+            fi
+            
+            if [ ! -z "$CAMERA_PID" ] && ps -p $CAMERA_PID > /dev/null 2>&1; then
+                echo "   Stopping Camera node..."
+                kill -TERM $CAMERA_PID 2>/dev/null
                 sleep 0.5
             fi
             
@@ -1353,6 +1376,12 @@ cleanup_inspection_exploration() {
     if [ ! -z "$INSPECTION_PID" ] && ps -p $INSPECTION_PID > /dev/null 2>&1; then
         echo "   Stopping Inspection Robot..."
         kill -TERM $INSPECTION_PID 2>/dev/null
+        sleep 0.5
+    fi
+    
+    if [ ! -z "$CAMERA_PID" ] && ps -p $CAMERA_PID > /dev/null 2>&1; then
+        echo "   Stopping Camera node..."
+        kill -TERM $CAMERA_PID 2>/dev/null
         sleep 0.5
     fi
     

@@ -10,7 +10,7 @@ echo "=========================================="
 echo ""
 
 # Set TurtleBot3 model
-export TURTLEBOT3_MODEL=burger
+export TURTLEBOT3_MODEL=burger_cam
 
 # Get the script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
