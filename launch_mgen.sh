@@ -183,7 +183,16 @@ if [ "$WAREHOUSE_MODE" = "true" ]; then
     export TURTLEBOT3_MODEL=burger
     cd turtlebot3_ws
     source install/setup.bash
+    
+    # Add both installed models and source models to Gazebo resource path
     export GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:$(pwd)/install/turtlebot3_gazebo/share/turtlebot3_gazebo/models
+    export GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:$(pwd)/src/turtlebot3_simulations/turtlebot3_gazebo/models
+    
+    echo "📁 Gazebo model paths configured:"
+    echo "   - $(pwd)/install/turtlebot3_gazebo/share/turtlebot3_gazebo/models"
+    echo "   - $(pwd)/src/turtlebot3_simulations/turtlebot3_gazebo/models"
+    echo ""
+    
     cd ..
     
     echo "🚀 Launching Gazebo with warehouse environment..."
@@ -262,8 +271,9 @@ export TURTLEBOT3_MODEL=burger
 cd turtlebot3_ws
 source install/setup.bash
 
-# Add TurtleBot3 models to Gazebo resource path
+# Add TurtleBot3 models and AprilTag models to Gazebo resource path
 export GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:$(pwd)/install/turtlebot3_gazebo/share/turtlebot3_gazebo/models
+export GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:$(pwd)/src/turtlebot3_simulations/turtlebot3_gazebo/models
 
 cd ..
 

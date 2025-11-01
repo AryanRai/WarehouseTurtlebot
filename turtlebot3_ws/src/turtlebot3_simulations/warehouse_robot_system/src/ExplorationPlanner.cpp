@@ -214,8 +214,10 @@ nav_msgs::msg::Path ExplorationPlanner::planExplorationPath(
     if (frontiers_checked == 0) {
         if (frontiers_within_goal_tolerance > 0) {
             RCLCPP_WARN(node_->get_logger(), 
-                       "All %d frontiers are within goal tolerance (< %.2fm) - robot should move to discover new areas", 
+                       "All %d frontiers are within goal tolerance (< %.2fm) - triggering recovery to move away", 
                        frontiers_within_goal_tolerance, GOAL_TOLERANCE);
+            // Increment counter to trigger recovery - robot is stuck at explored frontiers
+            no_path_found_counter_ += 5;  // Jump ahead to trigger recovery faster
         } else if (frontiers_too_close > 0) {
             RCLCPP_INFO(node_->get_logger(), 
                        "All %d frontiers were too close (< %.2fm) - waiting for map to update", 
@@ -247,10 +249,11 @@ nav_msgs::msg::Path ExplorationPlanner::planExplorationPath(
             // Skip if within goal tolerance (robot is already there)
             if (goal_distance < GOAL_TOLERANCE) {
                 RCLCPP_WARN(node_->get_logger(), 
-                           "Best path goal at (%.2f, %.2f) is within goal tolerance (%.3fm < %.2fm) - robot needs to move away", 
+                           "Best path goal at (%.2f, %.2f) is within goal tolerance (%.3fm < %.2fm) - triggering immediate recovery", 
                            goal_pos.x, goal_pos.y, goal_distance, GOAL_TOLERANCE);
-                // Increment counter so recovery will trigger
-                no_path_found_counter_++;
+                // Increment counter multiple times to trigger immediate recovery
+                // This ensures the robot moves away quickly instead of getting stuck
+                no_path_found_counter_ += 5;  // Jump ahead to trigger recovery faster
                 return empty_path;
             }
             

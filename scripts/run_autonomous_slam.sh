@@ -271,21 +271,33 @@ offer_mode_selection() {
     echo "       • Includes zones and robot pose"
     echo "       • Can be loaded later"
     echo ""
-    echo "   [5] 🔍 INSPECTION MODE (Coming Soon)"
-    echo "       • Damage detection with camera"
-    echo "       • Inspection point navigation"
-    echo "       • Damage report generation"
+    echo "   [5] 🔍 INSPECTION EXPLORATION MODE"
+    echo "       • Autonomous exploration with AprilTag detection"
+    echo "       • Discovers and marks damage sites automatically"
+    echo "       • Saves damage site locations to file"
+    echo "       • Similar to frontier exploration but with camera"
     echo ""
-    echo "   [6] ❌ EXIT"
+    echo "   [6] 📋 INSPECTION MODE"
+    echo "       • Navigate to pre-defined damage sites"
+    echo "       • Read AprilTag IDs with camera"
+    echo "       • Log inspection results"
+    echo "       • Route optimization (TSP)"
+    echo ""
+    echo "   [7] 💾 SAVE CURRENT MAP"
+    echo "       • Save map with custom name"
+    echo "       • Includes zones and robot pose"
+    echo "       • Can be loaded later"
+    echo ""
+    echo "   [8] ❌ EXIT"
     echo "       • Shutdown system"
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    echo "   Enter your choice [1/2/3/4/5/6]"
+    echo "   Enter your choice [1/2/3/4/5/6/7/8]"
     echo "   (You have 60 seconds to respond)"
     echo ""
     echo -n "   👉 Your choice: "
-    read -r -t 60 response || response="6"
+    read -r -t 60 response || response="8"
     echo ""
     
     if [[ "$response" == "1" ]]; then
@@ -793,17 +805,502 @@ EOF
         
     elif [[ "$response" == "5" ]]; then
         echo ""
+        echo "🔍 Inspection Exploration Mode - Discovering Damage Sites"
+        echo "=========================================================="
+        echo ""
+        echo "This mode will:"
+        echo "  • Systematically patrol the already-mapped warehouse"
+        echo "  • Detect AprilTags and colors with the camera"
+        echo "  • Automatically mark damage site locations"
+        echo "  • Save discovered sites to damage_sites.yaml"
+        echo ""
+        echo "⚠️  REQUIREMENTS:"
+        echo "  • Existing map (run exploration mode first!)"
+        echo "  • Camera working (/camera/image_raw)"
+        echo "  • SLAM Toolbox in localization mode"
+        echo ""
+        echo "📋 How it works:"
+        echo "  1. Robot patrols all accessible areas systematically"
+        echo "  2. AprilTag & Color detectors run continuously"
+        echo "  3. When damage detected, location is auto-saved"
+        echo "  4. Returns home when patrol complete"
+        echo ""
+        echo "Would you like to:"
+        echo "  [1] Start Inspection Exploration (systematic patrol)"
+        echo "  [2] Return to menu"
+        echo ""
+        echo -n "👉 Your choice: "
+        read -r explore_choice
+        
+        if [[ "$explore_choice" == "1" ]]; then
+            echo ""
+            echo "🔍 Starting Inspection Exploration with AprilTag Detection..."
+            echo "============================================================"
+            echo ""
+            
+            # Check if we have a valid map
+            if ! ros2 topic info /map > /dev/null 2>&1; then
+                echo "❌ No map available! Please run exploration mode first."
+                echo "   The inspection exploration needs an existing map to patrol."
+                sleep 3
+                offer_mode_selection
+                return
+            fi
+            
+            echo "✅ Map detected - ready for inspection exploration"
+            echo ""
+            
+            # Start AprilTag detector
+            if ! pgrep -f "apriltag_detector_node" > /dev/null; then
+                echo "   Starting AprilTag detector..."
+                ros2 run warehouse_robot_system apriltag_detector_node > /tmp/apriltag_detector.log 2>&1 &
+                APRILTAG_PID=$!
+                sleep 2
+                
+                if ps -p $APRILTAG_PID > /dev/null 2>&1; then
+                    echo "   ✅ AprilTag detector started"
+                else
+                    echo "   ⚠️  Failed to start AprilTag detector"
+                fi
+            else
+                echo "   ✓ AprilTag detector already running"
+                APRILTAG_PID=$(pgrep -f "apriltag_detector_node")
+            fi
+            
+            # Start color detector for enhanced detection
+            if ! pgrep -f "colour_detector_node" > /dev/null; then
+                echo "   Starting Color detector..."
+                ros2 run warehouse_robot_system colour_detector_node > /tmp/colour_detector.log 2>&1 &
+                COLOR_PID=$!
+                sleep 2
+                
+                if ps -p $COLOR_PID > /dev/null 2>&1; then
+                    echo "   ✅ Color detector started"
+                else
+                    echo "   ⚠️  Failed to start Color detector"
+                fi
+            else
+                echo "   ✓ Color detector already running"
+                COLOR_PID=$(pgrep -f "colour_detector_node")
+            fi
+            
+            # Start inspection robot in exploration mode
+            echo "   Starting Inspection Robot in exploration mode..."
+            export INSPECTION_MODE="exploration"
+            ros2 run warehouse_robot_system inspection_robot_node > /tmp/inspection_exploration.log 2>&1 &
+            INSPECTION_PID=$!
+            sleep 3
+            
+            if ! ps -p $INSPECTION_PID > /dev/null 2>&1; then
+                echo "   ❌ Failed to start inspection robot"
+                echo "   Check log: /tmp/inspection_exploration.log"
+                offer_mode_selection
+                return
+            fi
+            
+            echo ""
+            echo "✅ ================================================"
+            echo "   INSPECTION EXPLORATION ACTIVE!"
+            echo "   ================================================"
+            echo ""
+            echo "🤖 Robot Behavior:"
+            echo "   • Systematically patrols all accessible areas"
+            echo "   • Uses grid-based coverage pattern"
+            echo "   • Detects AprilTags and colors automatically"
+            echo "   • Marks damage sites when tags detected"
+            echo "   • Returns home when patrol complete"
+            echo ""
+            echo "📊 Monitor Progress:"
+            echo "   • AprilTag detections: ros2 topic echo /apriltag_detections"
+            echo "   • Color detections: ros2 topic echo /warehouse/damage_reports"
+            echo "   • Robot status: ros2 topic echo /inspection/status"
+            echo ""
+            echo "📁 Output Files:"
+            echo "   • damage_sites.yaml - Discovered damage locations"
+            echo "   • inspection_exploration_log.csv - Detection log"
+            echo ""
+            echo "Press Ctrl+C to stop"
+            echo ""
+            
+            # Set up trap for inspection exploration cleanup
+            trap 'cleanup_inspection_exploration' SIGINT SIGTERM
+            
+            # Wait for inspection exploration to complete
+            EXPLORATION_COMPLETE=false
+            while true; do
+                # Check for completion marker
+                if [ -f "/tmp/inspection_exploration_complete.marker" ]; then
+                    echo ""
+                    echo "✅ Inspection exploration completed!"
+                    rm -f "/tmp/inspection_exploration_complete.marker"
+                    EXPLORATION_COMPLETE=true
+                    break
+                fi
+                
+                if ! ps -p $INSPECTION_PID > /dev/null 2>&1; then
+                    echo ""
+                    echo "ℹ️  Inspection Robot process exited"
+                    if [ -f "/tmp/inspection_exploration_complete.marker" ]; then
+                        EXPLORATION_COMPLETE=true
+                        rm -f "/tmp/inspection_exploration_complete.marker"
+                    fi
+                    break
+                fi
+                
+                sleep 1
+            done
+            
+            # Cleanup
+            if [ ! -z "$INSPECTION_PID" ] && ps -p $INSPECTION_PID > /dev/null 2>&1; then
+                echo "   Stopping Inspection Robot..."
+                kill -TERM $INSPECTION_PID 2>/dev/null
+                sleep 0.5
+            fi
+            
+            if [ ! -z "$APRILTAG_PID" ] && ps -p $APRILTAG_PID > /dev/null 2>&1; then
+                echo "   Stopping AprilTag detector..."
+                kill -TERM $APRILTAG_PID 2>/dev/null
+                sleep 0.5
+            fi
+            
+            if [ ! -z "$COLOR_PID" ] && ps -p $COLOR_PID > /dev/null 2>&1; then
+                echo "   Stopping Color detector..."
+                kill -TERM $COLOR_PID 2>/dev/null
+                sleep 0.5
+            fi
+            
+            echo ""
+            if [ "$EXPLORATION_COMPLETE" = true ]; then
+                echo "✅ Inspection exploration completed successfully!"
+                echo ""
+                echo "📋 Results:"
+                if [ -f "damage_sites.yaml" ]; then
+                    SITE_COUNT=$(grep -c "^  - name:" "damage_sites.yaml" 2>/dev/null || echo "0")
+                    echo "   • Discovered $SITE_COUNT damage sites"
+                    echo "   • Sites saved to: damage_sites.yaml"
+                else
+                    echo "   • No damage sites discovered"
+                fi
+                
+                if [ -f "inspection_exploration_log.csv" ]; then
+                    echo "   • Detection log: inspection_exploration_log.csv"
+                fi
+                
+                echo ""
+                echo "💡 Next Steps:"
+                echo "   1. Review discovered sites: ./scripts/inspection_commands.sh sites"
+                echo "   2. Run inspection mode to verify sites: Select option [6]"
+                echo "   3. Save map with sites: Select option [7]"
+            else
+                echo "⚠️  Inspection exploration stopped early"
+                echo "   Check log: /tmp/inspection_exploration.log"
+            fi
+            
+            echo ""
+            sleep 3
+            offer_mode_selection
+        else
+            echo "Returning to menu..."
+            sleep 1
+            offer_mode_selection
+        fi
+        return
+        
+    elif [[ "$response" == "6" ]]; then
+        echo ""
         echo "🔄 Switching to Inspection Mode..."
-        echo "================================"
+        echo "=================================="
         echo ""
-        echo "   ⚠️  Inspection mode is not yet implemented!"
+        
+        # Prompt for route optimization mode
+        echo "📊 SELECT ROUTE OPTIMIZATION MODE"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
-        echo "   Planned features:"
-        echo "   • Camera-based damage detection"
-        echo "   • Navigate to inspection points"
-        echo "   • Save damage reports to disk"
-        echo "   • Image capture and logging"
+        echo "   [1] 📋 ORDERED MODE (Sequential)"
+        echo "       • Visits sites in defined order"
+        echo "       • Damage_1 → Damage_2 → Damage_3 → ... → Home"
+        echo "       • Fast startup, predictable route"
         echo ""
+        echo "   [2] 🎯 OPTIMIZED MODE (TSP)"
+        echo "       • Finds shortest total path"
+        echo "       • Uses A* distance matrix"
+        echo "       • Simulated Annealing optimization"
+        echo "       • Minimizes total travel distance"
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo -n "   👉 Your choice [1/2]: "
+        read -r opt_mode
+        echo ""
+        
+        # Set environment variable based on choice
+        if [[ "$opt_mode" == "2" ]]; then
+            export INSPECTION_OPTIMIZATION="tsp"
+            echo "   ✅ Selected: OPTIMIZED MODE (TSP)"
+            echo "   Using A* + Simulated Annealing for route optimization"
+        else
+            export INSPECTION_OPTIMIZATION="ordered"
+            echo "   ✅ Selected: ORDERED MODE (Sequential)"
+            echo "   Sites will be visited in defined order"
+        fi
+        echo ""
+        
+        # Find the most recent map file
+        MAP_FILE_BASE="$(pwd)/warehouse_map_final"
+        if [ ! -f "${MAP_FILE_BASE}.yaml" ]; then
+            MAP_FILE_BASE="$(pwd)/warehouse_map_complete"
+        fi
+        
+        # Check if we're already in preload mode (SLAM already in localization)
+        if [ "$PRELOAD_MAP" = true ]; then
+            echo "   ✓ Already in localization mode (preload)"
+            echo "   ✓ SLAM Toolbox running with loaded map"
+            echo "   ✓ Skipping SLAM restart to preserve TF tree"
+            echo ""
+        elif [ ! -f "${MAP_FILE_BASE}.yaml" ]; then
+            echo "   ⚠️  No saved map found, continuing with current SLAM state"
+            echo "   SLAM Toolbox will continue in mapping mode"
+        else
+            # Stop SLAM Toolbox (mapping mode) and restart in localization mode
+            if [ ! -z "$SLAM_TOOLBOX_PID" ] && ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
+                echo "   Switching SLAM Toolbox: mapping → localization mode..."
+                kill -TERM $SLAM_TOOLBOX_PID 2>/dev/null
+                sleep 2
+                
+                for i in {1..5}; do
+                    if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
+                        break
+                    fi
+                    sleep 0.5
+                done
+            fi
+            
+            # Create temporary params file
+            TEMP_PARAMS="/tmp/slam_localization_params_$$.yaml"
+            cat > "$TEMP_PARAMS" << EOF
+slam_toolbox:
+  ros__parameters:
+    odom_frame: odom
+    map_frame: map
+    base_frame: base_footprint
+    scan_topic: /scan
+    use_map_saver: false
+    mode: localization
+    map_file_name: $MAP_FILE_BASE
+    map_start_at_dock: true
+    map_update_interval: 5.0
+    resolution: 0.05
+    max_laser_range: 3.5
+    minimum_time_interval: 0.5
+    transform_publish_period: 0.02
+    transform_timeout: 0.2
+    tf_buffer_duration: 30.0
+    stack_size_to_use: 40000000
+EOF
+            
+            echo "   Loading map: ${MAP_FILE_BASE}.yaml"
+            
+            # Start SLAM Toolbox in localization mode
+            ros2 launch slam_toolbox localization_launch.py \
+                use_sim_time:=$USE_SIM_TIME \
+                slam_params_file:=$TEMP_PARAMS > /tmp/slam_toolbox.log 2>&1 &
+            SLAM_TOOLBOX_PID=$!
+            
+            echo "   Waiting for SLAM Toolbox to initialize..."
+            sleep 5
+            
+            if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
+                echo "   ❌ Failed to start SLAM in localization mode"
+                echo "   Check logs: tail -f /tmp/slam_toolbox.log"
+                return 1
+            fi
+            
+            echo "   ✅ SLAM Toolbox running in localization mode"
+        fi
+        
+        # Wait for SLAM to be ready
+        echo "   Waiting for SLAM to be ready..."
+        WAIT_COUNT=0
+        MAX_WAIT=30
+        MAP_READY=false
+        
+        while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
+            if ros2 topic info /map > /dev/null 2>&1; then
+                if timeout 2s ros2 topic echo /map --once > /dev/null 2>&1; then
+                    MAP_READY=true
+                    echo "   ✅ Map is being published"
+                    break
+                fi
+            fi
+            sleep 1
+            WAIT_COUNT=$((WAIT_COUNT + 1))
+            if [ $((WAIT_COUNT % 5)) -eq 0 ]; then
+                echo "   Still waiting for map... ($WAIT_COUNT/${MAX_WAIT}s)"
+            fi
+        done
+        
+        if [ "$MAP_READY" = false ]; then
+            echo "   ⚠️  WARNING: Map not ready after ${MAX_WAIT}s"
+            echo "   The inspection robot may not work correctly without a map!"
+            sleep 2
+        fi
+        
+        # Start AprilTag detector if not already running
+        if ! pgrep -f "apriltag_detector_node" > /dev/null; then
+            echo "   Starting AprilTag detector..."
+            ros2 run warehouse_robot_system apriltag_detector_node > /tmp/apriltag_detector.log 2>&1 &
+            APRILTAG_PID=$!
+            sleep 2
+            
+            if ps -p $APRILTAG_PID > /dev/null 2>&1; then
+                echo "   ✅ AprilTag detector started"
+            else
+                echo "   ⚠️  Failed to start AprilTag detector"
+                echo "   Check logs: tail -f /tmp/apriltag_detector.log"
+            fi
+        else
+            echo "   ✓ AprilTag detector already running"
+            APRILTAG_PID=$(pgrep -f "apriltag_detector_node")
+        fi
+        
+        # Start inspection robot node
+        echo "   Starting Inspection Robot node..."
+        ros2 run warehouse_robot_system inspection_robot_node &
+        INSPECTION_PID=$!
+        sleep 3
+        
+        if ! ps -p $INSPECTION_PID > /dev/null 2>&1; then
+            echo "   ❌ Failed to start inspection robot"
+            return 1
+        fi
+        
+        echo "   ✅ Inspection Robot node started"
+        echo ""
+        echo "✅ =============================================="
+        echo "   INSPECTION MODE ACTIVE!"
+        echo "   =============================================="
+        echo ""
+        echo "📋 Inspection Robot Workflow:"
+        echo "   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "   STEP 1: Define Damage Sites"
+        echo "   • Use RViz 'Publish Point' tool"
+        echo "   • Click on map to add damage sites"
+        echo "   • Each click = new site (Damage_1, Damage_2, etc.)"
+        echo ""
+        echo "   STEP 2: Save Sites (in another terminal)"
+        echo "   $ ./scripts/inspection_commands.sh save"
+        echo ""
+        echo "   STEP 3: Start Inspections"
+        echo "   $ ./scripts/inspection_commands.sh start"
+        echo ""
+        echo "   STEP 4: Monitor Progress"
+        echo "   $ ./scripts/inspection_commands.sh status"
+        echo ""
+        echo "📁 Output Files:"
+        echo "   • damage_sites.yaml - Saved damage sites"
+        echo "   • inspection_log.csv - Inspection records"
+        echo ""
+        echo "💡 Quick Commands:"
+        echo "   ./scripts/inspection_commands.sh save    # Save sites"
+        echo "   ./scripts/inspection_commands.sh start   # Begin inspections"
+        echo "   ./scripts/inspection_commands.sh status  # Watch progress"
+        echo "   ./scripts/inspection_commands.sh log     # View history"
+        echo ""
+        echo "🎥 Camera & AprilTag Detection:"
+        echo "   • Robot reads AprilTag IDs at each site"
+        echo "   • Detection timeout: 5 seconds per site"
+        echo "   • Results logged to inspection_log.csv"
+        echo ""
+        echo "Press Ctrl+C to stop inspection system"
+        echo ""
+        
+        # Set up new trap for inspection mode
+        trap 'cleanup_inspection_mode' SIGINT SIGTERM
+        
+        # Wait in inspection mode
+        INSPECTION_COMPLETE=false
+        while true; do
+            # Check for inspection completion marker
+            if [ -f "/tmp/inspection_complete.marker" ]; then
+                echo ""
+                echo "✅ Inspection system completed all tasks!"
+                rm -f "/tmp/inspection_complete.marker"
+                INSPECTION_COMPLETE=true
+                break
+            fi
+            
+            if ! ps -p $INSPECTION_PID > /dev/null 2>&1; then
+                echo ""
+                echo "ℹ️  Inspection Robot process exited"
+                if [ -f "/tmp/inspection_complete.marker" ]; then
+                    INSPECTION_COMPLETE=true
+                    rm -f "/tmp/inspection_complete.marker"
+                fi
+                break
+            fi
+            
+            if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
+                echo "❌ SLAM Toolbox process died!"
+                break
+            fi
+            
+            if [ "$USE_PHYSICAL_ROBOT" = false ] && [ ! -z "$RSP_PID" ]; then
+                if ! ps -p $RSP_PID > /dev/null 2>&1; then
+                    echo "❌ robot_state_publisher process died!"
+                    break
+                fi
+            fi
+            
+            sleep 1
+        done
+        
+        # Cleanup inspection mode
+        if [ ! -z "$INSPECTION_PID" ] && ps -p $INSPECTION_PID > /dev/null 2>&1; then
+            echo "   Stopping Inspection Robot..."
+            kill -TERM $INSPECTION_PID 2>/dev/null
+            sleep 0.5
+        fi
+        
+        if [ ! -z "$APRILTAG_PID" ] && ps -p $APRILTAG_PID > /dev/null 2>&1; then
+            echo "   Stopping AprilTag detector..."
+            kill -TERM $APRILTAG_PID 2>/dev/null
+            sleep 0.5
+        fi
+        
+        # If inspections completed successfully, offer mode selection again
+        if [ "$INSPECTION_COMPLETE" = true ]; then
+            echo ""
+            echo "   Inspections completed successfully!"
+            echo "   Returning to mode selection..."
+            sleep 2
+            offer_mode_selection
+        fi
+        
+    elif [[ "$response" == "7" ]]; then
+        echo ""
+        echo "💾 Save Current Map"
+        echo "==================="
+        echo ""
+        echo -n "   Enter map name: "
+        read -r map_name
+        
+        if [ -z "$map_name" ]; then
+            echo "   ❌ Map name cannot be empty"
+            sleep 2
+            offer_mode_selection
+            return
+        fi
+        
+        echo -n "   Enter description (optional): "
+        read -r map_desc
+        
+        echo ""
+        "$SCRIPT_DIR/map_manager.sh" save "$map_name" "$map_desc"
+        
+        echo "   Press ENTER to return to menu..."
+        read -r
+        offer_mode_selection
         
     else
         echo ""
@@ -823,6 +1320,54 @@ cleanup_delivery_mode() {
     fi
     
     echo "✅ Delivery system stopped."
+    exit 0
+}
+
+# Cleanup function for inspection mode
+cleanup_inspection_mode() {
+    echo ""
+    echo "🛑 Shutting down Inspection System..."
+    
+    if [ ! -z "$INSPECTION_PID" ] && ps -p $INSPECTION_PID > /dev/null 2>&1; then
+        echo "   Stopping Inspection Robot..."
+        kill -TERM $INSPECTION_PID 2>/dev/null
+        sleep 0.5
+    fi
+    
+    if [ ! -z "$APRILTAG_PID" ] && ps -p $APRILTAG_PID > /dev/null 2>&1; then
+        echo "   Stopping AprilTag detector..."
+        kill -TERM $APRILTAG_PID 2>/dev/null
+        sleep 0.5
+    fi
+    
+    echo "✅ Inspection system stopped."
+    exit 0
+}
+
+# Cleanup function for inspection exploration mode
+cleanup_inspection_exploration() {
+    echo ""
+    echo "🛑 Shutting down Inspection Exploration System..."
+    
+    if [ ! -z "$INSPECTION_PID" ] && ps -p $INSPECTION_PID > /dev/null 2>&1; then
+        echo "   Stopping Inspection Robot..."
+        kill -TERM $INSPECTION_PID 2>/dev/null
+        sleep 0.5
+    fi
+    
+    if [ ! -z "$APRILTAG_PID" ] && ps -p $APRILTAG_PID > /dev/null 2>&1; then
+        echo "   Stopping AprilTag detector..."
+        kill -TERM $APRILTAG_PID 2>/dev/null
+        sleep 0.5
+    fi
+    
+    if [ ! -z "$COLOR_PID" ] && ps -p $COLOR_PID > /dev/null 2>&1; then
+        echo "   Stopping Color detector..."
+        kill -TERM $COLOR_PID 2>/dev/null
+        sleep 0.5
+    fi
+    
+    echo "✅ Inspection exploration system stopped."
     exit 0
 }
 

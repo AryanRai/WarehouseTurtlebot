@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="apriltag_36h11_id3">
+    <static>true</static>
+    <link name="link">
+      <pose>0 0 0 0 0 0</pose>
+      
+      <!-- Visual element with AprilTag texture -->
+      <visual name="visual">
+        <geometry>
+          <box>
+            <size>0.162 0.162 0.001</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>1 1 1 1</ambient>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0 0 0 1</specular>
+          <emissive>0 0 0 1</emissive>
+          <pbr>
+            <metal>
+              <albedo_map>model://apriltag_36h11_id3/materials/textures/apriltag_3.png</albedo_map>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      
+      <!-- Collision (very thin) -->
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.162 0.162 0.001</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>

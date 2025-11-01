@@ -249,5 +249,27 @@
       </link>
     </model>
 
+    <!-- APRILTAG MARKERS FOR DAMAGE DETECTION -->
+    <!-- AprilTag ID 0 on North Wall (facing south) -->
+    <include>
+      <uri>model://apriltag_36h11_id0</uri>
+      <name>apriltag_0_north</name>
+      <pose>0.5 1.14 0.3 0 1.5708 3.14159</pose>
+    </include>
+
+    <!-- AprilTag ID 0 on East Wall (facing west) -->
+    <include>
+      <uri>model://apriltag_36h11_id0</uri>
+      <name>apriltag_0_east</name>
+      <pose>1.14 0.5 0.3 0 1.5708 -1.5708</pose>
+    </include>
+
+    <!-- AprilTag ID 0 on South Wall (facing north) -->
+    <include>
+      <uri>model://apriltag_36h11_id0</uri>
+      <name>apriltag_0_south</name>
+      <pose>-0.5 -1.14 0.3 0 1.5708 0</pose>
+    </include>
+
   </world>
 </sdf>

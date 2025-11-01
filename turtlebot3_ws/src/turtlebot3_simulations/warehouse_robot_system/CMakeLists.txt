@@ -28,7 +28,17 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(apriltag_msgs REQUIRED)
-find_package(apriltag REQUIRED)
+
+# Try to find apriltag library (optional for apriltag_detector_node)
+find_package(apriltag QUIET)
+if(apriltag_FOUND)
+  message(STATUS "Found apriltag library - will build apriltag_detector_node")
+  set(BUILD_APRILTAG_DETECTOR TRUE)
+else()
+  message(WARNING "apriltag library not found - skipping apriltag_detector_node")
+  message(WARNING "Install with: sudo apt install ros-${ROS_DISTRO}-apriltag")
+  set(BUILD_APRILTAG_DETECTOR FALSE)
+endif()
 
 # Include directories
 include_directories(
@@ -242,6 +252,41 @@ target_link_libraries(delivery_robot_node
   delivery_robot_lib
 )
 
+# Inspection Robot Library
+add_library(inspection_robot_lib
+  src/InspectionRobot.cpp
+)
+ament_target_dependencies(inspection_robot_lib
+  rclcpp
+  geometry_msgs
+  nav_msgs
+  std_msgs
+  std_srvs
+  apriltag_msgs
+)
+target_link_libraries(inspection_robot_lib
+  slam_controller_lib
+  motion_controller_lib
+  path_planner_lib
+  yaml-cpp
+)
+
+# Inspection Robot Node
+add_executable(inspection_robot_node
+  src/inspection_robot_node.cpp
+)
+ament_target_dependencies(inspection_robot_node
+  rclcpp
+  geometry_msgs
+  nav_msgs
+  std_msgs
+  std_srvs
+  apriltag_msgs
+)
+target_link_libraries(inspection_robot_node
+  inspection_robot_lib
+)
+
 # Twist to TwistStamped Bridge
 add_executable(twist_stamped_bridge
   src/twist_stamped_bridge.cpp
@@ -281,40 +326,51 @@ ament_target_dependencies(colour_detector_node
   std_msgs
 )
 
-# Add executable for independent AprilTag detector (main() is now in AprilTagDetector.cpp)
-add_executable(apriltag_detector_node 
-  src/AprilTagDetector.cpp
-  src/ImageProcessor_Node.cpp
-)
+# Add executable for independent AprilTag detector (conditional)
+if(BUILD_APRILTAG_DETECTOR)
+  add_executable(apriltag_detector_node 
+    src/AprilTagDetector.cpp
+    src/ImageProcessor_Node.cpp
+  )
 
-# Link dependencies
-ament_target_dependencies(apriltag_detector_node 
-  rclcpp 
-  sensor_msgs 
-  cv_bridge 
-  OpenCV 
-  apriltag_msgs 
-  std_msgs
-)
+  # Link dependencies
+  ament_target_dependencies(apriltag_detector_node 
+    rclcpp 
+    sensor_msgs 
+    cv_bridge 
+    OpenCV 
+    apriltag_msgs 
+    std_msgs
+  )
 
-# Link native apriltag library
-target_link_libraries(apriltag_detector_node 
-  apriltag::apriltag
-)
+  # Link native apriltag library
+  target_link_libraries(apriltag_detector_node 
+    apriltag::apriltag
+  )
+endif()
 
 # ============================================================================
 # INSTALL
 # ============================================================================
 
 # Install executables
-install(TARGETS
+set(INSTALL_TARGETS
   warehouse_robot_node
   autonomous_slam_node
   delivery_robot_node
+  inspection_robot_node
   twist_stamped_bridge
   zone_marker_node
   colour_detector_node
-  apriltag_detector_node
+)
+
+# Add apriltag_detector_node if it was built
+if(BUILD_APRILTAG_DETECTOR)
+  list(APPEND INSTALL_TARGETS apriltag_detector_node)
+endif()
+
+install(TARGETS
+  ${INSTALL_TARGETS}
   DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -329,6 +385,7 @@ install(TARGETS
   autonomous_exploration_lib
   warehouse_robot_lib
   delivery_robot_lib
+  inspection_robot_lib
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
