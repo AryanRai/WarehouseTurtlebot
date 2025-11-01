@@ -35,7 +35,9 @@ InspectionRobot::InspectionRobot(rclcpp::Node::SharedPtr node)
       last_tag_detection_time_(node->now()),
       is_reading_tag_(false),
       tag_reading_start_time_(node->now()),
-      use_tsp_optimization_(false) {
+      use_tsp_optimization_(false),
+      exploration_mode_(false),
+      current_patrol_index_(0) {
     
     // Initialize SLAM components
     slam_controller_ = std::make_unique<SlamController>(node);
@@ -115,6 +117,34 @@ void InspectionRobot::onAprilTagDetection(
     // Store the most recent detection
     last_detected_tag_id_ = msg->detections[0].id;
     last_tag_detection_time_ = node_->now();
+    
+    // If we're in exploration mode, automatically save discovered sites
+    if (exploration_mode_ && is_inspecting_) {
+        auto current_pose = slam_controller_->getCurrentPose();
+        
+        // Check if we've already discovered this tag at this location
+        bool already_discovered = false;
+        for (const auto& site : damage_sites_) {
+            if (site.apriltag_id == last_detected_tag_id_) {
+                double dx = site.position.x - current_pose.position.x;
+                double dy = site.position.y - current_pose.position.y;
+                double distance = std::sqrt(dx*dx + dy*dy);
+                
+                if (distance < 1.0) {  // Within 1m of existing site
+                    already_discovered = true;
+                    break;
+                }
+            }
+        }
+        
+        if (!already_discovered) {
+            RCLCPP_INFO(node_->get_logger(), "🎯 NEW AprilTag discovered! ID: %d at (%.2f, %.2f)",
+                       last_detected_tag_id_, current_pose.position.x, current_pose.position.y);
+            saveDiscoveredSite(last_detected_tag_id_, current_pose.position);
+        }
+        
+        return;
+    }
     
     // If we're at a site and reading tags, mark as detected
     if (is_reading_tag_) {
@@ -263,6 +293,76 @@ void InspectionRobot::update() {
     
     // Check if we have valid map and pose
     if (!slam_controller_->hasValidMap() || !slam_controller_->hasValidPose()) {
+        return;
+    }
+    
+    // Handle exploration mode
+    if (exploration_mode_) {
+        auto current_map = slam_controller_->getCurrentMap();
+        if (!current_map) {
+            return;
+        }
+        
+        // Generate patrol points if not done yet
+        if (patrol_points_.empty()) {
+            RCLCPP_INFO(node_->get_logger(), "Generating patrol points for systematic exploration...");
+            generatePatrolPoints(*current_map);
+            
+            if (patrol_points_.empty()) {
+                RCLCPP_ERROR(node_->get_logger(), "Failed to generate patrol points!");
+                return;
+            }
+            
+            RCLCPP_INFO(node_->get_logger(), "Generated %zu patrol points", patrol_points_.size());
+            publishStatus("Starting systematic patrol");
+        }
+        
+        // Process any AprilTag detections
+        processAprilTagDetections();
+        
+        // Check if we've completed all patrol points
+        if (current_patrol_index_ >= patrol_points_.size()) {
+            RCLCPP_INFO(node_->get_logger(), "✓ Systematic patrol complete! Returning home...");
+            returnToHome();
+            
+            // Create completion marker
+            std::ofstream marker("/tmp/inspection_exploration_complete.marker");
+            marker << "complete";
+            marker.close();
+            
+            publishStatus("Patrol complete - returning home");
+            is_inspecting_ = false;
+            return;
+        }
+        
+        // Navigate to current patrol point
+        auto& current_point = patrol_points_[current_patrol_index_];
+        auto current_pose = slam_controller_->getCurrentPose();
+        
+        double dx = current_point.x - current_pose.position.x;
+        double dy = current_point.y - current_pose.position.y;
+        double distance = std::sqrt(dx*dx + dy*dy);
+        
+        // Check if we've reached the current patrol point
+        if (distance < 0.5) {  // 50cm tolerance for patrol points
+            RCLCPP_INFO(node_->get_logger(), "✓ Reached patrol point %zu/%zu", 
+                       current_patrol_index_ + 1, patrol_points_.size());
+            
+            // Pause briefly to allow AprilTag detection
+            rclcpp::sleep_for(std::chrono::milliseconds(500));
+            
+            current_patrol_index_++;
+            publishStatus("Moving to next patrol point");
+            return;
+        }
+        
+        // Navigate to current patrol point
+        if (!navigateToPatrolPoint(current_point)) {
+            RCLCPP_WARN(node_->get_logger(), "Failed to navigate to patrol point %zu, skipping...", 
+                       current_patrol_index_);
+            current_patrol_index_++;
+        }
+        
         return;
     }
     
@@ -1045,4 +1145,165 @@ std::string InspectionRobot::getCurrentTimestamp() {
     std::stringstream ss;
     ss << std::put_time(std::localtime(&time_t_now), "%Y-%m-%d %H:%M:%S");
     return ss.str();
+}
+
+// ============================================================================
+// EXPLORATION MODE IMPLEMENTATION
+// ============================================================================
+
+void InspectionRobot::startExploration() {
+    if (exploration_mode_) {
+        RCLCPP_INFO(node_->get_logger(), "🔍 Starting inspection exploration patrol...");
+        is_inspecting_ = true;  // Reuse inspection flag to enable update loop
+        publishStatus("Starting exploration patrol");
+    } else {
+        RCLCPP_WARN(node_->get_logger(), "Not in exploration mode!");
+    }
+}
+
+void InspectionRobot::generatePatrolPoints(const nav_msgs::msg::OccupancyGrid& map) {
+    patrol_points_.clear();
+    
+    // Grid-based patrol pattern
+    double grid_spacing = 1.5;  // 1.5 meter spacing between patrol points
+    
+    // Get map bounds
+    double map_width = map.info.width * map.info.resolution;
+    double map_height = map.info.height * map.info.resolution;
+    double origin_x = map.info.origin.position.x;
+    double origin_y = map.info.origin.position.y;
+    
+    RCLCPP_INFO(node_->get_logger(), "Map bounds: %.2f x %.2f, origin: (%.2f, %.2f)", 
+               map_width, map_height, origin_x, origin_y);
+    
+    // Generate grid points
+    for (double y = origin_y + 0.5; y < origin_y + map_height - 0.5; y += grid_spacing) {
+        for (double x = origin_x + 0.5; x < origin_x + map_width - 0.5; x += grid_spacing) {
+            geometry_msgs::msg::Point point;
+            point.x = x;
+            point.y = y;
+            point.z = 0.0;
+            
+            // Check if point is in free space
+            GridCell cell = PathPlanner::worldToGrid(map, point);
+            if (PathPlanner::isCellInBounds(map, cell) && 
+                PathPlanner::isCellWalkable(map, cell)) {
+                
+                // Check surrounding area is also free (robot footprint)
+                bool area_clear = true;
+                for (int dx = -2; dx <= 2 && area_clear; dx++) {
+                    for (int dy = -2; dy <= 2 && area_clear; dy++) {
+                        GridCell check_cell = {cell.first + dx, cell.second + dy};
+                        if (!PathPlanner::isCellInBounds(map, check_cell) ||
+                            !PathPlanner::isCellWalkable(map, check_cell)) {
+                            area_clear = false;
+                        }
+                    }
+                }
+                
+                if (area_clear) {
+                    patrol_points_.push_back(point);
+                }
+            }
+        }
+    }
+    
+    RCLCPP_INFO(node_->get_logger(), "Generated %zu patrol points with %.1fm spacing", 
+               patrol_points_.size(), grid_spacing);
+}
+
+bool InspectionRobot::navigateToPatrolPoint(const geometry_msgs::msg::Point& point) {
+    auto current_pose = slam_controller_->getCurrentPose();
+    auto current_map = slam_controller_->getCurrentMap();
+    
+    if (!current_map) {
+        return false;
+    }
+    
+    // Execute motion if we have a path
+    if (motion_controller_->hasPath()) {
+        motion_controller_->computeVelocityCommand(current_pose, *current_map);
+        return true;
+    }
+    
+    // Plan path to patrol point
+    RCLCPP_INFO(node_->get_logger(), "Planning path to patrol point (%.2f, %.2f)", 
+               point.x, point.y);
+    
+    GridCell start = PathPlanner::worldToGrid(*current_map, current_pose.position);
+    GridCell goal = PathPlanner::worldToGrid(*current_map, point);
+    
+    auto [cspace, cspace_cells] = PathPlanner::calcCSpace(*current_map, false);
+    cv::Mat cost_map = PathPlanner::calcCostMap(*current_map);
+    
+    auto [path, cost, actual_start, actual_goal] = 
+        PathPlanner::aStar(cspace, cost_map, start, goal);
+    
+    if (path.empty()) {
+        RCLCPP_WARN(node_->get_logger(), "Cannot reach patrol point (%.2f, %.2f)", 
+                   point.x, point.y);
+        return false;
+    }
+    
+    auto path_msg = PathPlanner::pathToMessage(*current_map, path);
+    motion_controller_->setPath(path_msg);
+    
+    return true;
+}
+
+void InspectionRobot::processAprilTagDetections() {
+    // This method is called continuously to check for new AprilTag detections
+    // The actual detection handling is in onAprilTagDetection callback
+}
+
+void InspectionRobot::saveDiscoveredSite(int tag_id, const geometry_msgs::msg::Point& position) {
+    // Create new damage site
+    DamageSite site;
+    site.name = "Damage_" + std::to_string(damage_sites_.size() + 1);
+    site.apriltag_id = tag_id;
+    site.position = position;
+    site.description = "Automatically discovered during patrol";
+    site.discovered_time = std::chrono::system_clock::now();
+    
+    // Add to list
+    damage_sites_.push_back(site);
+    
+    // Save to file
+    try {
+        saveSitesToFile(sites_file_);
+        RCLCPP_INFO(node_->get_logger(), "✓ Discovered and saved damage site: %s (AprilTag ID: %d)", 
+                   site.name.c_str(), tag_id);
+        publishStatus("Discovered: " + site.name);
+    } catch (const std::exception& e) {
+        RCLCPP_ERROR(node_->get_logger(), "Failed to save discovered site: %s", e.what());
+    }
+    
+    // Log to exploration CSV
+    std::ofstream log("inspection_exploration_log.csv", std::ios::app);
+    if (log.is_open()) {
+        // Create header if file is new
+        std::ifstream check("inspection_exploration_log.csv");
+        bool file_exists = check.good();
+        check.close();
+        
+        if (!file_exists) {
+            log << "Timestamp,SiteName,AprilTagID,Position_X,Position_Y,PatrolPoint,Notes\n";
+        }
+        
+        auto now = std::chrono::system_clock::now();
+        auto time_t_now = std::chrono::system_clock::to_time_t(now);
+        std::stringstream ss;
+        ss << std::put_time(std::localtime(&time_t_now), "%Y-%m-%d %H:%M:%S");
+        
+        log << ss.str() << ","
+            << site.name << ","
+            << tag_id << ","
+            << std::fixed << std::setprecision(3)
+            << position.x << ","
+            << position.y << ","
+            << current_patrol_index_ << ","
+            << "Discovered during systematic patrol\n";
+        
+        log.close();
+    }
 }

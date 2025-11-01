@@ -53,6 +53,23 @@ int main(int argc, char** argv) {
     // Create inspection robot
     g_robot = std::make_shared<InspectionRobot>(node);
     
+    // Check for inspection mode from environment variable
+    const char* mode_env = std::getenv("INSPECTION_MODE");
+    bool exploration_mode = false;
+    
+    if (mode_env != nullptr) {
+        std::string mode(mode_env);
+        if (mode == "exploration") {
+            exploration_mode = true;
+            RCLCPP_INFO(node->get_logger(), "🔍 Mode: Inspection Exploration (Systematic Patrol)");
+            RCLCPP_INFO(node->get_logger(), "   Will patrol all accessible areas to discover AprilTags");
+        } else {
+            RCLCPP_INFO(node->get_logger(), "📋 Mode: Inspection (Visit Pre-defined Sites)");
+        }
+    } else {
+        RCLCPP_INFO(node->get_logger(), "📋 Mode: Inspection (Visit Pre-defined Sites) - Default");
+    }
+    
     // Check for optimization mode from environment variable
     const char* opt_mode_env = std::getenv("INSPECTION_OPTIMIZATION");
     bool use_tsp = false;
@@ -67,43 +84,57 @@ int main(int argc, char** argv) {
         }
     } else {
         RCLCPP_INFO(node->get_logger(), "🎯 Route Optimization: Ordered (Sequential) - Default");
-        RCLCPP_INFO(node->get_logger(), "   Set INSPECTION_OPTIMIZATION=tsp for optimized routing");
+        if (!exploration_mode) {
+            RCLCPP_INFO(node->get_logger(), "   Set INSPECTION_OPTIMIZATION=tsp for optimized routing");
+        }
     }
     
     g_robot->setOptimizationMode(use_tsp);
     
-    // Generate inspection requests for all damage sites
-    auto sites = g_robot->getSites();
-    
-    if (!sites.empty()) {
-        for (size_t i = 0; i < sites.size(); i++) {
-            InspectionRequest req;
-            req.site_name = sites[i].name;
-            req.priority = i + 1;
-            
-            g_robot->addInspectionRequest(req);
-        }
-        
-        RCLCPP_INFO(node->get_logger(), "Added %zu inspection requests for all damage sites", sites.size());
-    } else {
-        RCLCPP_WARN(node->get_logger(), "No damage sites defined. Please define sites first.");
+    // Set exploration mode if specified
+    if (exploration_mode) {
+        g_robot->setExplorationMode(true);
     }
     
-    // Wait for map to be available before starting inspections
+    // Generate inspection requests for all damage sites (only in inspection mode)
+    if (!exploration_mode) {
+        auto sites = g_robot->getSites();
+        
+        if (!sites.empty()) {
+            for (size_t i = 0; i < sites.size(); i++) {
+                InspectionRequest req;
+                req.site_name = sites[i].name;
+                req.priority = i + 1;
+                
+                g_robot->addInspectionRequest(req);
+            }
+            
+            RCLCPP_INFO(node->get_logger(), "Added %zu inspection requests for all damage sites", sites.size());
+        } else {
+            RCLCPP_WARN(node->get_logger(), "No damage sites defined. Please define sites first.");
+        }
+    }
+    
+    // Wait for map to be available before starting
     RCLCPP_INFO(node->get_logger(), "Waiting for map to be available...");
     
-    // Auto-start inspections after map is ready (check every second)
+    // Auto-start after map is ready (check every second)
     auto start_timer = node->create_wall_timer(
         std::chrono::seconds(1),
-        [&, node]() {
+        [&, node, exploration_mode]() {
             static bool started = false;
             static int wait_count = 0;
             
             if (!started) {
                 // Check if we have a valid map
                 if (g_robot && g_robot->hasValidMap()) {
-                    RCLCPP_INFO(node->get_logger(), "Map is ready! Auto-starting inspections...");
-                    g_robot->startInspections();
+                    if (exploration_mode) {
+                        RCLCPP_INFO(node->get_logger(), "Map is ready! Starting exploration patrol...");
+                        g_robot->startExploration();
+                    } else {
+                        RCLCPP_INFO(node->get_logger(), "Map is ready! Auto-starting inspections...");
+                        g_robot->startInspections();
+                    }
                     started = true;
                 } else {
                     wait_count++;
@@ -114,7 +145,7 @@ int main(int argc, char** argv) {
                     // Timeout after 30 seconds
                     if (wait_count >= 30) {
                         RCLCPP_ERROR(node->get_logger(), 
-                                    "Timeout waiting for map! Cannot start inspections.");
+                                    "Timeout waiting for map! Cannot start.");
                         RCLCPP_ERROR(node->get_logger(), 
                                     "Check that SLAM Toolbox is running and publishing /map");
                         started = true;  // Stop trying

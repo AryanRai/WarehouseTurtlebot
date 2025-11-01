@@ -54,6 +54,11 @@ public:
     void setOptimizationMode(bool use_tsp) { use_tsp_optimization_ = use_tsp; }
     bool isUsingTSP() const { return use_tsp_optimization_; }
     
+    // Exploration mode
+    void setExplorationMode(bool exploration) { exploration_mode_ = exploration; }
+    bool isExplorationMode() const { return exploration_mode_; }
+    void startExploration();
+    
     // Records
     void saveInspectionRecord(const InspectionRecord& record);
     
@@ -123,6 +128,11 @@ private:
     // Route optimization mode
     bool use_tsp_optimization_;
     
+    // Exploration mode
+    bool exploration_mode_;
+    std::vector<geometry_msgs::msg::Point> patrol_points_;
+    size_t current_patrol_index_;
+    
     // Helper methods
     void onPointClicked(const geometry_msgs::msg::PointStamped::SharedPtr msg);
     void onAprilTagDetection(const apriltag_msgs::msg::AprilTagDetectionArray::SharedPtr msg);
@@ -168,6 +178,12 @@ private:
     bool hasLineOfSight(const geometry_msgs::msg::Point& from, 
                        const geometry_msgs::msg::Point& to,
                        const nav_msgs::msg::OccupancyGrid& map);
+    
+    // Exploration mode helpers
+    void generatePatrolPoints(const nav_msgs::msg::OccupancyGrid& map);
+    bool navigateToPatrolPoint(const geometry_msgs::msg::Point& point);
+    void processAprilTagDetections();
+    void saveDiscoveredSite(int tag_id, const geometry_msgs::msg::Point& position);
     double checkMinDistanceToWalls(const geometry_msgs::msg::Point& position,
                                    const nav_msgs::msg::OccupancyGrid& map);
     void publishStatus(const std::string& status);
