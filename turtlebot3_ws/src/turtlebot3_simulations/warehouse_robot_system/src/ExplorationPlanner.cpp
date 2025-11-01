@@ -209,11 +209,18 @@ nav_msgs::msg::Path ExplorationPlanner::planExplorationPath(
         }
     }
     
-    // Log if all frontiers were too close
-    if (frontiers_too_close > 0 && frontiers_checked == 0) {
-        RCLCPP_INFO(node_->get_logger(), 
-                   "All %d frontiers were too close (< %.2fm) - waiting for map to update", 
-                   frontiers_too_close, MIN_FRONTIER_DISTANCE);
+    // Log if all frontiers were too close or within goal tolerance
+    int frontiers_within_goal_tolerance = top_frontiers.size() - frontiers_checked - frontiers_too_close;
+    if (frontiers_checked == 0) {
+        if (frontiers_within_goal_tolerance > 0) {
+            RCLCPP_WARN(node_->get_logger(), 
+                       "All %d frontiers are within goal tolerance (< %.2fm) - robot should move to discover new areas", 
+                       frontiers_within_goal_tolerance, GOAL_TOLERANCE);
+        } else if (frontiers_too_close > 0) {
+            RCLCPP_INFO(node_->get_logger(), 
+                       "All %d frontiers were too close (< %.2fm) - waiting for map to update", 
+                       frontiers_too_close, MIN_FRONTIER_DISTANCE);
+        }
     }
     
     // Publish start and goal for visualization
@@ -239,9 +246,11 @@ nav_msgs::msg::Path ExplorationPlanner::planExplorationPath(
             
             // Skip if within goal tolerance (robot is already there)
             if (goal_distance < GOAL_TOLERANCE) {
-                RCLCPP_INFO(node_->get_logger(), 
-                           "Best path goal at (%.2f, %.2f) is within goal tolerance (%.3fm < %.2fm) - skipping (frontier already explored)", 
+                RCLCPP_WARN(node_->get_logger(), 
+                           "Best path goal at (%.2f, %.2f) is within goal tolerance (%.3fm < %.2fm) - robot needs to move away", 
                            goal_pos.x, goal_pos.y, goal_distance, GOAL_TOLERANCE);
+                // Increment counter so recovery will trigger
+                no_path_found_counter_++;
                 return empty_path;
             }
             
