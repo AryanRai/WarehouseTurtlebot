@@ -1,10 +1,11 @@
 // ============================================================================
-// File: CAprilTagDetector.hpp
-// Description: AprilTag detection node that inherits from CImageProcessorNode.
-//              Detects 16h5 AprilTags in camera images and publishes their
-//              pose, ID, and corner positions for downstream colour analysis.
+// File: AprilTagDetector.hpp
+// Description: Independent AprilTag detection node for 16h5 family tags.
+//              Uses native apriltag library directly for detection, extracts
+//              pose/orientation data, and publishes for other nodes to consume.
+//              Includes GUI visualization with bounding boxes and ID labels.
 // Author(s): Dylan George
-// Last Edited: 2025-10-27
+// Last Edited: 2025-11-01
 // ============================================================================
 
 #ifndef APRIL_TAG_DETECTOR_HPP
@@ -12,89 +13,132 @@
 
 #include "ImageProcessor_Node.hpp"
 #include <apriltag_msgs/msg/april_tag_detection_array.hpp>
+#include <apriltag_msgs/msg/april_tag_detection.hpp>
+#include <apriltag_msgs/msg/point.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <std_msgs/msg/header.hpp>
+#include <opencv2/opencv.hpp>
 
-// SAprilTagData
-// Stores detection results for a single AprilTag including pose and corner info.
-struct SAprilTagData
-{
-    int mTagId;                        // AprilTag ID number
-    geometry_msgs::msg::Pose mPose;    // 6DOF pose of tag in camera frame
-    std::vector<cv::Point2d> mCorners; // Four corner positions in image [pixels]
-    rclcpp::Time mTimestamp;           // Detection timestamp
-};
+// Native AprilTag library headers
+extern "C" {
+#include <apriltag/apriltag.h>
+#include <apriltag/tag16h5.h>
+#include <apriltag/common/zarray.h>
+#include <apriltag/common/image_u8.h>
+}
 
 // CAprilTagDetector
-// Detects 16h5 AprilTags in images and publishes detection data. Inherits image
-// processing infrastructure from CImageProcessorNode. Uses apriltag_ros package
-// for detection and publishes results for colour analysis.
-// Ownership: Manages AprilTag detector instance and ROS publisher.
+// Independent AprilTag detection using native apriltag library.
+// Detects 16h5 family tags, extracts pose/orientation, shows GUI visualization,
+// and publishes detection data for downstream nodes (like color detection).
+// Ownership: Manages apriltag detector lifecycle and native library resources.
 class CAprilTagDetector : public CImageProcessorNode
 {
     public:
         // Constructor
-        // Initialises AprilTag detector and creates publisher for detection results.
+        // Initializes native AprilTag detector for 16h5 family.
         CAprilTagDetector();
 
         // Destructor
-        // Cleans up detector resources.
+        // Cleans up apriltag detector and family resources.
         ~CAprilTagDetector();
 
     protected:
         // ProcessImage (override)
-        // Detects AprilTags in the provided image and publishes results.
+        // Detects 16h5 AprilTags and publishes results with visualization.
         // aImage: OpenCV image in BGR8 format
-        // aTimestamp: timestamp from original image message
+        // aTimestamp: timestamp from image message
         void ProcessImage(const cv::Mat &aImage, 
                          const rclcpp::Time &aTimestamp) override;
 
     private:
-        // DetectTags
-        // Performs AprilTag detection on a grayscale image.
-        // aGrayImage: grayscale OpenCV image
-        // aTimestamp: timestamp for detected tags
-        // Returns vector of detected tag data.
-        std::vector<SAprilTagData> DetectTags(const cv::Mat &aGrayImage,
-                                              const rclcpp::Time &aTimestamp);
+        // InitializeDetector
+        // Sets up native apriltag detector with 16h5 family.
+        // Returns true if successful, false otherwise.
+        bool InitializeDetector();
+
+        // DetectTagsNative
+        // Performs native AprilTag detection on grayscale image.
+        // aGrayImage: input image in grayscale format
+        // Returns apriltag detections from native library.
+        zarray_t* DetectTagsNative(const cv::Mat &aGrayImage);
+
+        // ConvertToImageU8
+        // Converts OpenCV grayscale image to apriltag image_u8 format.
+        // aGrayImage: OpenCV grayscale image
+        // Returns image_u8 structure for apriltag processing.
+        image_u8_t* ConvertToImageU8(const cv::Mat &aGrayImage);
+
+        // ConvertDetectionToROS
+        // Converts native apriltag detection to ROS message format.
+        // aDetection: native apriltag_detection_t structure
+        // aTimestamp: detection timestamp
+        // Returns ROS AprilTagDetection message.
+        apriltag_msgs::msg::AprilTagDetection ConvertDetectionToROS(
+            apriltag_detection_t* aDetection, const rclcpp::Time &aTimestamp);
+
+        // CalculateOrientation
+        // Computes tag orientation from homography matrix.
+        // aDetection: native apriltag detection with homography
+        // Returns roll, pitch, yaw angles in radians.
+        std::vector<double> CalculateOrientation(apriltag_detection_t* aDetection);
+
+        // PrintDetectionInfo
+        // Prints comprehensive detection info including ID, position, orientation.
+        // aDetection: ROS detection message
+        // aOrientation: roll, pitch, yaw angles [radians]
+        void PrintDetectionInfo(const apriltag_msgs::msg::AprilTagDetection &aDetection,
+                               const std::vector<double> &aOrientation);
+
+        // DrawDetectionBox
+        // Draws green bounding box around detected tag with ID label.
+        // aImage: image to annotate [in-place modification]
+        // aDetection: ROS detection message with corners
+        void DrawDetectionBox(cv::Mat &aImage, 
+                             const apriltag_msgs::msg::AprilTagDetection &aDetection);
+
+        // ShowVisualizationWindow
+        // Displays image with detection overlays in GUI window.
+        // aImage: annotated image to display
+        void ShowVisualizationWindow(const cv::Mat &aImage);
 
         // PublishDetections
-        // Publishes detected AprilTag data to ROS topic.
-        // aDetections: vector of tag detections to publish
-        void PublishDetections(const std::vector<SAprilTagData> &aDetections);
-
-        // ConvertToGrayscale
-        // Converts BGR image to grayscale for AprilTag detection.
-        // aColorImage: input BGR8 image
-        // Returns grayscale image.
-        cv::Mat ConvertToGrayscale(const cv::Mat &aColorImage) const;
-
-        // ExtractCorners
-        // Extracts corner positions from AprilTag detection result.
-        // aDetection: detection result from apriltag library
-        // Returns vector of four corner points.
-        std::vector<cv::Point2d> ExtractCorners(
-            const apriltag_msgs::msg::AprilTagDetection &aDetection) const;
+        // Publishes detection array to ROS topic.
+        // aDetections: vector of ROS detection messages
+        // aTimestamp: detection timestamp
+        void PublishDetections(
+            const std::vector<apriltag_msgs::msg::AprilTagDetection> &aDetections,
+            const rclcpp::Time &aTimestamp);
 
         // Member Variables
 
-        rclcpp::Publisher<apriltag_msgs::msg::AprilTagDetectionArray>::SharedPtr mpTagPublisher;
-        // Publishes AprilTag detections; owned by this node, created in ctor
+        rclcpp::Publisher<apriltag_msgs::msg::AprilTagDetectionArray>::SharedPtr mpDetectionPublisher;
+        // Publishes AprilTag detections; owned by this node
 
-        rclcpp::Subscription<apriltag_msgs::msg::AprilTagDetectionArray>::SharedPtr mpTagSubscriber;
-        // Subscribes to apriltag_ros detections; owned by this node, created in ctor
+        apriltag_detector_t* mpAprilTagDetector;
+        // Native AprilTag detector instance; owned by this node
 
-        std::vector<SAprilTagData> mLastDetections;
-        // Most recent tag detections; cached for potential reprocessing
+        apriltag_family_t* mpTag16h5Family;
+        // 16h5 tag family configuration; owned by this node
 
-        const std::string kTagDetectionTopic = "/apriltag/detections";
-        // Topic for publishing tag detection data [string constant]
+        bool mShowVisualization;
+        // Flag to enable/disable GUI visualization [ROS parameter]
 
-        const std::string kAprilTagRosTopic = "/apriltag_ros/detections";
-        // Input topic from apriltag_ros package [string constant]
+        bool mPrintDetections;
+        // Flag to enable/disable console detection output [ROS parameter]
 
-        const int kPublisherQueueSize = 10;
-        // Publisher queue depth [messages]
+        std::string mVisualizationWindowName;
+        // OpenCV window name for detection display
+
+        // Constants
+        const std::string kDetectionOutputTopic = "/apriltag_detections";
+        const int kQueueSize = 10;
+        const double kTagSize = 0.162; // Tag size in meters (162mm standard)
+        const double kDecimation = 2.0; // Image decimation for performance
+        const double kBlur = 0.0; // Gaussian blur sigma (0 = disabled)
+        const int kThreads = 1; // Number of detection threads
+        const double kRefineEdges = 1; // Subpixel edge refinement
+        const double kDecodeSharpening = 0.25; // Decode sharpening
 };
 
 #endif // APRIL_TAG_DETECTOR_HPP

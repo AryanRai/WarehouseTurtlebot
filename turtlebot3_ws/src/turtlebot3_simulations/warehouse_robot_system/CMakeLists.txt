@@ -26,6 +26,9 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(yaml-cpp REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(apriltag_msgs REQUIRED)
+find_package(apriltag REQUIRED)
 
 # Include directories
 include_directories(
@@ -262,6 +265,44 @@ target_link_libraries(zone_marker_node
   yaml-cpp
 )
 
+# Add executable for colour detector
+add_executable(colour_detector_node 
+  src/ColourDetector.cpp
+  src/ImageProcessor_Node.cpp
+)
+
+# Link dependencies
+ament_target_dependencies(colour_detector_node 
+  rclcpp 
+  sensor_msgs 
+  cv_bridge 
+  OpenCV 
+  apriltag_msgs 
+  std_msgs
+)
+
+# Add executable for independent AprilTag detector
+add_executable(apriltag_detector_node 
+  src/apriltag_detector_main.cpp
+  src/AprilTagDetector.cpp
+  src/ImageProcessor_Node.cpp
+)
+
+# Link dependencies
+ament_target_dependencies(apriltag_detector_node 
+  rclcpp 
+  sensor_msgs 
+  cv_bridge 
+  OpenCV 
+  apriltag_msgs 
+  std_msgs
+)
+
+# Link native apriltag library
+target_link_libraries(apriltag_detector_node 
+  apriltag::apriltag
+)
+
 # ============================================================================
 # INSTALL
 # ============================================================================
@@ -273,6 +314,8 @@ install(TARGETS
   delivery_robot_node
   twist_stamped_bridge
   zone_marker_node
+  colour_detector_node
+  apriltag_detector_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

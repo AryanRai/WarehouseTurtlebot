@@ -12,7 +12,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
-#include <cv_bridge/cv_bridge.h>
+#include <cv_bridge/cv_bridge.hpp>
 #include <opencv2/opencv.hpp>
 
 // CImageProcessorNode
@@ -66,7 +66,7 @@ class CImageProcessorNode : public rclcpp::Node
         rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mpImageSubscriber;
         // Subscribes to unified camera topic; owned by this node, created in ctor
 
-        const std::string kCameraTopicName = "/camera/unified";
+        const std::string kCameraTopicName = "/camera/image_raw";
         // Input topic for camera data [string constant]
 
         const int kQueueSize = 10;
