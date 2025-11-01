@@ -3,7 +3,7 @@
 // Description: AprilTag detection node that inherits from CImageProcessorNode.
 //              Detects 16h5 AprilTags in camera images and publishes their
 //              pose, ID, and corner positions for downstream colour analysis.
-// Author(s): dylan George
+// Author(s): Dylan George
 // Last Edited: 2025-10-27
 // ============================================================================
 

@@ -49,7 +49,7 @@ WarehouseRobotSystem (Main Orchestrator)
 - Basic state management
 - Shared movement and battery functionality
 
-### 2. [Not Started] SLAM & Navigation
+### 2. [Done] SLAM & Navigation
 - **Frontier-based SLAM**: Expanding Wavefront Frontier Detection for autonomous mapping
 - **Path Planning**: A* algorithm with cost maps and C-space calculation
 - **Pure Pursuit**: Path following with obstacle avoidance and dynamic steering

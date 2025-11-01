@@ -1,0 +1,162 @@
+Timestamp,RequestID,FromZone,ToZone,Distance(m),Time(s),Status,Notes
+2025-10-31 07:28:00,,Start,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:01:57,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:01:57,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:01:57,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:01:57,,Zone_2,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:06:09,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:06:09,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:06:10,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:06:10,,Zone_2,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:07:38,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:07:38,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:07:38,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:07:39,,Zone_2,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:09:58,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:09:58,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:09:58,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:09:58,,Zone_2,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:12:14,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:12:14,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:12:14,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:12:14,,Zone_2,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:15:28,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:15:44,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:15:44,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:15:51,,Zone_2,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:23:28,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:23:44,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:23:44,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:23:51,,Zone_2,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:31:03,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:31:19,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:31:19,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:31:26,,Zone_2,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:34:53,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:35:09,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:35:09,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:35:25,,Zone_2,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:36:32,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:36:49,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:36:49,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:36:56,,Zone_2,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:47:44,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:48:00,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:48:00,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:48:07,,Zone_2,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:49:13,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:49:30,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:49:30,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:49:37,,Zone_2,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:52:44,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:53:01,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:53:01,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:53:08,,Zone_2,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:55:01,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:55:18,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:55:18,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 01:55:25,,Zone_2,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:20:02,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:20:19,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:20:19,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:20:25,,Zone_2,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:28:02,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:28:19,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:28:19,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:28:37,,Zone_2,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:31:42,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:31:57,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:31:57,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:32:03,,Zone_2,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:46:04,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:46:20,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:46:20,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:46:25,,Zone_2,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:53:05,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:53:20,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:53:20,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:53:25,,Zone_2,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:55:13,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:55:26,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:55:26,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 02:55:30,,Zone_2,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 03:25:41,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 03:25:55,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 03:25:55,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 03:25:59,,Zone_2,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 03:29:39,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 03:29:53,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 03:29:53,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 03:30:09,,Zone_2,Zone_3,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 03:30:09,,Zone_3,Zone_3,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 03:30:24,,Zone_3,Zone_4,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 03:47:13,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 03:47:28,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 03:47:44,,Zone_2,Zone_3,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 03:48:00,,Zone_3,Zone_4,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 03:54:06,,Start,Zone_3,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 03:54:08,,Zone_3,Zone_4,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 03:54:21,,Zone_4,Zone_5,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 03:54:38,,Zone_5,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 03:54:51,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:02:13,,Start,Zone_3,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:07:01,,Start,Zone_3,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:07:04,,Zone_3,Zone_4,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:07:04,,Zone_4,Zone_4,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:07:18,,Zone_4,Zone_5,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:07:34,,Zone_5,Zone_1,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:07:53,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:07:53,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:08:02,,Zone_2,Zone_3,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:09:38,,Start,Zone_3,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:09:41,,Zone_3,Zone_4,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:09:42,,Zone_4,Zone_4,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:09:53,,Zone_4,Zone_5,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:10:10,,Zone_5,Zone_1,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:10:23,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:10:23,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:10:35,,Zone_2,Zone_3,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:14:18,,Start,Zone_1,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:14:30,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:14:30,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:14:41,,Zone_2,Zone_3,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:14:41,,Zone_3,Zone_3,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:14:46,,Zone_3,Zone_4,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:14:47,,Zone_4,Zone_4,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:15:00,,Zone_4,Zone_5,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:15:59,,Start,Zone_1,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:16:11,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:16:11,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:16:22,,Zone_2,Zone_3,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:16:22,,Zone_3,Zone_3,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:16:27,,Zone_3,Zone_4,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:16:28,,Zone_4,Zone_4,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:16:41,,Zone_4,Zone_5,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:17:34,,Start,Zone_1,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:17:46,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:17:46,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:17:57,,Zone_2,Zone_3,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:17:57,,Zone_3,Zone_3,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:18:02,,Zone_3,Zone_4,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:18:03,,Zone_4,Zone_4,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:18:16,,Zone_4,Zone_5,0.000000,0.000000,SUCCESS,Reached nearest accessible point
+2025-11-01 04:22:59,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:23:23,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:23:24,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:27:27,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:27:49,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:27:49,,Zone_2,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:28:27,,Zone_2,Zone_3,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:28:28,,Zone_3,Zone_3,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:28:37,,Zone_3,Zone_4,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:28:38,,Zone_4,Zone_4,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:29:01,,Zone_4,Zone_5,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:31:39,,Start,Zone_3,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:31:54,,Zone_3,Zone_7,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:32:11,,Zone_7,Zone_5,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:32:29,,Zone_5,Zone_4,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:32:42,,Zone_4,Zone_8,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:33:01,,Zone_8,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:33:24,,Zone_2,Zone_6,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 04:33:42,,Zone_6,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-01 05:17:31,,Start,Zone_3,0.000000,0.000000,SUCCESS,Delivery completed successfully

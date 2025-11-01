@@ -45,6 +45,7 @@ __pycache__/
 *.tmp
 *.temp
 *.log
+/tmp/
 
 # ROS specific
 devel/
@@ -55,6 +56,30 @@ devel/
 
 # Generated maze files (if not needed in repo)
 generated_mazes/
+
+# Node.js / Web dependencies
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn
+dist/
+.vite/
+
+# Web build artifacts
+**/web/dist/
+**/web/.vite/
+**/web/node_modules/
+
+# Test and temporary scripts
+test_*.sh
+*_test.log
+
+# Documentation (optional - remove if you want to track these)
+**/CONDA_FIX_APPLIED.md
+**/START_WEB_DASHBOARD.md
 
 # System files
 Thumbs.db

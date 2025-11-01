@@ -25,7 +25,7 @@ enum eDamageType
     DAMAGE_MOULD = 1,   // Green colour
     DAMAGE_WATER = 2,   // Blue colour
     DAMAGE_BLOOD = 3,   // Red colour
-    DAMAGE_UNKNOWN = 4  // Unrecognised colour
+    DAMAGE_UNKNOWN = -1  // Unrecognised colour
 };
 
 // SDamageReport

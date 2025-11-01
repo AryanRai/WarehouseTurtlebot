@@ -1,5 +1,5 @@
 // ============================================================================
-// File: CCameraNode.hpp
+// File: CameraNode.hpp
 // Description: ROS2 node that subscribes to all available camera topics and
 //              republishes image data on a unified topic for modular access.
 //              Provides single point of camera data distribution.
@@ -7,8 +7,8 @@
 // Last Edited: 2025-10-27
 // ============================================================================
 
-#ifndef CCAMERA_NODE_HPP
-#define CCAMERA_NODE_HPP
+#ifndef CAMERA_NODE_HPP
+#define CAMERA_NODE_HPP
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
