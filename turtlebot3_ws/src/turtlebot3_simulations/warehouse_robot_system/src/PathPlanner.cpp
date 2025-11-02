@@ -1,5 +1,4 @@
 #include "PathPlanner.hpp"
-#include "priority_queue.hpp"
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <unordered_map>

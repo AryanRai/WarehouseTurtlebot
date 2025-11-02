@@ -56,16 +56,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 # SLAM UTILITY LIBRARIES
 # ============================================================================
 
-# Priority Queue library
-add_library(priority_queue
-  src/priority_queue.cpp
-)
-ament_target_dependencies(priority_queue
-  rclcpp
-  geometry_msgs
-  nav_msgs
-)
-
 # PathPlanner library
 add_library(path_planner_lib
   src/PathPlanner.cpp
@@ -77,7 +67,6 @@ ament_target_dependencies(path_planner_lib
   tf2_geometry_msgs
 )
 target_link_libraries(path_planner_lib
-  priority_queue
   ${OpenCV_LIBS}
 )
 
@@ -164,41 +153,7 @@ target_link_libraries(autonomous_exploration_lib
 # WAREHOUSE ROBOT SYSTEM
 # ============================================================================
 
-# Warehouse Robot System Library
-add_library(warehouse_robot_lib
-  src/warehouse_robot_system.cpp
-)
-ament_target_dependencies(warehouse_robot_lib
-  rclcpp
-  geometry_msgs
-  nav_msgs
-  std_msgs
-  tf2
-)
-# Link all component libraries to the main system library
-target_link_libraries(warehouse_robot_lib
-  slam_controller_lib
-  exploration_planner_lib
-  motion_controller_lib
-  path_planner_lib
-)
 
-# Main Warehouse Robot System Executable
-add_executable(warehouse_robot_node
-  src/warehouse_robot_main.cpp
-)
-ament_target_dependencies(warehouse_robot_node
-  rclcpp
-  geometry_msgs
-  nav_msgs
-  std_msgs
-  sensor_msgs
-  tf2
-  tf2_ros
-)
-target_link_libraries(warehouse_robot_node
-  warehouse_robot_lib
-)
 
 # Autonomous SLAM Exploration Executable
 add_executable(autonomous_slam_node
@@ -355,7 +310,6 @@ endif()
 
 # Install executables
 set(INSTALL_TARGETS
-  warehouse_robot_node
   autonomous_slam_node
   delivery_robot_node
   inspection_robot_node
@@ -376,14 +330,12 @@ install(TARGETS
 
 # Install all libraries
 install(TARGETS
-  priority_queue
   path_planner_lib
   FrontierSearch
   slam_controller_lib
   exploration_planner_lib
   motion_controller_lib
   autonomous_exploration_lib
-  warehouse_robot_lib
   delivery_robot_lib
   inspection_robot_lib
   ARCHIVE DESTINATION lib
