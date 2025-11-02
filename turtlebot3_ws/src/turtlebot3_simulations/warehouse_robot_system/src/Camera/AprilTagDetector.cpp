@@ -13,6 +13,8 @@
 #include <opencv2/highgui.hpp>
 #include <cmath>
 #include <iomanip>
+#include <set>
+#include <map>
 
 CAprilTagDetector::CAprilTagDetector()
     : CImageProcessorNode("apriltag_detector_node"),
@@ -35,11 +37,13 @@ CAprilTagDetector::CAprilTagDetector()
     // Declare ROS parameters
     mShowVisualization = this->declare_parameter<bool>("show_visualization", true);
     mPrintDetections = this->declare_parameter<bool>("print_detections", true);
+    mEnableTemporalFiltering = this->declare_parameter<bool>("enable_temporal_filtering", false);
 
     RCLCPP_INFO(GetLogger(), "🏷️ AprilTag 16h5 detector initialized");
     RCLCPP_INFO(GetLogger(), "Publishing to: %s", kDetectionOutputTopic.c_str());
     RCLCPP_INFO(GetLogger(), "Visualization: %s", mShowVisualization ? "ON" : "OFF");
     RCLCPP_INFO(GetLogger(), "Console output: %s", mPrintDetections ? "ON" : "OFF");
+    RCLCPP_INFO(GetLogger(), "Temporal filtering: %s", mEnableTemporalFiltering ? "ON" : "OFF");
 }
 
 CAprilTagDetector::~CAprilTagDetector()
@@ -119,8 +123,12 @@ void CAprilTagDetector::ProcessImage(const cv::Mat &aImage,
         return;
     }
 
-    // Convert to ROS messages and process
-    std::vector<apriltag_msgs::msg::AprilTagDetection> rosDetections;
+    // Track currently detected tag IDs in this frame
+    std::set<int> currentFrameTagIds;
+    
+    // Convert to ROS messages and update tracking
+    std::vector<apriltag_msgs::msg::AprilTagDetection> candidateDetections;
+    std::vector<apriltag_msgs::msg::AprilTagDetection> immediateDetections; // For non-temporal mode
     cv::Mat visualizationImage;
     
     // Only clone image if we have detections and visualization is enabled
@@ -135,38 +143,144 @@ void CAprilTagDetector::ProcessImage(const cv::Mat &aImage,
 
         // Filter out low-quality detections to reduce false positives
         if (det->decision_margin < kMinDecisionMargin) {
-            RCLCPP_DEBUG(GetLogger(), "Rejected tag ID %d: low decision margin (%.1f < %.1f)", 
+            RCLCPP_INFO_THROTTLE(GetLogger(), *this->get_clock(), 2000, 
+                        "❌ Rejected tag ID %d: low decision margin (%.1f < %.1f)", 
                         det->id, det->decision_margin, kMinDecisionMargin);
             continue;
         }
         
         if (det->hamming > kMaxHammingDistance) {
-            RCLCPP_DEBUG(GetLogger(), "Rejected tag ID %d: high hamming distance (%d > %d)", 
+            RCLCPP_INFO_THROTTLE(GetLogger(), *this->get_clock(), 2000,
+                        "❌ Rejected tag ID %d: high hamming distance (%d > %d)", 
                         det->id, det->hamming, kMaxHammingDistance);
             continue;
         }
 
         // Convert to ROS message
         apriltag_msgs::msg::AprilTagDetection rosDetection = ConvertDetectionToROS(det, aTimestamp);
-        rosDetections.push_back(rosDetection);
-
-        // Calculate orientation
-        std::vector<double> orientation = CalculateOrientation(det);
-
-        // Print detection info if enabled (throttled)
-        if (mPrintDetections) {
-            PrintDetectionInfo(rosDetection, orientation);
+        currentFrameTagIds.insert(det->id);
+        
+        // If temporal filtering is disabled, add to immediate detections
+        if (!mEnableTemporalFiltering) {
+            immediateDetections.push_back(rosDetection);
+            
+            // Calculate orientation
+            std::vector<double> orientation = CalculateOrientation(det);
+            
+            // Print detection info if enabled
+            if (mPrintDetections) {
+                PrintDetectionInfo(rosDetection, orientation);
+            }
+            
+            // Draw visualization if enabled
+            if (mShowVisualization && !visualizationImage.empty()) {
+                DrawDetectionBox(visualizationImage, rosDetection);
+            }
+            
+            continue; // Skip temporal tracking
         }
-
-        // Draw visualization if enabled
+        
+        // Update temporal tracking (only if enabled)
+        auto it = mTrackedTags.find(det->id);
+        if (it == mTrackedTags.end()) {
+            // First time seeing this tag
+            TagTrackingInfo info;
+            info.first_seen = aTimestamp;
+            info.last_seen = aTimestamp;
+            info.consecutive_frames = 1;
+            info.last_detection = rosDetection;
+            mTrackedTags[det->id] = info;
+            
+            RCLCPP_INFO(GetLogger(), "⏱️ Started tracking tag ID %d", det->id);
+        } else {
+            // Tag seen before - check if continuous
+            double time_since_last = (aTimestamp - it->second.last_seen).seconds();
+            
+            if (time_since_last > kMaxTimeSinceLastSeen) {
+                // Gap too large, reset tracking
+                it->second.first_seen = aTimestamp;
+                it->second.consecutive_frames = 1;
+                RCLCPP_INFO(GetLogger(), "🔄 Reset tracking for tag ID %d (gap: %.2fs)", 
+                           det->id, time_since_last);
+            } else {
+                // Continuous detection
+                it->second.consecutive_frames++;
+            }
+            
+            it->second.last_seen = aTimestamp;
+            it->second.last_detection = rosDetection;
+        }
+        
+        candidateDetections.push_back(rosDetection);
+    }
+    
+    // If temporal filtering is disabled, publish immediately
+    if (!mEnableTemporalFiltering) {
+        if (!immediateDetections.empty()) {
+            PublishDetections(immediateDetections, aTimestamp);
+        }
+        
+        // Show visualization window
         if (mShowVisualization && !visualizationImage.empty()) {
-            DrawDetectionBox(visualizationImage, rosDetection);
+            ShowVisualizationWindow(visualizationImage);
+        }
+        
+        // Clean up and return
+        apriltag_detections_destroy(detections);
+        return;
+    }
+    
+    // Temporal filtering mode - continue with tracking logic
+    // Remove tags that haven't been seen recently
+    auto it = mTrackedTags.begin();
+    while (it != mTrackedTags.end()) {
+        double time_since_last = (aTimestamp - it->second.last_seen).seconds();
+        if (time_since_last > kMaxTimeSinceLastSeen) {
+            RCLCPP_INFO(GetLogger(), "🗑️ Removed tag ID %d from tracking (not seen for %.2fs)", 
+                       it->first, time_since_last);
+            it = mTrackedTags.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    
+    // Only publish and visualize tags that have been stable for minimum duration
+    std::vector<apriltag_msgs::msg::AprilTagDetection> stableDetections;
+    
+    for (const auto& detection : candidateDetections) {
+        auto it = mTrackedTags.find(detection.id);
+        if (it != mTrackedTags.end()) {
+            double duration = (aTimestamp - it->second.first_seen).seconds();
+            
+            if (duration >= kMinDetectionDuration) {
+                // Tag has been stable long enough
+                stableDetections.push_back(detection);
+                
+                // Calculate orientation
+                std::vector<double> orientation = {0.0, 0.0, 0.0}; // Simplified for now
+                
+                // Print detection info if enabled (throttled)
+                if (mPrintDetections) {
+                    PrintDetectionInfo(detection, orientation);
+                }
+                
+                // Draw visualization if enabled
+                if (mShowVisualization && !visualizationImage.empty()) {
+                    DrawDetectionBox(visualizationImage, detection);
+                }
+            } else {
+                // Still tracking, not stable yet
+                RCLCPP_INFO_THROTTLE(GetLogger(), *this->get_clock(), 1000,
+                           "⏳ Tag ID %d tracking: %.2fs / %.2fs (frames: %d)", 
+                           detection.id, duration, kMinDetectionDuration, 
+                           it->second.consecutive_frames);
+            }
         }
     }
 
-    // Publish detections
-    if (!rosDetections.empty()) {
-        PublishDetections(rosDetections, aTimestamp);
+    // Publish only stable detections
+    if (!stableDetections.empty()) {
+        PublishDetections(stableDetections, aTimestamp);
     }
 
     // Show visualization window only when we have detections

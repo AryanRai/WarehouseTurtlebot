@@ -26,9 +26,11 @@ show_header() {
     echo ""
     echo -e "${YELLOW}📖 How the Enhanced System Works:${NC}"
     echo "  • ${GREEN}Independent AprilTag Detection:${NC} Dedicated 16h5 tag detector with orientation"
-    echo "  • ${BLUE}Color Detection:${NC} HSV-based damage classification around detected tags"
-    echo "  • ${RED}GUI Visualization:${NC} Live camera feed with tag boxes and color regions"
-    echo "  • ${YELLOW}Adaptive Sampling:${NC} Regions scale with tag distance for accurate detection"
+    echo "  • ${BLUE}Temporal Filtering:${NC} 1-second stability requirement eliminates false positives"
+    echo "  • ${RED}Quality Filtering:${NC} Decision margin ≥150, Hamming=0 for reliable detection"
+    echo "  • ${YELLOW}Color Detection:${NC} HSV-based damage classification around detected tags"
+    echo "  • ${GREEN}GUI Visualization:${NC} Live camera feed with tag boxes and color regions"
+    echo "  • ${BLUE}Adaptive Sampling:${NC} Regions scale with tag distance for accurate detection"
     echo ""
 }
 
@@ -71,48 +73,59 @@ setup_environment() {
     export QT_X11_NO_MITSHM=1
     export DISPLAY=${DISPLAY:-:0}
     
-    # Source ROS workspace
-    cd ~/MTRX3760_Project_2/turtlebot3_ws
+    # Source ROS workspace - UPDATED PATH
+    cd ~/MTRX3760_Project_2_Fixing/turtlebot3_ws
     source /opt/ros/jazzy/setup.bash
     source install/setup.bash
+    
+    echo -e "${GREEN}✅ Workspace sourced: ~/MTRX3760_Project_2_Fixing/turtlebot3_ws${NC}"
 }
 
 show_header
 
 while true; do
     echo -e "${BLUE}Choose detection mode:${NC}"
-    echo "  1) 🏷️ AprilTag Detection Only (ID, position, orientation)"
-    echo "  2) 🎨 Color Calibration Mode (HSV tuning with AprilTag detection)"
-    echo "  3) 🔍 Full Detection System (AprilTag + Color detection)"
-    echo "  4) 🚀 HEADLESS Mode - No GUI (Fast, for SSH without -X)"
-    echo "  5) 📋 System Status & Process Management"
-    echo "  6) 🛑 Stop All Detectors"
-    echo "  7) 🚪 Exit"
+    echo "  1) 🏷️ AprilTag Detection (WITH temporal filtering - 1s stability)"
+    echo "  2) ⚡ AprilTag Detection (NO temporal filtering - instant detection)"
+    echo "  3) 🎨 Color Calibration Mode (HSV tuning with AprilTag detection)"
+    echo "  4) 🔍 Full Detection System (AprilTag + Color detection)"
+    echo "  5) 🚀 HEADLESS Mode - No GUI (Fast, for SSH without -X)"
+    echo "  6) 📋 System Status & Process Management"
+    echo "  7) 🛑 Stop All Detectors"
+    echo "  8) 🚪 Exit"
     echo ""
-    echo -n "Enter choice [1-7]: "
+    echo -n "Enter choice [1-8]: "
     read choice
 
     case $choice in
         1)
             echo ""
-            echo -e "${GREEN}🏷️ Starting AprilTag Detection Only...${NC}"
-            echo "======================================="
+            echo -e "${GREEN}🏷️ Starting AprilTag Detection (WITH Temporal Filtering)...${NC}"
+            echo "=============================================================="
             echo ""
             echo "This will show:"
             echo "  📹 Live camera feed with 16h5 AprilTag detection"
             echo "  🟢 Green bounding boxes around detected tags"
             echo "  🏷️ Tag ID labels and orientation information"
+            echo "  ⏱️ Temporal tracking messages (1-second stability required)"
             echo "  📊 Console output with position and orientation data"
+            echo ""
+            echo -e "${YELLOW}Expected behavior:${NC}"
+            echo "  • ⏱️ Started tracking tag ID X - New tag detected"
+            echo "  • ⏳ Tag tracking: 0.5s / 1.0s - Progress updates"
+            echo "  • ✅ Published after 1 second of continuous visibility"
+            echo "  • 🗑️ Removed - Flickering false positives filtered out"
             echo ""
             
             setup_environment
             kill_detectors
             
-            echo "Starting AprilTag detector..."
+            echo "Starting AprilTag detector with temporal filtering..."
             ros2 run warehouse_robot_system apriltag_detector_node \
                 --ros-args \
                 -p show_visualization:=true \
-                -p print_detections:=true &
+                -p print_detections:=true \
+                -p enable_temporal_filtering:=true &
             
             echo ""
             echo -e "${YELLOW}🎮 Press Ctrl+C to stop detection${NC}"
@@ -120,6 +133,40 @@ while true; do
             ;;
             
         2)
+            echo ""
+            echo -e "${GREEN}⚡ Starting AprilTag Detection (NO Temporal Filtering)...${NC}"
+            echo "=========================================================="
+            echo ""
+            echo "This will show:"
+            echo "  📹 Live camera feed with 16h5 AprilTag detection"
+            echo "  🟢 Green bounding boxes around detected tags"
+            echo "  🏷️ Tag ID labels and orientation information"
+            echo "  ⚡ INSTANT detection - no 1-second wait"
+            echo "  📊 Console output with position and orientation data"
+            echo ""
+            echo -e "${YELLOW}Expected behavior:${NC}"
+            echo "  • ✅ Tags detected and published IMMEDIATELY"
+            echo "  • ❌ Quality filtering still active (margin ≥ 45)"
+            echo "  • ⚠️ May see more false positives (no temporal filter)"
+            echo "  • 🚀 Faster response time"
+            echo ""
+            
+            setup_environment
+            kill_detectors
+            
+            echo "Starting AprilTag detector WITHOUT temporal filtering..."
+            ros2 run warehouse_robot_system apriltag_detector_node \
+                --ros-args \
+                -p show_visualization:=true \
+                -p print_detections:=true \
+                -p enable_temporal_filtering:=false &
+            
+            echo ""
+            echo -e "${YELLOW}🎮 Press Ctrl+C to stop detection${NC}"
+            wait
+            ;;
+            
+        3)
             echo ""
             echo -e "${BLUE}🎨 Starting Color Calibration Mode...${NC}"
             echo "====================================="
@@ -152,7 +199,7 @@ while true; do
                 --ros-args -p calibration_mode:=true
             ;;
             
-        3)
+        4)
             echo ""
             echo -e "${RED}🔍 Starting Full Detection System...${NC}"
             echo "===================================="
@@ -184,24 +231,31 @@ while true; do
             wait
             ;;
             
-        4)
+        5)
             echo ""
             echo -e "${GREEN}🚀 Starting HEADLESS Detection System...${NC}"
             echo "========================================="
             echo ""
             echo "This will run:"
             echo "  🏷️ AprilTag detector (NO GUI - console only)"
+            echo "  ⏱️ Temporal filtering (1-second stability)"
             echo "  🎨 Color detector (NO GUI - console only)"
             echo "  📊 Console output from both detectors"
             echo "  ⚡ FAST - No X11 overhead"
             echo ""
             echo -e "${YELLOW}💡 Perfect for SSH without -X flag!${NC}"
             echo ""
+            echo "You will see:"
+            echo "  • ⏱️ Started tracking - New tags detected"
+            echo "  • ⏳ Tracking progress - Tags stabilizing"
+            echo "  • ✅ Published - Stable tags after 1 second"
+            echo "  • ❌ Rejected - Low quality detections filtered"
+            echo ""
             
             setup_environment
             kill_detectors
             
-            echo "Starting AprilTag detector (headless)..."
+            echo "Starting AprilTag detector with temporal filtering (headless)..."
             ros2 run warehouse_robot_system apriltag_detector_node \
                 --ros-args \
                 -p show_visualization:=false \
@@ -216,10 +270,11 @@ while true; do
             echo ""
             echo -e "${YELLOW}🎮 Press Ctrl+C to stop both detectors${NC}"
             echo -e "${GREEN}✅ Running in headless mode - no GUI windows${NC}"
+            echo -e "${BLUE}🔍 Watch for temporal tracking messages...${NC}"
             wait
             ;;
             
-        5)
+        6)
             echo ""
             echo -e "${YELLOW}📋 System Status Check...${NC}"
             echo "========================="
@@ -257,12 +312,12 @@ while true; do
             fi
             ;;
             
-        5)
+        7)
             kill_detectors
             echo -e "${GREEN}✅ All detectors stopped${NC}"
             ;;
             
-        6)
+        8)
             kill_detectors
             echo -e "${GREEN}Goodbye! 👋${NC}"
             exit 0

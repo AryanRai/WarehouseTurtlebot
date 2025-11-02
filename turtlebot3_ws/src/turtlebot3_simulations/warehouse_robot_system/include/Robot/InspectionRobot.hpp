@@ -18,6 +18,8 @@
 #include <std_srvs/srv/trigger.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <apriltag_msgs/msg/april_tag_detection_array.hpp>
+#include <visualization_msgs/msg/marker.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
 #include "Robot/InspectionStructures.hpp"
 #include "SLAM/SlamController.hpp"
 #include "SLAM/MotionController.hpp"
@@ -96,6 +98,7 @@ private:
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr start_inspection_srv_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr save_sites_srv_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr status_pub_;
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_pub_;
     
     // Configuration
     std::string sites_file_;
@@ -147,6 +150,10 @@ private:
     std::vector<InspectionData::DamageSite> optimizeRoute(
         const geometry_msgs::msg::Point& start,
         const std::vector<InspectionData::InspectionRequest>& requests);
+    
+    void saveDiscoveredSite(int tag_id, const geometry_msgs::msg::Point& position);
+    void publishSiteMarkers();
+    void publishStatus(const std::string& message);
     
     std::vector<InspectionData::DamageSite> optimizeRouteTSP(
         const geometry_msgs::msg::Point& start,

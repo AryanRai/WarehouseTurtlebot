@@ -127,8 +127,21 @@ class CAprilTagDetector : public CImageProcessorNode
         bool mPrintDetections;
         // Flag to enable/disable console detection output [ROS parameter]
 
+        bool mEnableTemporalFiltering;
+        // Flag to enable/disable temporal filtering [ROS parameter]
+
         std::string mVisualizationWindowName;
         // OpenCV window name for detection display
+
+        // Temporal filtering for stable detections
+        struct TagTrackingInfo {
+            rclcpp::Time first_seen;
+            rclcpp::Time last_seen;
+            int consecutive_frames;
+            apriltag_msgs::msg::AprilTagDetection last_detection;
+        };
+        std::map<int, TagTrackingInfo> mTrackedTags;
+        // Map of tag ID to tracking info for temporal filtering
 
         // Constants
         const std::string kDetectionOutputTopic = "/apriltag_detections";
@@ -141,8 +154,12 @@ class CAprilTagDetector : public CImageProcessorNode
         const double kDecodeSharpening = 0.25; // Decode sharpening
         
         // Quality thresholds to reduce false positives
-        const double kMinDecisionMargin = 80.0; // Minimum decision margin (higher = stricter)
+        const double kMinDecisionMargin = 45.0; // Minimum decision margin (higher = stricter)
         const int kMaxHammingDistance = 0; // Maximum bit errors allowed (0 = perfect match only)
+        
+        // Temporal filtering thresholds
+        const double kMinDetectionDuration = 1.0; // Minimum duration in seconds for stable detection
+        const double kMaxTimeSinceLastSeen = 1.0; // Max time gap before resetting tracking (seconds)
 };
 
 #endif // APRIL_TAG_DETECTOR_HPP
