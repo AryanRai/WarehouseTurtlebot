@@ -919,97 +919,42 @@ EOF
                 echo "   📷 Camera UI disabled (-nocamui flag)"
             fi
             
-            # Start AprilTag detector with appropriate visualization setting
-            if ! pgrep -f "apriltag_detector_node" > /dev/null; then
-                echo "   Starting AprilTag detector..."
-                if [ "$SHOW_CAMERA_UI" = true ]; then
-                    echo "   • Visualization: ENABLED (viewfinder will open)"
-                    ros2 run warehouse_robot_system apriltag_detector_node \
-                        --ros-args -p show_visualization:=true > /tmp/apriltag_detector.log 2>&1 &
-                else
-                    echo "   • Visualization: DISABLED (headless mode)"
-                    ros2 run warehouse_robot_system apriltag_detector_node \
-                        --ros-args -p show_visualization:=false > /tmp/apriltag_detector.log 2>&1 &
-                fi
-                APRILTAG_PID=$!
-                sleep 3
-                
-                if ps -p $APRILTAG_PID > /dev/null 2>&1; then
-                    echo "   ✅ AprilTag detector started"
-                    
-                    # If UI enabled, check if viewfinder opened
-                    if [ "$SHOW_CAMERA_UI" = true ]; then
-                        echo ""
-                        echo "   📺 Camera viewfinder should be visible now"
-                        echo "   • Green boxes = Detected AprilTags"
-                        echo "   • Tag IDs shown above boxes"
-                        echo ""
-                        echo "   ⚠️  If viewfinder is laggy or frozen:"
-                        echo "   1. Press Ctrl+C to stop"
-                        echo "   2. Restart with: ./scripts/run_autonomous_slam.sh -nocamui"
-                        echo ""
-                        echo -n "   Is the viewfinder working properly? (yes/no): "
-                        read -r -t 15 viewfinder_ok || viewfinder_ok="yes"
-                        echo ""
-                        
-                        if [[ "$viewfinder_ok" != "yes" ]]; then
-                            echo "   ⚠️  Viewfinder issues detected"
-                            echo "   Stopping AprilTag detector..."
-                            kill -TERM $APRILTAG_PID 2>/dev/null
-                            sleep 2
-                            
-                            echo "   Restarting in headless mode..."
-                            ros2 run warehouse_robot_system apriltag_detector_node \
-                                --ros-args -p show_visualization:=false > /tmp/apriltag_detector.log 2>&1 &
-                            APRILTAG_PID=$!
-                            sleep 2
-                            echo "   ✅ AprilTag detector restarted (headless)"
-                        else
-                            echo "   ✅ Viewfinder confirmed working"
-                        fi
-                    fi
-                else
-                    echo "   ⚠️  Failed to start AprilTag detector"
-                    echo "   Check logs: tail -f /tmp/apriltag_detector.log"
-                fi
+            # ═══════════════════════════════════════════════════════════════
+            # CAMERA DETECTION NOW RUNS ON TURTLEBOT (NOT LAPTOP)
+            # Start camera on TurtleBot with: ~/turtlebot_start_camera.sh
+            # ═══════════════════════════════════════════════════════════
+            echo "   📹 Camera detection running on TurtleBot"
+            echo "   (AprilTag & Color detectors on TurtleBot)"
+            
+            # Check if AprilTag detections are being published from TurtleBot
+            if timeout 3s ros2 topic info /apriltag_detections > /dev/null 2>&1; then
+                echo "   ✅ AprilTag detections available from TurtleBot"
             else
-                echo "   ✓ AprilTag detector already running"
-                APRILTAG_PID=$(pgrep -f "apriltag_detector_node")
+                echo "   ⚠️  AprilTag detections not available"
+                echo "   Make sure camera is running on TurtleBot:"
+                echo "   ssh ubuntu@10.42.0.1 '~/turtlebot_start_camera.sh'"
             fi
             
-            # Start camera node
-            if ! pgrep -f "camera_node" > /dev/null; then
-                echo "   Starting Camera node..."
-                ros2 run warehouse_robot_system camera_node > /tmp/camera_node.log 2>&1 &
-                CAMERA_PID=$!
-                sleep 2
-                
-                if ps -p $CAMERA_PID > /dev/null 2>&1; then
-                    echo "   ✅ Camera node started"
-                else
-                    echo "   ⚠️  Failed to start Camera node"
-                fi
-            else
-                echo "   ✓ Camera node already running"
-                CAMERA_PID=$(pgrep -f "camera_node")
-            fi
+            # OLD CODE (commented out - camera now on TurtleBot):
+            # if ! pgrep -f "apriltag_detector_node" > /dev/null; then
+            #     echo "   Starting AprilTag detector..."
+            #     ros2 run warehouse_robot_system apriltag_detector_node ...
+            # fi
             
-            # Start color detector for enhanced detection
-            if ! pgrep -f "colour_detector_node" > /dev/null; then
-                echo "   Starting Color detector..."
-                ros2 run warehouse_robot_system colour_detector_node > /tmp/colour_detector.log 2>&1 &
-                COLOR_PID=$!
-                sleep 2
-                
-                if ps -p $COLOR_PID > /dev/null 2>&1; then
-                    echo "   ✅ Color detector started"
-                else
-                    echo "   ⚠️  Failed to start Color detector"
-                fi
-            else
-                echo "   ✓ Color detector already running"
-                COLOR_PID=$(pgrep -f "colour_detector_node")
-            fi
+            # OLD CODE (all commented out - camera now on TurtleBot)
+            
+            # ═══════════════════════════════════════════════════════════════
+            # CAMERA NODE & COLOR DETECTOR NOW RUN ON TURTLEBOT
+            # These are no longer needed on the laptop
+            # ═══════════════════════════════════════════════════════════
+            
+            # OLD CODE (commented out - camera now on TurtleBot):
+            # if ! pgrep -f "camera_node" > /dev/null; then
+            #     ros2 run warehouse_robot_system camera_node ...
+            # fi
+            # if ! pgrep -f "colour_detector_node" > /dev/null; then
+            #     ros2 run warehouse_robot_system colour_detector_node ...
+            # fi
             
             # Wait for TF transforms to stabilize
             echo ""
@@ -1424,31 +1369,25 @@ EOF
             echo "   📷 Camera UI disabled (-nocamui flag)"
         fi
         
-        # Start AprilTag detector if not already running
-        if ! pgrep -f "apriltag_detector_node" > /dev/null; then
-            echo "   Starting AprilTag detector..."
-            if [ "$SHOW_CAMERA_UI" = true ]; then
-                echo "   • Visualization: ENABLED"
-                ros2 run warehouse_robot_system apriltag_detector_node \
-                    --ros-args -p show_visualization:=true > /tmp/apriltag_detector.log 2>&1 &
-            else
-                echo "   • Visualization: DISABLED (headless)"
-                ros2 run warehouse_robot_system apriltag_detector_node \
-                    --ros-args -p show_visualization:=false > /tmp/apriltag_detector.log 2>&1 &
-            fi
-            APRILTAG_PID=$!
-            sleep 2
-            
-            if ps -p $APRILTAG_PID > /dev/null 2>&1; then
-                echo "   ✅ AprilTag detector started"
-            else
-                echo "   ⚠️  Failed to start AprilTag detector"
-                echo "   Check logs: tail -f /tmp/apriltag_detector.log"
-            fi
+        # ═══════════════════════════════════════════════════════════════
+        # CAMERA DETECTION NOW RUNS ON TURTLEBOT (NOT LAPTOP)
+        # Start camera on TurtleBot with: ~/turtlebot_start_camera.sh
+        # ═══════════════════════════════════════════════════════════
+        echo "   📹 Camera detection running on TurtleBot"
+        
+        # Check if AprilTag detections are available
+        if timeout 3s ros2 topic info /apriltag_detections > /dev/null 2>&1; then
+            echo "   ✅ AprilTag detections available from TurtleBot"
         else
-            echo "   ✓ AprilTag detector already running"
-            APRILTAG_PID=$(pgrep -f "apriltag_detector_node")
+            echo "   ⚠️  AprilTag detections not available"
+            echo "   Make sure camera is running on TurtleBot:"
+            echo "   ssh ubuntu@10.42.0.1 '~/turtlebot_start_camera.sh'"
         fi
+        
+        # OLD CODE (commented out - camera now on TurtleBot):
+        # if ! pgrep -f "apriltag_detector_node" > /dev/null; then
+        #     ros2 run warehouse_robot_system apriltag_detector_node ...
+        # fi
         
         # Wait for TF transforms to stabilize
         echo ""

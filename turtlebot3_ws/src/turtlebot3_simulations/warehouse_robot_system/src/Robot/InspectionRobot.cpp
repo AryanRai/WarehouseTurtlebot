@@ -41,7 +41,9 @@ InspectionRobot::InspectionRobot(rclcpp::Node::SharedPtr node)
       tag_reading_start_time_(node->now()),
       use_tsp_optimization_(false),
       exploration_mode_(false),
-      current_patrol_index_(0) {
+      current_patrol_index_(0),
+      last_valid_tf_time_(node->now()),
+      tf_is_healthy_(true) {
     
     // Initialize SLAM components
     slam_controller_ = std::make_unique<SlamController>(node);
@@ -68,6 +70,11 @@ InspectionRobot::InspectionRobot(rclcpp::Node::SharedPtr node)
     apriltag_sub_ = node_->create_subscription<apriltag_msgs::msg::AprilTagDetectionArray>(
         "/apriltag_detections", 10,
         std::bind(&InspectionRobot::onAprilTagDetection, this, std::placeholders::_1));
+    
+    // Subscribe to laser scan for obstacle detection (Tier 1 Safety)
+    laser_sub_ = node_->create_subscription<sensor_msgs::msg::LaserScan>(
+        "/scan", 10,
+        std::bind(&InspectionRobot::onLaserScan, this, std::placeholders::_1));
     
     // Create services
     start_inspection_srv_ = node_->create_service<std_srvs::srv::Trigger>(
@@ -296,6 +303,21 @@ void InspectionRobot::stopInspections() {
 
 
 void InspectionRobot::update() {
+    // TIER 1 SAFETY CHECK 1: Stop if TF2 is failing
+    if (!checkTFHealth()) {
+        // Wait for TF2 to recover - don't proceed
+        return;
+    }
+    
+    // TIER 1 SAFETY CHECK 2: Stop if obstacle detected
+    if (!isPathClear()) {
+        // Clear path to stop motion
+        motion_controller_->clearPath();
+        // Wait briefly then retry
+        rclcpp::sleep_for(std::chrono::milliseconds(500));
+        return;
+    }
+    
     if (!is_inspecting_) {
         return;
     }
@@ -1599,4 +1621,108 @@ void InspectionRobot::publishSiteMarkers() {
     }
     
     marker_pub_->publish(marker_array);
+}
+
+// ============================================================================
+// TIER 1 SAFETY FUNCTIONS
+// ============================================================================
+
+bool InspectionRobot::checkTFHealth() {
+    try {
+        // Try to get current pose - this uses TF2
+        auto current_pose = slam_controller_->getCurrentPose();
+        last_valid_tf_time_ = node_->now();
+        
+        // If we were unhealthy, log recovery
+        if (!tf_is_healthy_) {
+            RCLCPP_INFO(node_->get_logger(), "✅ TF2 recovered - resuming operation");
+            publishStatus("TF2 recovered");
+            tf_is_healthy_ = true;
+        }
+        return true;
+        
+    } catch (const std::exception& e) {
+        auto time_since_valid = (node_->now() - last_valid_tf_time_).seconds();
+        
+        if (time_since_valid > TF_TIMEOUT) {
+            if (tf_is_healthy_) {
+                RCLCPP_ERROR(node_->get_logger(), "⚠️⚠️⚠️ TF2 FAILURE DETECTED! ⚠️⚠️⚠️");
+                RCLCPP_ERROR(node_->get_logger(), 
+                    "No valid transforms for %.1f seconds - EMERGENCY STOP", 
+                    time_since_valid);
+                RCLCPP_ERROR(node_->get_logger(), 
+                    "Robot will resume when TF2 recovers");
+                
+                // EMERGENCY STOP - clear path to stop motion
+                motion_controller_->clearPath();
+                tf_is_healthy_ = false;
+                publishStatus("⚠️ TF2 FAILURE - STOPPED");
+            }
+            return false;
+        }
+        
+        // Within grace period - just warn
+        if (time_since_valid > 0.5) {
+            RCLCPP_WARN_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000,
+                "TF2 unstable for %.1f seconds", time_since_valid);
+        }
+        return true;
+    }
+}
+
+void InspectionRobot::onLaserScan(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
+    latest_scan_ = msg;
+}
+
+bool InspectionRobot::isPathClear() {
+    if (!latest_scan_ || latest_scan_->ranges.empty()) {
+        // No scan data yet - assume clear but warn once
+        static bool warned = false;
+        if (!warned) {
+            RCLCPP_WARN(node_->get_logger(), "No laser scan data yet for obstacle detection");
+            warned = true;
+        }
+        return true;
+    }
+    
+    // Check front 90 degrees (±45°) for obstacles
+    size_t total_points = latest_scan_->ranges.size();
+    size_t center = total_points / 2;
+    size_t check_range = total_points / 4;  // 90° total (quarter of 360°)
+    
+    float min_distance = std::numeric_limits<float>::max();
+    size_t obstacle_count = 0;
+    
+    for (size_t i = center - check_range; i < center + check_range; i++) {
+        float range = latest_scan_->ranges[i % total_points];
+        
+        // Ignore invalid readings
+        if (std::isnan(range) || std::isinf(range) || range < 0.1) {
+            continue;
+        }
+        
+        if (range < min_distance) {
+            min_distance = range;
+        }
+        
+        if (range < OBSTACLE_STOP_DISTANCE) {
+            obstacle_count++;
+        }
+    }
+    
+    // If multiple points detect obstacle, it's real (not noise)
+    if (obstacle_count > 3) {
+        RCLCPP_ERROR(node_->get_logger(), 
+            "⚠️ OBSTACLE DETECTED at %.2fm - EMERGENCY STOP", min_distance);
+        publishStatus("⚠️ Obstacle detected");
+        return false;
+    }
+    
+    // Warning zone
+    if (min_distance < OBSTACLE_WARN_DISTANCE) {
+        RCLCPP_WARN_THROTTLE(node_->get_logger(), *node_->get_clock(), 2000,
+            "⚠️ Close to obstacle: %.2fm", min_distance);
+    }
+    
+    return true;
 }

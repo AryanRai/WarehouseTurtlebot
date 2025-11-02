@@ -15,6 +15,7 @@
 #include <geometry_msgs/msg/point_stamped.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
+#include <sensor_msgs/msg/laser_scan.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <apriltag_msgs/msg/april_tag_detection_array.hpp>
@@ -137,6 +138,17 @@ private:
     std::vector<geometry_msgs::msg::Point> patrol_points_;
     size_t current_patrol_index_;
     
+    // TF2 Health Monitoring (Tier 1 Safety)
+    rclcpp::Time last_valid_tf_time_;
+    bool tf_is_healthy_;
+    static constexpr double TF_TIMEOUT = 2.0;  // Stop if no TF for 2 seconds
+    
+    // Obstacle Avoidance (Tier 1 Safety)
+    rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laser_sub_;
+    sensor_msgs::msg::LaserScan::SharedPtr latest_scan_;
+    static constexpr double OBSTACLE_STOP_DISTANCE = 0.35;  // 35cm safety margin
+    static constexpr double OBSTACLE_WARN_DISTANCE = 0.50;  // 50cm warning
+    
     // Helper methods
     void onPointClicked(const geometry_msgs::msg::PointStamped::SharedPtr msg);
     void onAprilTagDetection(const apriltag_msgs::msg::AprilTagDetectionArray::SharedPtr msg);
@@ -187,6 +199,11 @@ private:
     
     // Exploration mode helpers
     void generatePatrolPoints(const nav_msgs::msg::OccupancyGrid& map);
+    
+    // Tier 1 Safety Methods
+    bool checkTFHealth();
+    bool isPathClear();
+    void onLaserScan(const sensor_msgs::msg::LaserScan::SharedPtr msg);
     bool navigateToPatrolPoint(const geometry_msgs::msg::Point& point);
     void processAprilTagDetections();
     void saveDiscoveredSite(int tag_id, const geometry_msgs::msg::Point& position);
