@@ -29,6 +29,31 @@ find_package(yaml-cpp REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(apriltag_msgs REQUIRED)
 
+# Try to find nlohmann_json
+find_package(nlohmann_json QUIET)
+if(NOT nlohmann_json_FOUND)
+  find_package(PkgConfig QUIET)
+  if(PkgConfig_FOUND)
+    pkg_check_modules(NLOHMANN_JSON nlohmann_json)
+    if(NLOHMANN_JSON_FOUND)
+      message(STATUS "Found nlohmann_json via pkg-config")
+    endif()
+  endif()
+endif()
+
+# If still not found, check for header file
+if(NOT nlohmann_json_FOUND AND NOT NLOHMANN_JSON_FOUND)
+  find_path(NLOHMANN_JSON_INCLUDE_DIR nlohmann/json.hpp
+    PATHS /usr/include /usr/local/include
+  )
+  if(NLOHMANN_JSON_INCLUDE_DIR)
+    message(STATUS "Found nlohmann/json.hpp at ${NLOHMANN_JSON_INCLUDE_DIR}")
+    set(NLOHMANN_JSON_FOUND TRUE)
+  else()
+    message(WARNING "nlohmann_json not found - install with: sudo apt install nlohmann-json3-dev")
+  endif()
+endif()
+
 # Try to find apriltag library (optional for apriltag_detector_node)
 find_package(apriltag QUIET)
 if(apriltag_FOUND)
@@ -40,11 +65,22 @@ else()
   set(BUILD_APRILTAG_DETECTOR FALSE)
 endif()
 
-# Include directories
+# Include directories - ADD SUBDIRECTORIES
 include_directories(
   include
+  include/Camera
+  include/Robot
+  include/SLAM
   ${OpenCV_INCLUDE_DIRS}
+  ${YAML_CPP_INCLUDE_DIRS}
 )
+
+# Add nlohmann_json include if found
+if(NLOHMANN_JSON_INCLUDE_DIR)
+  include_directories(${NLOHMANN_JSON_INCLUDE_DIR})
+elseif(NLOHMANN_JSON_INCLUDE_DIRS)
+  include_directories(${NLOHMANN_JSON_INCLUDE_DIRS})
+endif()
 
 # Generate action interfaces (must be before executables)
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -56,9 +92,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 # SLAM UTILITY LIBRARIES
 # ============================================================================
 
-# PathPlanner library
+# PathPlanner library - UPDATED PATH
 add_library(path_planner_lib
-  src/PathPlanner.cpp
+  src/SLAM/PathPlanner.cpp
 )
 ament_target_dependencies(path_planner_lib
   rclcpp
@@ -70,9 +106,9 @@ target_link_libraries(path_planner_lib
   ${OpenCV_LIBS}
 )
 
-# Frontier Search library
+# Frontier Search library - UPDATED PATH
 add_library(FrontierSearch
-  src/FrontierSearch.cpp
+  src/SLAM/FrontierSearch.cpp
 )
 ament_target_dependencies(FrontierSearch
   rclcpp
@@ -84,12 +120,12 @@ target_link_libraries(FrontierSearch
 )
 
 # ============================================================================
-# SLAM COMPONENT LIBRARIES (No main functions)
+# SLAM COMPONENT LIBRARIES
 # ============================================================================
 
-# SlamController Library
+# SlamController Library - UPDATED PATH
 add_library(slam_controller_lib
-  src/SlamController.cpp
+  src/SLAM/SlamController.cpp
 )
 ament_target_dependencies(slam_controller_lib
   rclcpp
@@ -101,9 +137,9 @@ ament_target_dependencies(slam_controller_lib
   tf2_geometry_msgs
 )
 
-# ExplorationPlanner Library
+# ExplorationPlanner Library - UPDATED PATH
 add_library(exploration_planner_lib
-  src/ExplorationPlanner.cpp
+  src/SLAM/ExplorationPlanner.cpp
 )
 ament_target_dependencies(exploration_planner_lib
   rclcpp
@@ -116,9 +152,9 @@ target_link_libraries(exploration_planner_lib
   path_planner_lib
 )
 
-# MotionController Library
+# MotionController Library - UPDATED PATH
 add_library(motion_controller_lib
-  src/MotionController.cpp
+  src/SLAM/MotionController.cpp
 )
 ament_target_dependencies(motion_controller_lib
   rclcpp
@@ -133,31 +169,41 @@ target_link_libraries(motion_controller_lib
   path_planner_lib
 )
 
-# AutonomousExplorationRobot Library
+# AutonomousExplorationRobot Library - UPDATED PATH
 add_library(autonomous_exploration_lib
-  src/AutonomousExplorationRobot.cpp
+  src/Robot/AutonomousExplorationRobot.cpp
 )
 ament_target_dependencies(autonomous_exploration_lib
   rclcpp
   nav_msgs
   geometry_msgs
   std_msgs
+  sensor_msgs
+  tf2_ros
+  tf2_geometry_msgs
+  apriltag_msgs
 )
 target_link_libraries(autonomous_exploration_lib
   slam_controller_lib
   exploration_planner_lib
   motion_controller_lib
+  yaml-cpp
 )
 
+# Link nlohmann_json if available
+if(nlohmann_json_FOUND)
+  target_link_libraries(autonomous_exploration_lib nlohmann_json::nlohmann_json)
+elseif(NLOHMANN_JSON_LIBRARIES)
+  target_link_libraries(autonomous_exploration_lib ${NLOHMANN_JSON_LIBRARIES})
+endif()
+
 # ============================================================================
-# WAREHOUSE ROBOT SYSTEM
+# ROBOT EXECUTABLES
 # ============================================================================
 
-
-
-# Autonomous SLAM Exploration Executable
+# Autonomous SLAM Exploration Executable - UPDATED PATH
 add_executable(autonomous_slam_node
-  src/autonomous_slam_node.cpp
+  src/Robot/autonomous_slam_node.cpp
 )
 ament_target_dependencies(autonomous_slam_node
   rclcpp
@@ -169,14 +215,15 @@ ament_target_dependencies(autonomous_slam_node
   sensor_msgs
   tf2
   tf2_ros
+  apriltag_msgs
 )
 target_link_libraries(autonomous_slam_node
   autonomous_exploration_lib
 )
 
-# Delivery Robot Library
+# Delivery Robot Library - UPDATED PATH
 add_library(delivery_robot_lib
-  src/DeliveryRobot.cpp
+  src/Robot/DeliveryRobot.cpp
 )
 ament_target_dependencies(delivery_robot_lib
   rclcpp
@@ -192,9 +239,9 @@ target_link_libraries(delivery_robot_lib
   yaml-cpp
 )
 
-# Delivery Robot Node
+# Delivery Robot Node - UPDATED PATH
 add_executable(delivery_robot_node
-  src/delivery_robot_node.cpp
+  src/Robot/delivery_robot_node.cpp
 )
 ament_target_dependencies(delivery_robot_node
   rclcpp
@@ -207,9 +254,9 @@ target_link_libraries(delivery_robot_node
   delivery_robot_lib
 )
 
-# Inspection Robot Library
+# Inspection Robot Library - UPDATED PATH
 add_library(inspection_robot_lib
-  src/InspectionRobot.cpp
+  src/Robot/InspectionRobot.cpp
 )
 ament_target_dependencies(inspection_robot_lib
   rclcpp
@@ -226,9 +273,9 @@ target_link_libraries(inspection_robot_lib
   yaml-cpp
 )
 
-# Inspection Robot Node
+# Inspection Robot Node - UPDATED PATH
 add_executable(inspection_robot_node
-  src/inspection_robot_node.cpp
+  src/Robot/inspection_robot_node.cpp
 )
 ament_target_dependencies(inspection_robot_node
   rclcpp
@@ -242,18 +289,18 @@ target_link_libraries(inspection_robot_node
   inspection_robot_lib
 )
 
-# Twist to TwistStamped Bridge
+# Twist to TwistStamped Bridge - UPDATED PATH
 add_executable(twist_stamped_bridge
-  src/twist_stamped_bridge.cpp
+  src/SLAM/twist_stamped_bridge.cpp
 )
 ament_target_dependencies(twist_stamped_bridge
   rclcpp
   geometry_msgs
 )
 
-# Zone Marker Node (for interactive zone definition)
+# Zone Marker Node - UPDATED PATH
 add_executable(zone_marker_node
-  src/zone_marker_node.cpp
+  src/SLAM/zone_marker_node.cpp
 )
 ament_target_dependencies(zone_marker_node
   rclcpp
@@ -265,13 +312,24 @@ target_link_libraries(zone_marker_node
   yaml-cpp
 )
 
-# Add executable for colour detector
-add_executable(colour_detector_node 
-  src/ColourDetector.cpp
-  src/ImageProcessor_Node.cpp
+# ============================================================================
+# CAMERA NODES
+# ============================================================================
+
+# Camera Node - UPDATED PATH
+add_executable(camera_node
+  src/Camera/Camera_Node.cpp
+)
+ament_target_dependencies(camera_node
+  rclcpp
+  sensor_msgs
 )
 
-# Link dependencies
+# Colour Detector Node - UPDATED PATHS
+add_executable(colour_detector_node 
+  src/Camera/ColourDetector.cpp
+  src/Camera/ImageProcessor_Node.cpp
+)
 ament_target_dependencies(colour_detector_node 
   rclcpp 
   sensor_msgs 
@@ -281,14 +339,13 @@ ament_target_dependencies(colour_detector_node
   std_msgs
 )
 
-# Add executable for independent AprilTag detector (conditional)
+# AprilTag Detector Node (conditional) - UPDATED PATHS
 if(BUILD_APRILTAG_DETECTOR)
   add_executable(apriltag_detector_node 
-    src/AprilTagDetector.cpp
-    src/ImageProcessor_Node.cpp
+    src/Camera/AprilTagDetector.cpp
+    src/Camera/ImageProcessor_Node.cpp
   )
 
-  # Link dependencies
   ament_target_dependencies(apriltag_detector_node 
     rclcpp 
     sensor_msgs 
@@ -298,7 +355,6 @@ if(BUILD_APRILTAG_DETECTOR)
     std_msgs
   )
 
-  # Link native apriltag library
   target_link_libraries(apriltag_detector_node 
     apriltag::apriltag
   )
@@ -315,6 +371,7 @@ set(INSTALL_TARGETS
   inspection_robot_node
   twist_stamped_bridge
   zone_marker_node
+  camera_node
   colour_detector_node
 )
 
@@ -343,8 +400,11 @@ install(TARGETS
   RUNTIME DESTINATION bin
 )
 
-# Install header files
-install(DIRECTORY include/
+# Install header files - UPDATED to include subdirectories
+install(DIRECTORY 
+  include/Camera
+  include/Robot
+  include/SLAM
   DESTINATION include/
 )
 

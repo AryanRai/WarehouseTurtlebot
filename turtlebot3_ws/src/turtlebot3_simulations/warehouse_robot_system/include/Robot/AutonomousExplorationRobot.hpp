@@ -6,9 +6,9 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <memory>
-#include "SlamController.hpp"
-#include "ExplorationPlanner.hpp"
-#include "MotionController.hpp"
+#include "SLAM/SlamController.hpp"
+#include "SLAM/ExplorationPlanner.hpp"
+#include "SLAM/MotionController.hpp"
 
 class AutonomousExplorationRobot {
 public:

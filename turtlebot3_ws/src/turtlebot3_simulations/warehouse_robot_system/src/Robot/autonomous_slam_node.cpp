@@ -3,7 +3,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
-#include "AutonomousExplorationRobot.hpp"
+#include "Robot/AutonomousExplorationRobot.hpp"
 #include <sensor_msgs/msg/battery_state.hpp>
 #include "std_srvs/srv/trigger.hpp"
 #include <memory>

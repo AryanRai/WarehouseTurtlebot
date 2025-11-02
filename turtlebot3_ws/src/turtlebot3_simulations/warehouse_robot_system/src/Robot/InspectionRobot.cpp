@@ -6,7 +6,7 @@
 // Last Edited: 2025-11-01
 // ============================================================================
 
-#include "InspectionRobot.hpp"
+#include "Robot/InspectionRobot.hpp"
 #include <yaml-cpp/yaml.h>
 #include <ctime>
 #include <iomanip>

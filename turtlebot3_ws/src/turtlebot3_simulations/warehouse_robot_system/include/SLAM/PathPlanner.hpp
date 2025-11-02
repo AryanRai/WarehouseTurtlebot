@@ -10,7 +10,7 @@
 #include <nav_msgs/msg/grid_cells.hpp>
 #include <geometry_msgs/msg/point.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
-#include <priority_queue.hpp>
+#include <SLAM/priority_queue.hpp>
 #include <vector>
 #include <tuple>
 #include <cmath>

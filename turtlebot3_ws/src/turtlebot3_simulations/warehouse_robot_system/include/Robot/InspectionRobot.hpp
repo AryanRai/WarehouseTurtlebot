@@ -17,10 +17,10 @@
 #include <std_srvs/srv/trigger.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <apriltag_msgs/msg/april_tag_detection_array.hpp>
-#include "InspectionStructures.hpp"
-#include "SlamController.hpp"
-#include "MotionController.hpp"
-#include "PathPlanner.hpp"
+#include "Robot/InspectionStructures.hpp"
+#include "SLAM/SlamController.hpp"
+#include "SLAM/MotionController.hpp"
+#include "SLAM/PathPlanner.hpp"
 #include <fstream>
 #include <memory>
 #include <vector>

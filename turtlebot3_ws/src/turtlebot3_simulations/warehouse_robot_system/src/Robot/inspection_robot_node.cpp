@@ -7,7 +7,7 @@
 // ============================================================================
 
 #include <rclcpp/rclcpp.hpp>
-#include "InspectionRobot.hpp"
+#include "Robot/InspectionRobot.hpp"
 #include <signal.h>
 
 std::shared_ptr<InspectionRobot> g_robot;

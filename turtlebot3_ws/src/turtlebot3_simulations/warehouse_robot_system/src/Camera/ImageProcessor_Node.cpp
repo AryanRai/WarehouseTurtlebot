@@ -7,7 +7,7 @@
 // Last Edited: 2025-10-27
 // ============================================================================
 
-#include "ImageProcessor_Node.hpp"
+#include "Camera/ImageProcessor_Node.hpp"
 
 CImageProcessorNode::CImageProcessorNode(const std::string &aNodeName)
     : rclcpp::Node(aNodeName)

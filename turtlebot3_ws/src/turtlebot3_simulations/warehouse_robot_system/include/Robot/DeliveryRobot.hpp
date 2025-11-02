@@ -7,10 +7,10 @@
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <std_msgs/msg/string.hpp>
-#include "DeliveryStructures.hpp"
-#include "SlamController.hpp"
-#include "MotionController.hpp"
-#include "PathPlanner.hpp"
+#include "Robot/DeliveryStructures.hpp"
+#include "SLAM/SlamController.hpp"
+#include "SLAM/MotionController.hpp"
+#include "SLAM/PathPlanner.hpp"
 #include <fstream>
 #include <memory>
 #include <vector>

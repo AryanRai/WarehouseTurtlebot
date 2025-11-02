@@ -1,4 +1,4 @@
-#include "SlamController.hpp"
+#include "SLAM/SlamController.hpp"
 #include <fstream>
 #include <sys/wait.h>
 

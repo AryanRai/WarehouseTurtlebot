@@ -1,4 +1,4 @@
-#include "FrontierSearch.hpp"
+#include "SLAM/FrontierSearch.hpp"
 #include <unordered_map>
 #include <queue>
 

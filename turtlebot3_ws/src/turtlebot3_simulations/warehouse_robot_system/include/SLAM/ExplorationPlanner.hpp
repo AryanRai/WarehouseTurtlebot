@@ -10,8 +10,8 @@
 #include <nav_msgs/msg/grid_cells.hpp>
 #include <geometry_msgs/msg/pose.hpp>
 #include <std_msgs/msg/bool.hpp>
-#include "FrontierSearch.hpp"
-#include "PathPlanner.hpp"
+#include "SLAM/FrontierSearch.hpp"
+#include "SLAM/PathPlanner.hpp"
 #include <memory>
 
 class ExplorationPlanner {

@@ -11,7 +11,7 @@
 #ifndef APRIL_TAG_DETECTOR_HPP
 #define APRIL_TAG_DETECTOR_HPP
 
-#include "ImageProcessor_Node.hpp"
+#include "Camera/ImageProcessor_Node.hpp"
 #include <apriltag_msgs/msg/april_tag_detection_array.hpp>
 #include <apriltag_msgs/msg/april_tag_detection.hpp>
 #include <apriltag_msgs/msg/point.hpp>

@@ -11,7 +11,7 @@
 #ifndef COLOUR_DETECTOR_HPP
 #define COLOUR_DETECTOR_HPP
 
-#include "ImageProcessor_Node.hpp"
+#include "Camera/ImageProcessor_Node.hpp"
 #include <apriltag_msgs/msg/april_tag_detection_array.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <std_msgs/msg/string.hpp>

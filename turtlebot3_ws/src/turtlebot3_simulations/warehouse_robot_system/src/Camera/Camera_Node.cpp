@@ -8,7 +8,7 @@
 // Last Edited: 2025-10-27
 // ============================================================================
 
-#include "Camera_Node.hpp"
+#include "Camera/Camera_Node.hpp"
 
 CCameraNode::CCameraNode()
     : rclcpp::Node("camera_node")

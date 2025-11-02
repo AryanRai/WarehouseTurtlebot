@@ -7,7 +7,7 @@
 // Last Edited: 2025-11-01
 // ============================================================================
 
-#include "AprilTagDetector.hpp"
+#include "Camera/AprilTagDetector.hpp"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include <cmath>

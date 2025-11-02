@@ -1,4 +1,4 @@
-#include "ExplorationPlanner.hpp"
+#include "SLAM/ExplorationPlanner.hpp"
 #include <algorithm>
 
 ExplorationPlanner::ExplorationPlanner(rclcpp::Node::SharedPtr node)

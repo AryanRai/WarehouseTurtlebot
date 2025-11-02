@@ -13,7 +13,7 @@
 #include <geometry_msgs/msg/point_stamped.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <std_msgs/msg/bool.hpp>
-#include "PathPlanner.hpp"
+#include "SLAM/PathPlanner.hpp"
 #include <memory>
 
 class MotionController {

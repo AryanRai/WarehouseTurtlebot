@@ -8,7 +8,7 @@
 // Last Edited: 2025-11-01
 // ============================================================================
 
-#include "ColourDetector.hpp"
+#include "Camera/ColourDetector.hpp"
 #include <sstream>
 #include <fstream>
 #include <iomanip>

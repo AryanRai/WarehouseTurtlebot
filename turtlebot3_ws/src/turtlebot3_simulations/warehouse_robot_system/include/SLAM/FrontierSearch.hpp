@@ -9,7 +9,7 @@
 #include <nav_msgs/msg/grid_cells.hpp>
 #include <geometry_msgs/msg/point.hpp>
 #include <vector>
-#include "PathPlanner.hpp"
+#include "SLAM/PathPlanner.hpp"
 
 struct Frontier {
     uint32_t size;
