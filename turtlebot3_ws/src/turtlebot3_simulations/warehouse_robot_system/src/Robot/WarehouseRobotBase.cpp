@@ -24,7 +24,11 @@ Robot::Robot(const std::string& node_name)
       in_docking_mode_(false),
       initial_yaw_(0.0),
       has_relocalized_(false),
-      use_tsp_optimization_(true)
+      use_tsp_optimization_(true),
+      battery_level_(100.0f),
+      battery_low_threshold_(-1.0),
+      battery_monitoring_enabled_(false),
+      low_battery_return_triggered_(false)
 {
     RCLCPP_INFO(this->get_logger(), "Robot base class created: %s", node_name.c_str());
 }
@@ -424,4 +428,70 @@ double Robot::getYawFromQuaternion(
     double roll, pitch, yaw;
     m.getRPY(roll, pitch, yaw);
     return yaw;
+}
+
+// ============================================================================
+// Battery Monitoring
+// ============================================================================
+
+void Robot::initializeBatteryMonitoring(double threshold) {
+    battery_low_threshold_ = threshold;
+    battery_monitoring_enabled_ = (threshold >= 0.0);
+    low_battery_return_triggered_ = false;
+    
+    if (battery_monitoring_enabled_) {
+        RCLCPP_INFO(this->get_logger(), "🔋 Battery monitoring ENABLED - Low threshold: %.1f%%", threshold);
+        
+        // Subscribe to battery state
+        battery_sub_ = this->create_subscription<sensor_msgs::msg::BatteryState>(
+            "/battery_state", 10,
+            std::bind(&Robot::onBatteryState, this, std::placeholders::_1));
+    } else {
+        RCLCPP_INFO(this->get_logger(), "🔋 Battery monitoring DISABLED");
+    }
+}
+
+void Robot::onBatteryState(const sensor_msgs::msg::BatteryState::SharedPtr msg) {
+    // Calculate percentage from voltage if not provided
+    if (std::isnan(msg->percentage)) {
+        // For 3S LiPo: 12.6V = 100%, 10.5V = 0%
+        battery_level_ = ((msg->voltage - 10.5) / (12.6 - 10.5)) * 100.0f;
+        battery_level_ = std::max(0.0f, std::min(100.0f, battery_level_));
+    } else {
+        battery_level_ = msg->percentage;
+    }
+    
+    // Log battery level periodically
+    static auto last_log_time = this->now();
+    if ((this->now() - last_log_time).seconds() > 30.0) {
+        RCLCPP_INFO(this->get_logger(), "🔋 Battery: %.1f%%", battery_level_);
+        last_log_time = this->now();
+    }
+}
+
+bool Robot::checkLowBattery() {
+    if (!battery_monitoring_enabled_ || low_battery_return_triggered_) {
+        return false;
+    }
+    
+    if (battery_level_ < battery_low_threshold_) {
+        RCLCPP_WARN(this->get_logger(), 
+                   "⚠️ LOW BATTERY DETECTED! (%.1f%% < %.1f%%)", 
+                   battery_level_, battery_low_threshold_);
+        RCLCPP_WARN(this->get_logger(), 
+                   "🚨 EMERGENCY RETURN TO HOME INITIATED!");
+        
+        low_battery_return_triggered_ = true;
+        emergencyReturnHome();
+        return true;
+    }
+    
+    return false;
+}
+
+void Robot::emergencyReturnHome() {
+    // Default implementation - derived classes can override
+    RCLCPP_WARN(this->get_logger(), "Emergency return home triggered - returning to base");
+    publishStatus("EMERGENCY: Low battery - returning home");
+    returnToHome();
 }

@@ -43,7 +43,11 @@ InspectionRobot::InspectionRobot(rclcpp::Node::SharedPtr node)
       exploration_mode_(false),
       current_patrol_index_(0),
       last_valid_tf_time_(node->now()),
-      tf_is_healthy_(true) {
+      tf_is_healthy_(true),
+      battery_level_(100.0f),
+      battery_low_threshold_(-1.0),
+      battery_monitoring_enabled_(false),
+      low_battery_return_triggered_(false) {
     
     // Initialize SLAM components
     slam_controller_ = std::make_unique<SlamController>(node);
@@ -75,6 +79,20 @@ InspectionRobot::InspectionRobot(rclcpp::Node::SharedPtr node)
     laser_sub_ = node_->create_subscription<sensor_msgs::msg::LaserScan>(
         "/scan", 10,
         std::bind(&InspectionRobot::onLaserScan, this, std::placeholders::_1));
+    
+    // Initialize battery monitoring
+    node_->declare_parameter("battery_low_threshold", -1.0);
+    battery_low_threshold_ = node_->get_parameter("battery_low_threshold").as_double();
+    battery_monitoring_enabled_ = (battery_low_threshold_ >= 0.0);
+    
+    if (battery_monitoring_enabled_) {
+        RCLCPP_INFO(node_->get_logger(), "🔋 Battery monitoring ENABLED - Low threshold: %.1f%%", battery_low_threshold_);
+        battery_sub_ = node_->create_subscription<sensor_msgs::msg::BatteryState>(
+            "/battery_state", 10,
+            std::bind(&InspectionRobot::onBatteryState, this, std::placeholders::_1));
+    } else {
+        RCLCPP_INFO(node_->get_logger(), "🔋 Battery monitoring DISABLED");
+    }
     
     // Create services
     start_inspection_srv_ = node_->create_service<std_srvs::srv::Trigger>(
@@ -311,6 +329,12 @@ void InspectionRobot::stopInspections() {
 
 
 void InspectionRobot::update() {
+    // BATTERY CHECK: Emergency return if battery low
+    if (checkLowBattery()) {
+        // Battery check handles return to home
+        return;
+    }
+    
     // TIER 1 SAFETY CHECK 1: Stop if TF2 is failing
     if (!checkTFHealth()) {
         // Wait for TF2 to recover - don't proceed
@@ -1805,4 +1829,54 @@ bool InspectionRobot::isPathClear() {
     }
     
     return true;
+}
+
+// ============================================================================
+// Battery Monitoring
+// ============================================================================
+
+void InspectionRobot::onBatteryState(const sensor_msgs::msg::BatteryState::SharedPtr msg) {
+    // Calculate percentage from voltage if not provided
+    if (std::isnan(msg->percentage)) {
+        // For 3S LiPo: 12.6V = 100%, 10.5V = 0%
+        battery_level_ = ((msg->voltage - 10.5) / (12.6 - 10.5)) * 100.0f;
+        battery_level_ = std::max(0.0f, std::min(100.0f, battery_level_));
+    } else {
+        battery_level_ = msg->percentage;
+    }
+    
+    // Log battery level periodically
+    static auto last_log_time = node_->now();
+    if ((node_->now() - last_log_time).seconds() > 30.0) {
+        RCLCPP_INFO(node_->get_logger(), "🔋 Battery: %.1f%%", battery_level_);
+        last_log_time = node_->now();
+    }
+}
+
+bool InspectionRobot::checkLowBattery() {
+    if (!battery_monitoring_enabled_ || low_battery_return_triggered_) {
+        return false;
+    }
+    
+    if (battery_level_ < battery_low_threshold_) {
+        RCLCPP_WARN(node_->get_logger(), 
+                   "⚠️ LOW BATTERY DETECTED! (%.1f%% < %.1f%%)", 
+                   battery_level_, battery_low_threshold_);
+        RCLCPP_WARN(node_->get_logger(), 
+                   "🚨 EMERGENCY RETURN TO HOME INITIATED!");
+        
+        low_battery_return_triggered_ = true;
+        
+        // Stop current inspection
+        is_inspecting_ = false;
+        motion_controller_->clearPath();
+        publishStatus("EMERGENCY: Low battery - returning home");
+        
+        // Trigger return home
+        returnToHome();
+        
+        return true;
+    }
+    
+    return false;
 }

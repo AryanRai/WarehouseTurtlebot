@@ -16,6 +16,7 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
+#include <sensor_msgs/msg/battery_state.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <apriltag_msgs/msg/april_tag_detection_array.hpp>
@@ -128,6 +129,15 @@ private:
     bool is_reading_tag_;
     rclcpp::Time tag_reading_start_time_;
     static constexpr double RELOCALIZATION_DURATION = 20.0;  // 20 seconds for very slow, thorough scan
+    
+    // Battery monitoring
+    float battery_level_;
+    double battery_low_threshold_;
+    bool battery_monitoring_enabled_;
+    bool low_battery_return_triggered_;
+    rclcpp::Subscription<sensor_msgs::msg::BatteryState>::SharedPtr battery_sub_;
+    void onBatteryState(const sensor_msgs::msg::BatteryState::SharedPtr msg);
+    bool checkLowBattery();
     static constexpr double RELOCALIZATION_SPEED = 0.31;  // rad/s (~18°/s) - very slow for reliable AprilTag detection
     
     // Route optimization mode

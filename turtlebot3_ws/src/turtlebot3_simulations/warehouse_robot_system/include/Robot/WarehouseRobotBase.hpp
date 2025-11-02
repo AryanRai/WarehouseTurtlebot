@@ -18,6 +18,7 @@
 #include <geometry_msgs/msg/point_stamped.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <std_msgs/msg/string.hpp>
+#include <sensor_msgs/msg/battery_state.hpp>
 #include "SLAM/SlamController.hpp"
 #include "SLAM/MotionController.hpp"
 #include "SLAM/PathPlanner.hpp"
@@ -82,6 +83,13 @@ protected:
     bool has_relocalized_;
     rclcpp::Time relocalization_start_time_;
     bool use_tsp_optimization_;
+    
+    // Battery monitoring
+    float battery_level_;
+    double battery_low_threshold_;
+    bool battery_monitoring_enabled_;
+    bool low_battery_return_triggered_;
+    rclcpp::Subscription<sensor_msgs::msg::BatteryState>::SharedPtr battery_sub_;
     
     // ========================================================================
     // Common Constants
@@ -173,6 +181,33 @@ protected:
     double checkMinDistanceToWalls(
         const geometry_msgs::msg::Point& position,
         const nav_msgs::msg::OccupancyGrid& map);
+    
+    // ========================================================================
+    // Battery Monitoring
+    // ========================================================================
+    
+    /**
+     * @brief Initialize battery monitoring
+     * @param threshold Battery percentage threshold for emergency return (-1 to disable)
+     */
+    void initializeBatteryMonitoring(double threshold);
+    
+    /**
+     * @brief Battery state callback
+     * @param msg Battery state message
+     */
+    void onBatteryState(const sensor_msgs::msg::BatteryState::SharedPtr msg);
+    
+    /**
+     * @brief Check if battery is low and trigger emergency return if needed
+     * @return True if low battery return was triggered
+     */
+    bool checkLowBattery();
+    
+    /**
+     * @brief Handle emergency low battery return to home
+     */
+    virtual void emergencyReturnHome();
     
     // ========================================================================
     // Utility Methods

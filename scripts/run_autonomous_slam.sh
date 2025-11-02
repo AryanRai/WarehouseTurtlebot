@@ -40,6 +40,7 @@ fi
 START_WEB_DASHBOARD=false
 PRELOAD_MAP=false
 DISABLE_CAMERA_UI=false
+BATTERY_THRESHOLD=-1.0  # Default: disabled (must be double for ROS parameter)
 while [[ $# -gt 0 ]]; do
     case $1 in
         -web|--web)
@@ -54,14 +55,26 @@ while [[ $# -gt 0 ]]; do
             DISABLE_CAMERA_UI=true
             shift
             ;;
+        -battery|--battery)
+            # Ensure it's a double by adding .0 if it's an integer
+            if [[ "$2" =~ ^-?[0-9]+$ ]]; then
+                BATTERY_THRESHOLD="$2.0"
+            else
+                BATTERY_THRESHOLD="$2"
+            fi
+            shift 2
+            ;;
         -h|--help)
-            echo "Usage: $0 [-web] [-preload] [-nocamui]"
+            echo "Usage: $0 [-web] [-preload] [-nocamui] [-battery THRESHOLD]"
             echo ""
             echo "Options:"
-            echo "  -web, --web        Start web dashboard (opens browser at http://localhost:3000)"
-            echo "  -preload, --preload Skip exploration, load existing map and go to mode selection"
-            echo "  -nocamui, --nocamui Disable camera viewfinder (detection still works)"
-            echo "  -h, --help         Show this help message"
+            echo "  -web, --web              Start web dashboard (opens browser at http://localhost:3000)"
+            echo "  -preload, --preload      Skip exploration, load existing map and go to mode selection"
+            echo "  -nocamui, --nocamui      Disable camera viewfinder (detection still works)"
+            echo "  -battery THRESHOLD       Enable low battery return (percentage, -1 to disable)"
+            echo "                           Example: -battery 20 (return home at 20%)"
+            echo "                                    -battery -1 (disable battery monitoring)"
+            echo "  -h, --help               Show this help message"
             exit 0
             ;;
         *)
@@ -697,7 +710,7 @@ EOF
         
         # Start delivery robot node
         echo "   Starting Delivery Robot node..."
-        ros2 run warehouse_robot_system delivery_robot_node &
+        ros2 run warehouse_robot_system delivery_robot_node --ros-args -p battery_low_threshold:=$BATTERY_THRESHOLD &
         DELIVERY_PID=$!
         sleep 3
         
@@ -1021,7 +1034,7 @@ EOF
             echo "   Starting Inspection Robot in exploration mode..."
             echo ""
             export INSPECTION_MODE="exploration"
-            ros2 run warehouse_robot_system inspection_robot_node &
+            ros2 run warehouse_robot_system inspection_robot_node --ros-args -p battery_low_threshold:=$BATTERY_THRESHOLD &
             INSPECTION_PID=$!
             sleep 3
             
@@ -1418,7 +1431,7 @@ EOF
         
         # Start inspection robot node
         echo "   Starting Inspection Robot node..."
-        ros2 run warehouse_robot_system inspection_robot_node &
+        ros2 run warehouse_robot_system inspection_robot_node --ros-args -p battery_low_threshold:=$BATTERY_THRESHOLD &
         INSPECTION_PID=$!
         sleep 3
         
