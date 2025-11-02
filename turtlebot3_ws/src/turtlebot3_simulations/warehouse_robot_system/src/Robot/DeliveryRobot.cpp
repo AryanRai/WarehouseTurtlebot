@@ -85,7 +85,7 @@ DeliveryRobot::DeliveryRobot(rclcpp::Node::SharedPtr node)
 
 void DeliveryRobot::onPointClicked(const geometry_msgs::msg::PointStamped::SharedPtr msg) {
     // Add new zone with auto-generated name
-    DeliveryZone zone;
+    DeliveryData::DeliveryZone zone;
     zone.name = "Zone_" + std::to_string(zones_.size() + 1);
     zone.position = msg->point;
     zone.description = "Delivery zone added via RViz";
@@ -133,7 +133,7 @@ void DeliveryRobot::loadZonesFromFile(const std::string& filename) {
     
     if (config["delivery_zones"]) {
         for (const auto& zone_node : config["delivery_zones"]) {
-            DeliveryZone zone;
+            DeliveryData::DeliveryZone zone;
             zone.name = zone_node["name"].as<std::string>();
             zone.position.x = zone_node["x"].as<double>();
             zone.position.y = zone_node["y"].as<double>();
@@ -169,7 +169,7 @@ void DeliveryRobot::saveZonesToFile(const std::string& filename) {
     RCLCPP_INFO(node_->get_logger(), "Saved %zu zones to %s", zones_.size(), filename.c_str());
 }
 
-void DeliveryRobot::addZone(const DeliveryZone& zone) {
+void DeliveryRobot::addZone(const DeliveryData::DeliveryZone& zone) {
     zones_.push_back(zone);
 }
 
@@ -177,7 +177,7 @@ void DeliveryRobot::clearZones() {
     zones_.clear();
 }
 
-void DeliveryRobot::addDeliveryRequest(const DeliveryRequest& request) {
+void DeliveryRobot::addDeliveryRequest(const DeliveryData::DeliveryRequest& request) {
     delivery_queue_.push_back(request);
     RCLCPP_INFO(node_->get_logger(), "Added delivery: %s -> %s (Priority: %d)",
                 request.from_zone.c_str(), request.to_zone.c_str(), request.priority);
@@ -223,12 +223,12 @@ void DeliveryRobot::stopDeliveries() {
     publishStatus("Deliveries stopped");
 }
 
-std::vector<DeliveryZone> DeliveryRobot::optimizeRoute(
+std::vector<DeliveryData::DeliveryZone> DeliveryRobot::optimizeRoute(
     const geometry_msgs::msg::Point& start,
-    const std::vector<DeliveryRequest>& requests) {
+    const std::vector<DeliveryData::DeliveryRequest>& requests) {
     
     // Ordered mode: Follow requests in sequential order (no optimization)
-    std::vector<DeliveryZone> route;
+    std::vector<DeliveryData::DeliveryZone> route;
     
     for (const auto& request : requests) {
         // Add from and to zones in order
@@ -244,7 +244,7 @@ std::vector<DeliveryZone> DeliveryRobot::optimizeRoute(
     return route;
 }
 
-DeliveryZone* DeliveryRobot::findZone(const std::string& zone_name) {
+DeliveryData::DeliveryZone* DeliveryRobot::findZone(const std::string& zone_name) {
     for (auto& zone : zones_) {
         if (zone.name == zone_name) {
             return &zone;
@@ -253,7 +253,7 @@ DeliveryZone* DeliveryRobot::findZone(const std::string& zone_name) {
     return nullptr;
 }
 
-bool DeliveryRobot::isAtZone(const DeliveryZone& zone) {
+bool DeliveryRobot::isAtZone(const DeliveryData::DeliveryZone& zone) {
     auto current_pose = slam_controller_->getCurrentPose();
     double dx = zone.position.x - current_pose.position.x;
     double dy = zone.position.y - current_pose.position.y;
@@ -374,7 +374,7 @@ void DeliveryRobot::update() {
         cmd_vel_pub->publish(stop_cmd);
         
         // Save delivery record
-        DeliveryRecord record;
+        DeliveryData::DeliveryRecord record;
         record.timestamp = getCurrentTimestamp();
         record.from_zone = current_delivery_index_ > 0 ? 
             optimized_route_[current_delivery_index_ - 1].name : "Start";
@@ -469,7 +469,7 @@ void DeliveryRobot::update() {
             zone_path_completed_ = false;  // Reset for next zone
             
             // Save delivery record
-            DeliveryRecord record;
+            DeliveryData::DeliveryRecord record;
             record.timestamp = getCurrentTimestamp();
             record.from_zone = current_delivery_index_ > 0 ? 
                 optimized_route_[current_delivery_index_ - 1].name : "Start";
@@ -491,7 +491,7 @@ void DeliveryRobot::update() {
             
             zone_path_completed_ = false;
             
-            DeliveryRecord record;
+            DeliveryData::DeliveryRecord record;
             record.timestamp = getCurrentTimestamp();
             record.from_zone = current_delivery_index_ > 0 ? 
                 optimized_route_[current_delivery_index_ - 1].name : "Start";
@@ -570,7 +570,7 @@ void DeliveryRobot::update() {
                             current_zone.name.c_str());
                 
                 // Save failed delivery record
-                DeliveryRecord record;
+                DeliveryData::DeliveryRecord record;
                 record.timestamp = getCurrentTimestamp();
                 record.from_zone = current_delivery_index_ > 0 ? 
                     optimized_route_[current_delivery_index_ - 1].name : "Start";
@@ -597,7 +597,7 @@ void DeliveryRobot::update() {
     }
 }
 
-void DeliveryRobot::saveDeliveryRecord(const DeliveryRecord& record) {
+void DeliveryRobot::saveDeliveryRecord(const DeliveryData::DeliveryRecord& record) {
     std::ofstream log(delivery_log_file_, std::ios::app);
     log << record.toLogString() << "\n";
     log.close();
@@ -975,9 +975,9 @@ double DeliveryRobot::checkMinDistanceToWalls(const geometry_msgs::msg::Point& p
 }
 
 // TSP-based route optimization using A* distance matrix and Simulated Annealing
-std::vector<DeliveryZone> DeliveryRobot::optimizeRouteTSP(
+std::vector<DeliveryData::DeliveryZone> DeliveryRobot::optimizeRouteTSP(
     const geometry_msgs::msg::Point& start,
-    const std::vector<DeliveryRequest>& requests) {
+    const std::vector<DeliveryData::DeliveryRequest>& requests) {
     
     if (requests.empty()) {
         return {};
@@ -1025,7 +1025,7 @@ std::vector<DeliveryZone> DeliveryRobot::optimizeRouteTSP(
     auto optimal_tour = simulatedAnnealing(distance_matrix, 0);  // Start from index 0 (start position)
     
     // Build optimized route from tour
-    std::vector<DeliveryZone> route;
+    std::vector<DeliveryData::DeliveryZone> route;
     for (size_t i = 1; i < optimal_tour.size(); ++i) {  // Skip index 0 (start)
         int point_idx = optimal_tour[i];
         if (point_idx > 0 && point_idx < static_cast<int>(points.size())) {

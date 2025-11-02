@@ -88,6 +88,14 @@ damage_sites.yaml
 *.yaml
 !**/config/*.yaml
 !**/launch/*.yaml
+!**/CMakeLists.txt
+
+# Specific generated map files
+warehouse_map_*.pgm
+warehouse_map_*.yaml
+warehouse_map_*.data
+warehouse_map_*.posegraph
+warehouse_map_*_pose.txt
 
 # Generated maze files (if not needed in repo)
 generated_mazes/

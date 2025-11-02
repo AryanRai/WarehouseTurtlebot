@@ -59,7 +59,7 @@ public:
     
 private:
     void onPointClicked(const geometry_msgs::msg::PointStamped::SharedPtr msg) {
-        DeliveryZone zone;
+        DeliveryData::DeliveryZone zone;
         zone.name = "Zone_" + std::to_string(zones_.size() + 1);
         zone.position.x = msg->point.x;
         zone.position.y = msg->point.y;
@@ -82,7 +82,7 @@ private:
             
             if (config["delivery_zones"]) {
                 for (const auto& zone_node : config["delivery_zones"]) {
-                    DeliveryZone zone;
+                    DeliveryData::DeliveryZone zone;
                     zone.name = zone_node["name"].as<std::string>();
                     zone.position.x = zone_node["x"].as<double>();
                     zone.position.y = zone_node["y"].as<double>();
@@ -220,7 +220,7 @@ private:
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_pub_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr clear_zones_srv_;
     rclcpp::TimerBase::SharedPtr marker_timer_;
-    std::vector<DeliveryZone> zones_;
+    std::vector<DeliveryData::DeliveryZone> zones_;
 };
 
 int main(int argc, char** argv) {
