@@ -70,8 +70,8 @@ private:
     double max_turn_speed_;    // rad/s
     
     // Default speed profiles
-    static constexpr double INSPECTION_LINEAR_SPEED = 0.06;   // m/s - slow for AprilTag detection
-    static constexpr double INSPECTION_ANGULAR_SPEED = 0.8;   // rad/s
+    static constexpr double INSPECTION_LINEAR_SPEED = 0.05;   // m/s - balanced speed for localization
+    static constexpr double INSPECTION_ANGULAR_SPEED = 0.6;   // rad/s - moderate turns
     static constexpr double DELIVERY_LINEAR_SPEED = 0.10;     // m/s - moderate speed for deliveries
     static constexpr double DELIVERY_ANGULAR_SPEED = 1.25;    // rad/s
     static constexpr double EXPLORATION_LINEAR_SPEED = 0.10;  // m/s - moderate speed for exploration

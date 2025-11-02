@@ -633,7 +633,7 @@ void InspectionRobot::update() {
                 const int num_stops = 6;
                 const double angle_increment = (2.0 * M_PI) / num_stops;  // 60° in radians
                 const double pause_duration = 1.0;  // 1 second pause at each angle
-                const double rotation_speed = 0.5;  // rad/s for turning between angles
+                const double rotation_speed = 0.3;  // rad/s - slow rotation to prevent localization drift
                 
                 auto cmd_vel_pub = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
                 
