@@ -39,6 +39,7 @@ fi
 # Parse command line arguments
 START_WEB_DASHBOARD=false
 PRELOAD_MAP=false
+DISABLE_CAMERA_UI=false
 while [[ $# -gt 0 ]]; do
     case $1 in
         -web|--web)
@@ -49,12 +50,17 @@ while [[ $# -gt 0 ]]; do
             PRELOAD_MAP=true
             shift
             ;;
+        -nocamui|--nocamui)
+            DISABLE_CAMERA_UI=true
+            shift
+            ;;
         -h|--help)
-            echo "Usage: $0 [-web] [-preload]"
+            echo "Usage: $0 [-web] [-preload] [-nocamui]"
             echo ""
             echo "Options:"
             echo "  -web, --web        Start web dashboard (opens browser at http://localhost:3000)"
             echo "  -preload, --preload Skip exploration, load existing map and go to mode selection"
+            echo "  -nocamui, --nocamui Disable camera viewfinder (detection still works)"
             echo "  -h, --help         Show this help message"
             exit 0
             ;;
@@ -86,6 +92,9 @@ if [ "$START_WEB_DASHBOARD" = true ]; then
 fi
 if [ "$PRELOAD_MAP" = true ]; then
     echo "   Mode: PRELOAD (Skip exploration)"
+fi
+if [ "$DISABLE_CAMERA_UI" = true ]; then
+    echo "   Camera UI: DISABLED (headless detection)"
 fi
 echo ""
 
@@ -862,17 +871,106 @@ EOF
             echo "✅ Map detected - ready for inspection exploration"
             echo ""
             
-            # Start AprilTag detector
+            # Check camera availability and stability
+            echo "📹 Checking camera feed..."
+            CAMERA_CHECK_TIMEOUT=10
+            CAMERA_READY=false
+            
+            for i in $(seq 1 $CAMERA_CHECK_TIMEOUT); do
+                # Check if topic exists and has at least one publisher
+                if ros2 topic info /camera/image_raw 2>/dev/null | grep -q "Publisher count: [1-9]"; then
+                    # Try to get one message to verify it's actually publishing
+                    if timeout 3s ros2 topic echo /camera/image_raw --once > /dev/null 2>&1; then
+                        CAMERA_READY=true
+                        echo "   ✅ Camera feed detected and stable"
+                        break
+                    fi
+                fi
+                echo "   Waiting for camera... ($i/$CAMERA_CHECK_TIMEOUT)"
+                sleep 1
+            done
+            
+            if [ "$CAMERA_READY" = false ]; then
+                echo ""
+                echo "   ❌ Camera feed not available or unstable!"
+                echo "   Camera topic /camera/image_raw is not publishing"
+                echo ""
+                echo "   Please check:"
+                echo "   • Is the camera node running?"
+                echo "   • Is the TurtleBot connected?"
+                echo "   • Network connection stable?"
+                echo ""
+                echo -n "   Continue anyway? (yes/no): "
+                read -r camera_continue
+                
+                if [[ "$camera_continue" != "yes" ]]; then
+                    echo "   Returning to menu..."
+                    sleep 1
+                    offer_mode_selection
+                    return
+                fi
+                echo "   ⚠️  Proceeding without stable camera feed"
+            fi
+            
+            # Determine visualization mode
+            SHOW_CAMERA_UI=true
+            if [ "$DISABLE_CAMERA_UI" = true ]; then
+                SHOW_CAMERA_UI=false
+                echo "   📷 Camera UI disabled (-nocamui flag)"
+            fi
+            
+            # Start AprilTag detector with appropriate visualization setting
             if ! pgrep -f "apriltag_detector_node" > /dev/null; then
                 echo "   Starting AprilTag detector..."
-                ros2 run warehouse_robot_system apriltag_detector_node > /tmp/apriltag_detector.log 2>&1 &
+                if [ "$SHOW_CAMERA_UI" = true ]; then
+                    echo "   • Visualization: ENABLED (viewfinder will open)"
+                    ros2 run warehouse_robot_system apriltag_detector_node \
+                        --ros-args -p show_visualization:=true > /tmp/apriltag_detector.log 2>&1 &
+                else
+                    echo "   • Visualization: DISABLED (headless mode)"
+                    ros2 run warehouse_robot_system apriltag_detector_node \
+                        --ros-args -p show_visualization:=false > /tmp/apriltag_detector.log 2>&1 &
+                fi
                 APRILTAG_PID=$!
-                sleep 2
+                sleep 3
                 
                 if ps -p $APRILTAG_PID > /dev/null 2>&1; then
                     echo "   ✅ AprilTag detector started"
+                    
+                    # If UI enabled, check if viewfinder opened
+                    if [ "$SHOW_CAMERA_UI" = true ]; then
+                        echo ""
+                        echo "   📺 Camera viewfinder should be visible now"
+                        echo "   • Green boxes = Detected AprilTags"
+                        echo "   • Tag IDs shown above boxes"
+                        echo ""
+                        echo "   ⚠️  If viewfinder is laggy or frozen:"
+                        echo "   1. Press Ctrl+C to stop"
+                        echo "   2. Restart with: ./scripts/run_autonomous_slam.sh -nocamui"
+                        echo ""
+                        echo -n "   Is the viewfinder working properly? (yes/no): "
+                        read -r -t 15 viewfinder_ok || viewfinder_ok="yes"
+                        echo ""
+                        
+                        if [[ "$viewfinder_ok" != "yes" ]]; then
+                            echo "   ⚠️  Viewfinder issues detected"
+                            echo "   Stopping AprilTag detector..."
+                            kill -TERM $APRILTAG_PID 2>/dev/null
+                            sleep 2
+                            
+                            echo "   Restarting in headless mode..."
+                            ros2 run warehouse_robot_system apriltag_detector_node \
+                                --ros-args -p show_visualization:=false > /tmp/apriltag_detector.log 2>&1 &
+                            APRILTAG_PID=$!
+                            sleep 2
+                            echo "   ✅ AprilTag detector restarted (headless)"
+                        else
+                            echo "   ✅ Viewfinder confirmed working"
+                        fi
+                    fi
                 else
                     echo "   ⚠️  Failed to start AprilTag detector"
+                    echo "   Check logs: tail -f /tmp/apriltag_detector.log"
                 fi
             else
                 echo "   ✓ AprilTag detector already running"
@@ -913,6 +1011,76 @@ EOF
                 COLOR_PID=$(pgrep -f "colour_detector_node")
             fi
             
+            # Wait for TF transforms to stabilize
+            echo ""
+            echo "🔄 Waiting for TF transforms to stabilize..."
+            echo "   (This prevents the 'white robot' issue in RViz)"
+            echo ""
+            
+            TF_STABLE=false
+            TF_CHECK_COUNT=0
+            MAX_TF_CHECKS=15
+            TOTAL_ATTEMPTS=0
+            
+            while [ $TOTAL_ATTEMPTS -lt $MAX_TF_CHECKS ]; do
+                TOTAL_ATTEMPTS=$((TOTAL_ATTEMPTS + 1))
+                
+                # Check if critical transforms are available and publishing (with timeout)
+                if timeout 2s bash -c "ros2 run tf2_ros tf2_echo map base_footprint 2>&1 | grep -q 'At time'" 2>/dev/null; then
+                    # Transform exists and is publishing, check if it's stable
+                    TF_CHECK_COUNT=$((TF_CHECK_COUNT + 1))
+                    
+                    if [ $TF_CHECK_COUNT -ge 2 ]; then
+                        # Got 2 consecutive successful checks
+                        TF_STABLE=true
+                        echo "   ✅ TF transforms stable (map → base_footprint)"
+                        break
+                    fi
+                    echo "   Checking TF stability... ($TF_CHECK_COUNT/2)"
+                else
+                    # Transform failed, reset counter
+                    TF_CHECK_COUNT=0
+                    if [ $((TOTAL_ATTEMPTS % 3)) -eq 0 ]; then
+                        echo "   Waiting for TF transforms... ($TOTAL_ATTEMPTS/$MAX_TF_CHECKS)"
+                    fi
+                fi
+                
+                sleep 0.5
+            done
+            
+            if [ "$TF_STABLE" = false ]; then
+                echo ""
+                echo "   ⚠️  WARNING: TF transforms not stable after ${MAX_TF_CHECKS} seconds"
+                echo "   The robot may appear white in RViz"
+                echo ""
+                echo "   Common causes:"
+                echo "   • SLAM Toolbox still initializing"
+                echo "   • Map not fully loaded"
+                echo "   • TF tree disrupted from mode switch"
+                echo ""
+                echo "   Recommended actions:"
+                echo "   1. Wait and see if robot appears (may take 10-30 seconds)"
+                echo "   2. If robot stays white, press Ctrl+C and restart system"
+                echo "   3. Use -preload flag next time to avoid mode switching"
+                echo ""
+                echo -n "   Continue anyway? (yes/no): "
+                read -r -t 15 tf_continue || tf_continue="yes"
+                
+                if [[ "$tf_continue" != "yes" ]]; then
+                    echo "   Returning to menu..."
+                    sleep 1
+                    offer_mode_selection
+                    return
+                fi
+                
+                echo "   ⚠️  Proceeding with unstable TF (robot may be white)"
+            fi
+            
+            # Additional wait for robot to appear in RViz
+            echo ""
+            echo "   ⏳ Allowing extra time for robot to appear in RViz..."
+            sleep 3
+            
             # Start inspection robot in exploration mode
             echo "   Starting Inspection Robot in exploration mode..."
             echo ""
@@ -926,6 +1094,48 @@ EOF
                 echo "   Check log: /tmp/inspection_exploration.log"
                 offer_mode_selection
                 return
+            fi
+            
+            # Final check: Is robot visible in RViz?
+            echo ""
+            echo "   🤖 Robot Status Check"
+            echo "   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
+            echo "   Please check RViz:"
+            echo "   • Is the robot visible (not white)?"
+            echo "   • Is the robot at the correct position?"
+            echo "   • Are the laser scans showing?"
+            echo ""
+            echo -n "   Is the robot visible and ready? (yes/no): "
+            read -r -t 20 robot_visible || robot_visible="yes"
+            echo ""
+            
+            if [[ "$robot_visible" != "yes" ]]; then
+                echo "   ⚠️  Robot not visible in RViz"
+                echo ""
+                echo "   This usually means TF transforms are broken."
+                echo "   The robot will not be able to navigate properly."
+                echo ""
+                echo "   RECOMMENDED FIX:"
+                echo "   1. Press Ctrl+C to stop"
+                echo "   2. Stop Gazebo/TurtleBot"
+                echo "   3. Restart everything fresh"
+                echo "   4. Use: ./scripts/run_autonomous_slam.sh -preload"
+                echo ""
+                echo -n "   Stop now and fix? (yes/no): "
+                read -r -t 15 stop_now || stop_now="no"
+                
+                if [[ "$stop_now" == "yes" ]]; then
+                    echo "   Stopping inspection robot..."
+                    kill -TERM $INSPECTION_PID 2>/dev/null
+                    sleep 1
+                    offer_mode_selection
+                    return
+                fi
+                
+                echo "   ⚠️  Continuing with white robot (may not work correctly)"
+            else
+                echo "   ✅ Robot confirmed visible and ready!"
             fi
             
             echo ""
@@ -1181,10 +1391,51 @@ EOF
             sleep 2
         fi
         
+        # Check camera availability
+        echo "   Checking camera feed..."
+        CAMERA_CHECK_TIMEOUT=10
+        CAMERA_READY=false
+        
+        for i in $(seq 1 $CAMERA_CHECK_TIMEOUT); do
+            # Check if topic exists and has at least one publisher
+            if ros2 topic info /camera/image_raw 2>/dev/null | grep -q "Publisher count: [1-9]"; then
+                # Try to get one message to verify it's actually publishing
+                if timeout 3s ros2 topic echo /camera/image_raw --once > /dev/null 2>&1; then
+                    CAMERA_READY=true
+                    echo "   ✅ Camera feed detected"
+                    break
+                fi
+            fi
+            if [ $i -eq 1 ]; then
+                echo "   Waiting for camera..."
+            fi
+            sleep 1
+        done
+        
+        if [ "$CAMERA_READY" = false ]; then
+            echo "   ⚠️  Camera feed not available"
+            echo "   Inspection will continue but AprilTag detection may not work"
+        fi
+        
+        # Determine visualization mode
+        SHOW_CAMERA_UI=true
+        if [ "$DISABLE_CAMERA_UI" = true ]; then
+            SHOW_CAMERA_UI=false
+            echo "   📷 Camera UI disabled (-nocamui flag)"
+        fi
+        
         # Start AprilTag detector if not already running
         if ! pgrep -f "apriltag_detector_node" > /dev/null; then
             echo "   Starting AprilTag detector..."
-            ros2 run warehouse_robot_system apriltag_detector_node > /tmp/apriltag_detector.log 2>&1 &
+            if [ "$SHOW_CAMERA_UI" = true ]; then
+                echo "   • Visualization: ENABLED"
+                ros2 run warehouse_robot_system apriltag_detector_node \
+                    --ros-args -p show_visualization:=true > /tmp/apriltag_detector.log 2>&1 &
+            else
+                echo "   • Visualization: DISABLED (headless)"
+                ros2 run warehouse_robot_system apriltag_detector_node \
+                    --ros-args -p show_visualization:=false > /tmp/apriltag_detector.log 2>&1 &
+            fi
             APRILTAG_PID=$!
             sleep 2
             
@@ -1199,6 +1450,42 @@ EOF
             APRILTAG_PID=$(pgrep -f "apriltag_detector_node")
         fi
         
+        # Wait for TF transforms to stabilize
+        echo ""
+        echo "   🔄 Waiting for TF transforms to stabilize..."
+        
+        TF_STABLE=false
+        TF_CHECK_COUNT=0
+        TOTAL_ATTEMPTS=0
+        MAX_TF_CHECKS=15
+        
+        while [ $TOTAL_ATTEMPTS -lt $MAX_TF_CHECKS ]; do
+            TOTAL_ATTEMPTS=$((TOTAL_ATTEMPTS + 1))
+            
+            # Check if transform is actually publishing data (with timeout)
+            if timeout 2s bash -c "ros2 run tf2_ros tf2_echo map base_footprint 2>&1 | grep -q 'At time'" 2>/dev/null; then
+                TF_CHECK_COUNT=$((TF_CHECK_COUNT + 1))
+                if [ $TF_CHECK_COUNT -ge 2 ]; then
+                    TF_STABLE=true
+                    echo "   ✅ TF transforms stable"
+                    break
+                fi
+                echo "   Checking TF stability... ($TF_CHECK_COUNT/2)"
+            else
+                TF_CHECK_COUNT=0
+                if [ $((TOTAL_ATTEMPTS % 3)) -eq 0 ]; then
+                    echo "   Waiting for TF transforms... ($TOTAL_ATTEMPTS/$MAX_TF_CHECKS)"
+                fi
+            fi
+            sleep 0.5
+        done
+        
+        if [ "$TF_STABLE" = false ]; then
+            echo "   ⚠️  TF transforms not stable - robot may appear white in RViz"
+        fi
+        
+        sleep 2
+        
         # Start inspection robot node
         echo "   Starting Inspection Robot node..."
         ros2 run warehouse_robot_system inspection_robot_node &
@@ -1211,6 +1498,19 @@ EOF
         fi
         
         echo "   ✅ Inspection Robot node started"
+        
+        # Check robot visibility
+        echo ""
+        echo "   🤖 Please verify robot is visible in RViz (not white)"
+        echo -n "   Robot visible and ready? (yes/no): "
+        read -r -t 15 robot_ok || robot_ok="yes"
+        
+        if [[ "$robot_ok" != "yes" ]]; then
+            echo "   ⚠️  Robot visibility issue - consider restarting system"
+        else
+            echo "   ✅ Robot confirmed ready"
+        fi
+        
         echo ""
         echo "✅ =============================================="
         echo "   INSPECTION MODE ACTIVE!"

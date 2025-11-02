@@ -126,8 +126,8 @@ private:
     rclcpp::Time relocalization_start_time_;
     bool is_reading_tag_;
     rclcpp::Time tag_reading_start_time_;
-    static constexpr double RELOCALIZATION_DURATION = 8.0;  // 8 seconds for 2 full rotations
-    static constexpr double RELOCALIZATION_SPEED = 1.57;  // rad/s (~90°/s)
+    static constexpr double RELOCALIZATION_DURATION = 12.0;  // 12 seconds for slower, more thorough scan
+    static constexpr double RELOCALIZATION_SPEED = 0.52;  // rad/s (~30°/s) - slower for better AprilTag detection
     
     // Route optimization mode
     bool use_tsp_optimization_;
@@ -151,9 +151,7 @@ private:
         const geometry_msgs::msg::Point& start,
         const std::vector<InspectionData::InspectionRequest>& requests);
     
-    void saveDiscoveredSite(int tag_id, const geometry_msgs::msg::Point& position);
     void publishSiteMarkers();
-    void publishStatus(const std::string& message);
     
     std::vector<InspectionData::DamageSite> optimizeRouteTSP(
         const geometry_msgs::msg::Point& start,

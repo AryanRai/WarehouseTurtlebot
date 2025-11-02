@@ -10,22 +10,28 @@ echo "🛑 EMERGENCY STOP"
 echo "=================="
 echo ""
 
+# Check if ROS2 is running
+if ! ros2 topic list &>/dev/null; then
+    echo "⚠️  Warning: ROS2 nodes may not be running"
+fi
+
 # Step 1: Kill autonomous controller
 echo "1️⃣ Stopping autonomous SLAM controller..."
 pkill -9 -f autonomous_slam
+pkill -9 -f run_autonomous_slam
 sleep 0.5
 
-# Step 2: Publish zero velocity multiple times
+# Step 2: Publish zero velocity multiple times with timeout
 echo "2️⃣ Sending zero velocity commands..."
-for i in {1..10}; do
-    ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}" 2>/dev/null &
+for i in {1..5}; do
+    timeout 1s ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}" 2>/dev/null &
 done
-wait
+sleep 1
 
 # Step 3: Start continuous zero velocity publisher for 2 seconds
 echo "3️⃣ Holding zero velocity..."
-timeout 2s ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}" --rate 10 2>/dev/null &
-sleep 2
+timeout 2s ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}" --rate 10 2>/dev/null
+sleep 0.5
 
 echo ""
 echo "✅ ROBOT STOPPED"

@@ -83,10 +83,14 @@ InspectionRobot::InspectionRobot(rclcpp::Node::SharedPtr node)
     // Status publisher
     status_pub_ = node_->create_publisher<std_msgs::msg::String>("/inspection/status", 10);
     
+    // Marker publisher for RViz visualization
+    marker_pub_ = node_->create_publisher<visualization_msgs::msg::MarkerArray>("/inspection/damage_markers", 10);
+    
     // Try to load existing sites
     try {
         loadSitesFromFile(sites_file_);
         RCLCPP_INFO(node_->get_logger(), "Loaded %zu damage sites", damage_sites_.size());
+        publishSiteMarkers();  // Visualize loaded sites
     } catch (const std::exception& e) {
         RCLCPP_WARN(node_->get_logger(), "No existing sites file, starting fresh");
     }
@@ -231,6 +235,7 @@ void InspectionRobot::saveSitesToFile(const std::string& filename) {
 void InspectionRobot::addSite(const InspectionData::DamageSite& site) {
     damage_sites_.push_back(site);
     saveSitesToFile(sites_file_);
+    publishSiteMarkers();  // Update RViz visualization
 }
 
 void InspectionRobot::clearSites() {
@@ -1479,6 +1484,9 @@ void InspectionRobot::saveDiscoveredSite(int tag_id, const geometry_msgs::msg::P
     // Add to list
     damage_sites_.push_back(site);
     
+    // Update RViz markers
+    publishSiteMarkers();
+    
     // Save to file
     try {
         saveSitesToFile(sites_file_);
@@ -1517,4 +1525,78 @@ void InspectionRobot::saveDiscoveredSite(int tag_id, const geometry_msgs::msg::P
         
         log.close();
     }
+}
+
+void InspectionRobot::publishSiteMarkers() {
+    visualization_msgs::msg::MarkerArray marker_array;
+    
+    int marker_id = 0;
+    for (const auto& site : damage_sites_) {
+        // Create marker for the site
+        visualization_msgs::msg::Marker marker;
+        marker.header.frame_id = "map";
+        marker.header.stamp = node_->now();
+        marker.ns = "damage_sites";
+        marker.id = marker_id++;
+        marker.type = visualization_msgs::msg::Marker::CYLINDER;
+        marker.action = visualization_msgs::msg::Marker::ADD;
+        
+        // Position
+        marker.pose.position = site.position;
+        marker.pose.position.z = 0.5;  // Raise marker above ground
+        marker.pose.orientation.w = 1.0;
+        
+        // Size
+        marker.scale.x = 0.3;  // Diameter
+        marker.scale.y = 0.3;
+        marker.scale.z = 1.0;  // Height
+        
+        // Color based on whether tag is detected
+        if (site.apriltag_id >= 0) {
+            // Green for detected tags
+            marker.color.r = 0.0f;
+            marker.color.g = 1.0f;
+            marker.color.b = 0.0f;
+            marker.color.a = 0.8f;
+        } else {
+            // Yellow for undetected sites
+            marker.color.r = 1.0f;
+            marker.color.g = 1.0f;
+            marker.color.b = 0.0f;
+            marker.color.a = 0.8f;
+        }
+        
+        marker.lifetime = rclcpp::Duration::from_seconds(0);  // Persistent
+        marker_array.markers.push_back(marker);
+        
+        // Add text label with tag ID
+        visualization_msgs::msg::Marker text_marker;
+        text_marker.header = marker.header;
+        text_marker.ns = "damage_labels";
+        text_marker.id = marker_id++;
+        text_marker.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
+        text_marker.action = visualization_msgs::msg::Marker::ADD;
+        
+        text_marker.pose.position = site.position;
+        text_marker.pose.position.z = 1.2;  // Above the cylinder
+        text_marker.pose.orientation.w = 1.0;
+        
+        text_marker.scale.z = 0.3;  // Text height
+        
+        text_marker.color.r = 1.0f;
+        text_marker.color.g = 1.0f;
+        text_marker.color.b = 1.0f;
+        text_marker.color.a = 1.0f;
+        
+        if (site.apriltag_id >= 0) {
+            text_marker.text = "ID: " + std::to_string(site.apriltag_id);
+        } else {
+            text_marker.text = site.name;
+        }
+        
+        text_marker.lifetime = rclcpp::Duration::from_seconds(0);
+        marker_array.markers.push_back(text_marker);
+    }
+    
+    marker_pub_->publish(marker_array);
 }

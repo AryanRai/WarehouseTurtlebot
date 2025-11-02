@@ -272,6 +272,7 @@ ament_target_dependencies(inspection_robot_lib
   std_msgs
   std_srvs
   apriltag_msgs
+  visualization_msgs
 )
 target_link_libraries(inspection_robot_lib
   slam_controller_lib
@@ -291,6 +292,7 @@ ament_target_dependencies(inspection_robot_node
   std_msgs
   std_srvs
   apriltag_msgs
+  visualization_msgs
 )
 target_link_libraries(inspection_robot_node
   inspection_robot_lib
