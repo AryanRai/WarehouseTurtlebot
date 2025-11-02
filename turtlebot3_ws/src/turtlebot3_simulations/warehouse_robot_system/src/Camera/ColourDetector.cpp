@@ -95,28 +95,39 @@ void CColourDetector::ProcessImage(const cv::Mat &aImage,
     mHasImage = true;
 
     // In calibration mode, show overlay if we have detections
+    // Throttle display updates to reduce X11 overhead (update every 3rd frame)
     if (mCalibrationMode) {
-        if (!mLastDetections.empty()) {
-            DisplayCalibrationWindow(mLatestImage, mLastDetections);
-            int key = cv::waitKey(1);
-            if (key >= 0) {
-                HandleKeyboardInput(key);
-            }
-        } else {
-            // No tags detected yet; still show raw image to confirm feed
-            try {
-                cv::imshow(mCalibrationWindowName, mLatestImage);
+        static int frame_skip_counter = 0;
+        frame_skip_counter++;
+        
+        if (frame_skip_counter % 3 == 0) {  // Only update display every 3rd frame
+            if (!mLastDetections.empty()) {
+                DisplayCalibrationWindow(mLatestImage, mLastDetections);
                 int key = cv::waitKey(1);
                 if (key >= 0) {
                     HandleKeyboardInput(key);
                 }
-            } catch (const std::exception &aEx) {
-                // Fall back to file saving if GUI fails
-                static int raw_frame_count = 0;
-                std::string filename = "/tmp/raw_frame_" + std::to_string(raw_frame_count++) + ".jpg";
-                cv::imwrite(filename, mLatestImage);
-                RCLCPP_INFO_THROTTLE(GetLogger(), *this->get_clock(), 5000, 
-                                     "GUI failed, saving to: %s", filename.c_str());
+            } else {
+                // No tags detected yet; still show raw image to confirm feed
+                try {
+                    static bool raw_window_ensured = false;
+                    if (!raw_window_ensured) {
+                        cv::namedWindow(mCalibrationWindowName, cv::WINDOW_AUTOSIZE);
+                        raw_window_ensured = true;
+                    }
+                    cv::imshow(mCalibrationWindowName, mLatestImage);
+                    int key = cv::waitKey(1);
+                    if (key >= 0) {
+                        HandleKeyboardInput(key);
+                    }
+                } catch (const std::exception &aEx) {
+                    // Fall back to file saving if GUI fails
+                    static int raw_frame_count = 0;
+                    std::string filename = "/tmp/raw_frame_" + std::to_string(raw_frame_count++) + ".jpg";
+                    cv::imwrite(filename, mLatestImage);
+                    RCLCPP_INFO_THROTTLE(GetLogger(), *this->get_clock(), 5000, 
+                                         "GUI failed, saving to: %s", filename.c_str());
+                }
             }
         }
     }
@@ -150,8 +161,17 @@ void CColourDetector::TagDetectionCallback(
     }
 
     // === NORMAL DETECTION MODE WITH CAMERA VISUALIZATION ===
+    // Throttle visualization updates to reduce X11 overhead
+    static int normal_frame_skip = 0;
+    normal_frame_skip++;
+    
+    bool should_display = (normal_frame_skip % 3 == 0);  // Display every 3rd frame
+    
     // Show camera feed with AprilTag detection overlays in normal mode too
-    cv::Mat display_image = mLatestImage.clone();
+    cv::Mat display_image;
+    if (should_display) {
+        display_image = mLatestImage.clone();
+    }
     
     // Draw detection overlays for normal mode (only high confidence tags)
     const double kMinConfidence = 0.5; // 50% confidence threshold
@@ -175,90 +195,103 @@ void CColourDetector::TagDetectionCallback(
         );
         int tagSize = static_cast<int>(corner_dist);
         
-        // Draw AprilTag box (blue for normal mode)
-        std::vector<cv::Point> corners;
-        for (const auto& corner : detection.corners) {
-            corners.push_back(cv::Point(static_cast<int>(corner.x), static_cast<int>(corner.y)));
-        }
-        
-        for (size_t i = 0; i < corners.size(); ++i) {
-            cv::line(display_image, corners[i], corners[(i+1) % corners.size()], 
-                     cv::Scalar(255, 0, 0), 2); // Blue border for normal mode
-        }
-        
-        // Extract and analyze color sampling regions around the tag
-        std::vector<cv::Rect> samplingRegions = ExtractSamplingRegions(
-            centerX, centerY, tagSize, display_image.cols, display_image.rows);
-        
-        // Analyze each region and draw with detected color
-        const std::vector<std::string> regionLabels = {"TOP", "BOTTOM", "LEFT", "RIGHT"};
-        
-        for (size_t i = 0; i < samplingRegions.size() && i < regionLabels.size(); ++i) {
-            const cv::Rect& region = samplingRegions[i];
-            
-            // Skip invalid regions
-            if (region.x < 0 || region.y < 0 || 
-                region.x + region.width > display_image.cols ||
-                region.y + region.height > display_image.rows) {
-                continue;
+        // Only draw visualization if we're displaying this frame
+        if (should_display && !display_image.empty()) {
+            // Draw AprilTag box (blue for normal mode)
+            std::vector<cv::Point> corners;
+            for (const auto& corner : detection.corners) {
+                corners.push_back(cv::Point(static_cast<int>(corner.x), static_cast<int>(corner.y)));
             }
             
-            // Extract and classify color in this region
-            cv::Mat regionImage = display_image(region);
-            eDamageType detectedColor = ClassifyColour(regionImage);
-            
-            // Choose box color and label based on what was actually detected
-            cv::Scalar boxColor;
-            std::string colorLabel;
-            
-            switch (detectedColor) {
-                case DAMAGE_MOULD:
-                    boxColor = cv::Scalar(0, 255, 0); // Green
-                    colorLabel = "MOULD";
-                    break;
-                case DAMAGE_WATER:
-                    boxColor = cv::Scalar(255, 0, 0); // Blue
-                    colorLabel = "WATER";
-                    break;
-                case DAMAGE_BLOOD:
-                    boxColor = cv::Scalar(0, 0, 255); // Red
-                    colorLabel = "BLOOD";
-                    break;
-                case DAMAGE_NONE:
-                case DAMAGE_UNKNOWN:
-                default:
-                    boxColor = cv::Scalar(128, 128, 128); // Gray for no detection
-                    colorLabel = "NONE";
-                    break;
+            for (size_t i = 0; i < corners.size(); ++i) {
+                cv::line(display_image, corners[i], corners[(i+1) % corners.size()], 
+                         cv::Scalar(255, 0, 0), 2); // Blue border for normal mode
             }
-            
-            // Draw the region box with detected color
-            cv::rectangle(display_image, region, boxColor, 2);
-            
-            // Add label showing detected damage type
-            cv::putText(display_image, colorLabel, 
-                       cv::Point(region.x, region.y - 5),
-                       cv::FONT_HERSHEY_SIMPLEX, 0.4, boxColor, 1);
         }
         
-        // Draw ID label with confidence
-        std::string id_text = "ID:" + std::to_string(detection.id) + 
-                             " (" + std::to_string(static_cast<int>(confidence * 100)) + "%)";
-        cv::putText(display_image, id_text, 
-                   cv::Point(centerX - 20, centerY - tagSize/2 - 15), 
-                   cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(255, 255, 0), 2);
+        // Only do visualization drawing if displaying this frame
+        if (should_display && !display_image.empty()) {
+            // Extract and analyze color sampling regions around the tag
+            std::vector<cv::Rect> samplingRegions = ExtractSamplingRegions(
+                centerX, centerY, tagSize, display_image.cols, display_image.rows);
+            
+            // Analyze each region and draw with detected color
+            const std::vector<std::string> regionLabels = {"TOP", "BOTTOM", "LEFT", "RIGHT"};
+            
+            for (size_t i = 0; i < samplingRegions.size() && i < regionLabels.size(); ++i) {
+                const cv::Rect& region = samplingRegions[i];
+                
+                // Skip invalid regions
+                if (region.x < 0 || region.y < 0 || 
+                    region.x + region.width > display_image.cols ||
+                    region.y + region.height > display_image.rows) {
+                    continue;
+                }
+                
+                // Extract and classify color in this region
+                cv::Mat regionImage = display_image(region);
+                eDamageType detectedColor = ClassifyColour(regionImage);
+                
+                // Choose box color and label based on what was actually detected
+                cv::Scalar boxColor;
+                std::string colorLabel;
+                
+                switch (detectedColor) {
+                    case DAMAGE_MOULD:
+                        boxColor = cv::Scalar(0, 255, 0); // Green
+                        colorLabel = "MOULD";
+                        break;
+                    case DAMAGE_WATER:
+                        boxColor = cv::Scalar(255, 0, 0); // Blue
+                        colorLabel = "WATER";
+                        break;
+                    case DAMAGE_BLOOD:
+                        boxColor = cv::Scalar(0, 0, 255); // Red
+                        colorLabel = "BLOOD";
+                        break;
+                    case DAMAGE_NONE:
+                    case DAMAGE_UNKNOWN:
+                    default:
+                        boxColor = cv::Scalar(128, 128, 128); // Gray for no detection
+                        colorLabel = "NONE";
+                        break;
+                }
+                
+                // Draw the region box with detected color
+                cv::rectangle(display_image, region, boxColor, 2);
+                
+                // Add label showing detected damage type
+                cv::putText(display_image, colorLabel, 
+                           cv::Point(region.x, region.y - 5),
+                           cv::FONT_HERSHEY_SIMPLEX, 0.4, boxColor, 1);
+            }
+            
+            // Draw ID label with confidence
+            std::string id_text = "ID:" + std::to_string(detection.id) + 
+                                 " (" + std::to_string(static_cast<int>(confidence * 100)) + "%)";
+            cv::putText(display_image, id_text, 
+                       cv::Point(centerX - 20, centerY - tagSize/2 - 15), 
+                       cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(255, 255, 0), 2);
+        }
     }
     
-    // Show detection window (try GUI, fallback to file)
-    try {
-        cv::imshow("AprilTag Detection", display_image);
-        cv::waitKey(1);
-    } catch (const std::exception &ex) {
-        static int detection_frame_count = 0;
-        std::string filename = "/tmp/detection_frame_" + std::to_string(detection_frame_count++) + ".jpg";
-        cv::imwrite(filename, display_image);
-        RCLCPP_INFO_THROTTLE(GetLogger(), *this->get_clock(), 3000, 
+    // Show detection window (try GUI, fallback to file) - only on display frames
+    if (should_display && !display_image.empty()) {
+        try {
+            static bool detection_window_created = false;
+            if (!detection_window_created) {
+                cv::namedWindow("AprilTag Detection", cv::WINDOW_AUTOSIZE);
+                detection_window_created = true;
+            }
+            cv::imshow("AprilTag Detection", display_image);
+            cv::waitKey(1);
+        } catch (const std::exception &ex) {
+            static int detection_frame_count = 0;
+            std::string filename = "/tmp/detection_frame_" + std::to_string(detection_frame_count++) + ".jpg";
+            cv::imwrite(filename, display_image);
+            RCLCPP_INFO_THROTTLE(GetLogger(), *this->get_clock(), 3000, 
                              "Saved detection frame: %s", filename.c_str());
+        }
     }
 
     // Normal detection path (existing logic)
@@ -597,7 +630,14 @@ void CColourDetector::DisplayCalibrationWindow(
     }
 
     try {
+        // Window should already be created in constructor, but ensure it exists
+        static bool calibration_window_ensured = false;
+        if (!calibration_window_ensured) {
+            cv::namedWindow(mCalibrationWindowName, cv::WINDOW_AUTOSIZE);
+            calibration_window_ensured = true;
+        }
         cv::imshow(mCalibrationWindowName, annotated);
+        cv::waitKey(1);
     } catch (const std::exception &aEx) {
         // Fall back to saving file if GUI display fails
         static int frame_count = 0;

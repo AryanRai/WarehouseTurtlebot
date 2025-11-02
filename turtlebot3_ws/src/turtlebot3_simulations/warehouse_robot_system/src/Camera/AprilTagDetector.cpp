@@ -121,11 +121,30 @@ void CAprilTagDetector::ProcessImage(const cv::Mat &aImage,
 
     // Convert to ROS messages and process
     std::vector<apriltag_msgs::msg::AprilTagDetection> rosDetections;
-    cv::Mat visualizationImage = aImage.clone();
+    cv::Mat visualizationImage;
+    
+    // Only clone image if we have detections and visualization is enabled
+    bool hasDetections = zarray_size(detections) > 0;
+    if (mShowVisualization && hasDetections) {
+        visualizationImage = aImage.clone();
+    }
 
     for (int i = 0; i < zarray_size(detections); i++) {
         apriltag_detection_t* det;
         zarray_get(detections, i, &det);
+
+        // Filter out low-quality detections to reduce false positives
+        if (det->decision_margin < kMinDecisionMargin) {
+            RCLCPP_DEBUG(GetLogger(), "Rejected tag ID %d: low decision margin (%.1f < %.1f)", 
+                        det->id, det->decision_margin, kMinDecisionMargin);
+            continue;
+        }
+        
+        if (det->hamming > kMaxHammingDistance) {
+            RCLCPP_DEBUG(GetLogger(), "Rejected tag ID %d: high hamming distance (%d > %d)", 
+                        det->id, det->hamming, kMaxHammingDistance);
+            continue;
+        }
 
         // Convert to ROS message
         apriltag_msgs::msg::AprilTagDetection rosDetection = ConvertDetectionToROS(det, aTimestamp);
@@ -134,13 +153,13 @@ void CAprilTagDetector::ProcessImage(const cv::Mat &aImage,
         // Calculate orientation
         std::vector<double> orientation = CalculateOrientation(det);
 
-        // Print detection info if enabled
+        // Print detection info if enabled (throttled)
         if (mPrintDetections) {
             PrintDetectionInfo(rosDetection, orientation);
         }
 
         // Draw visualization if enabled
-        if (mShowVisualization) {
+        if (mShowVisualization && !visualizationImage.empty()) {
             DrawDetectionBox(visualizationImage, rosDetection);
         }
     }
@@ -150,8 +169,8 @@ void CAprilTagDetector::ProcessImage(const cv::Mat &aImage,
         PublishDetections(rosDetections, aTimestamp);
     }
 
-    // Show visualization window
-    if (mShowVisualization) {
+    // Show visualization window only when we have detections
+    if (mShowVisualization && !visualizationImage.empty()) {
         ShowVisualizationWindow(visualizationImage);
     }
 
@@ -263,9 +282,10 @@ void CAprilTagDetector::PrintDetectionInfo(
     const apriltag_msgs::msg::AprilTagDetection &aDetection,
     const std::vector<double> &aOrientation)
 {
-    RCLCPP_INFO(GetLogger(), "🏷️ APRILTAG 16h5 DETECTED:");
-    RCLCPP_INFO(GetLogger(), "   📍 ID: %d", aDetection.id);
-    RCLCPP_INFO(GetLogger(), "   📐 Center: (%.1f, %.1f) pixels", 
+    // Throttle console output to once per second to reduce overhead
+    RCLCPP_INFO_THROTTLE(GetLogger(), *this->get_clock(), 1000, "🏷️ APRILTAG 16h5 DETECTED:");
+    RCLCPP_INFO_THROTTLE(GetLogger(), *this->get_clock(), 1000, "   📍 ID: %d", aDetection.id);
+    RCLCPP_INFO_THROTTLE(GetLogger(), *this->get_clock(), 1000, "   📐 Center: (%.1f, %.1f) pixels", 
                aDetection.centre.x, aDetection.centre.y);
     
     // Calculate tag size
@@ -273,14 +293,10 @@ void CAprilTagDetector::PrintDetectionInfo(
     double dy = aDetection.corners[0].y - aDetection.corners[2].y;
     double diagonal = sqrt(dx*dx + dy*dy);
     
-    RCLCPP_INFO(GetLogger(), "   📏 Size: %.1f pixels (diagonal)", diagonal);
-    RCLCPP_INFO(GetLogger(), "   🔄 Orientation: %.1f° (yaw)", aOrientation[2] * 180.0 / M_PI);
-    
-    RCLCPP_INFO(GetLogger(), "   📊 Corners:");
-    for (size_t i = 0; i < aDetection.corners.size(); i++) {
-        RCLCPP_INFO(GetLogger(), "      [%zu]: (%.1f, %.1f)", i, 
-                   aDetection.corners[i].x, aDetection.corners[i].y);
-    }
+    RCLCPP_INFO_THROTTLE(GetLogger(), *this->get_clock(), 1000, "   📏 Size: %.1f pixels (diagonal)", diagonal);
+    RCLCPP_INFO_THROTTLE(GetLogger(), *this->get_clock(), 1000, "   🔄 Orientation: %.1f° (yaw)", aOrientation[2] * 180.0 / M_PI);
+    RCLCPP_INFO_THROTTLE(GetLogger(), *this->get_clock(), 1000, "   ✅ Quality: margin=%.1f, hamming=%d", 
+               aDetection.decision_margin, aDetection.hamming);
 }
 
 void CAprilTagDetector::DrawDetectionBox(cv::Mat &aImage, 
@@ -326,6 +342,13 @@ void CAprilTagDetector::DrawDetectionBox(cv::Mat &aImage,
 void CAprilTagDetector::ShowVisualizationWindow(const cv::Mat &aImage)
 {
     try {
+        // Create window if it doesn't exist (first call)
+        static bool window_created = false;
+        if (!window_created) {
+            cv::namedWindow(mVisualizationWindowName, cv::WINDOW_AUTOSIZE);
+            window_created = true;
+        }
+        
         cv::imshow(mVisualizationWindowName, aImage);
         cv::waitKey(1);
     } catch (const std::exception &e) {

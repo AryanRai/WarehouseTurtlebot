@@ -84,11 +84,12 @@ while true; do
     echo "  1) 🏷️ AprilTag Detection Only (ID, position, orientation)"
     echo "  2) 🎨 Color Calibration Mode (HSV tuning with AprilTag detection)"
     echo "  3) 🔍 Full Detection System (AprilTag + Color detection)"
-    echo "  4) 📋 System Status & Process Management"
-    echo "  5) 🛑 Stop All Detectors"
-    echo "  6) 🚪 Exit"
+    echo "  4) 🚀 HEADLESS Mode - No GUI (Fast, for SSH without -X)"
+    echo "  5) 📋 System Status & Process Management"
+    echo "  6) 🛑 Stop All Detectors"
+    echo "  7) 🚪 Exit"
     echo ""
-    echo -n "Enter choice [1-6]: "
+    echo -n "Enter choice [1-7]: "
     read choice
 
     case $choice in
@@ -184,6 +185,41 @@ while true; do
             ;;
             
         4)
+            echo ""
+            echo -e "${GREEN}🚀 Starting HEADLESS Detection System...${NC}"
+            echo "========================================="
+            echo ""
+            echo "This will run:"
+            echo "  🏷️ AprilTag detector (NO GUI - console only)"
+            echo "  🎨 Color detector (NO GUI - console only)"
+            echo "  📊 Console output from both detectors"
+            echo "  ⚡ FAST - No X11 overhead"
+            echo ""
+            echo -e "${YELLOW}💡 Perfect for SSH without -X flag!${NC}"
+            echo ""
+            
+            setup_environment
+            kill_detectors
+            
+            echo "Starting AprilTag detector (headless)..."
+            ros2 run warehouse_robot_system apriltag_detector_node \
+                --ros-args \
+                -p show_visualization:=false \
+                -p print_detections:=true &
+            
+            sleep 2
+            
+            echo "Starting color detector (headless)..."
+            ros2 run warehouse_robot_system colour_detector_node \
+                --ros-args -p calibration_mode:=false &
+            
+            echo ""
+            echo -e "${YELLOW}🎮 Press Ctrl+C to stop both detectors${NC}"
+            echo -e "${GREEN}✅ Running in headless mode - no GUI windows${NC}"
+            wait
+            ;;
+            
+        5)
             echo ""
             echo -e "${YELLOW}📋 System Status Check...${NC}"
             echo "========================="

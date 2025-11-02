@@ -1148,16 +1148,16 @@ std::vector<InspectionData::DamageSite> InspectionRobot::optimizeRoute(
     return route;
 }
 
-std::vector<DamageSite> InspectionRobot::optimizeRouteTSP(
+std::vector<InspectionData::DamageSite> InspectionRobot::optimizeRouteTSP(
     const geometry_msgs::msg::Point& start,
-    const std::vector<InspectionRequest>& requests) {
+    const std::vector<InspectionData::InspectionRequest>& requests) {
     
     if (requests.empty()) {
         return {};
     }
     
     std::vector<geometry_msgs::msg::Point> points;
-    std::vector<DamageSite> sites;
+    std::vector<InspectionData::DamageSite> sites;
     
     points.push_back(start);
     
@@ -1305,7 +1305,7 @@ double InspectionRobot::calculateTourCost(
     return cost;
 }
 
-void InspectionRobot::saveInspectionRecord(const InspectionRecord& record) {
+void InspectionRobot::saveInspectionRecord(const InspectionData::InspectionRecord& record) {
     std::ofstream log(inspection_log_file_, std::ios::app);
     
     auto time_t_start = std::chrono::system_clock::to_time_t(record.start_time);
@@ -1469,7 +1469,7 @@ void InspectionRobot::processAprilTagDetections() {
 
 void InspectionRobot::saveDiscoveredSite(int tag_id, const geometry_msgs::msg::Point& position) {
     // Create new damage site
-    DamageSite site;
+    InspectionData::DamageSite site;
     site.name = "Damage_" + std::to_string(damage_sites_.size() + 1);
     site.apriltag_id = tag_id;
     site.position = position;

@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
     if (zones.size() >= 2) {
         // Create delivery chain through all zones (no return to first zone)
         for (size_t i = 0; i < zones.size() - 1; i++) {
-            DeliveryRequest req;
+            DeliveryData::DeliveryRequest req;
             req.id = "DEL" + std::to_string(i + 1);
             req.from_zone = zones[i].name;
             req.to_zone = zones[i + 1].name;  // Next zone in sequence

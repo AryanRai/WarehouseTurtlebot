@@ -59,6 +59,13 @@ find_package(apriltag QUIET)
 if(apriltag_FOUND)
   message(STATUS "Found apriltag library - will build apriltag_detector_node")
   set(BUILD_APRILTAG_DETECTOR TRUE)
+  # Find CURL library (required by apriltag dependencies)
+  find_package(CURL REQUIRED)
+  # Find OpenJPEG (openjp2) library
+  find_package(PkgConfig QUIET)
+  if(PkgConfig_FOUND)
+    pkg_check_modules(OPENJP2 libopenjp2)
+  endif()
 else()
   message(WARNING "apriltag library not found - skipping apriltag_detector_node")
   message(WARNING "Install with: sudo apt install ros-${ROS_DISTRO}-apriltag")
@@ -338,6 +345,14 @@ ament_target_dependencies(colour_detector_node
   apriltag_msgs 
   std_msgs
 )
+# Link CURL and OpenJPEG if apriltag detector is being built (shared dependency)
+if(BUILD_APRILTAG_DETECTOR AND CURL_FOUND)
+  target_link_libraries(colour_detector_node ${CURL_LIBRARIES})
+  if(OPENJP2_FOUND)
+    target_link_libraries(colour_detector_node ${OPENJP2_LIBRARIES})
+    target_include_directories(colour_detector_node PRIVATE ${OPENJP2_INCLUDE_DIRS})
+  endif()
+endif()
 
 # AprilTag Detector Node (conditional) - UPDATED PATHS
 if(BUILD_APRILTAG_DETECTOR)
@@ -357,7 +372,14 @@ if(BUILD_APRILTAG_DETECTOR)
 
   target_link_libraries(apriltag_detector_node 
     apriltag::apriltag
+    ${CURL_LIBRARIES}
   )
+  
+  # Link OpenJPEG if found
+  if(OPENJP2_FOUND)
+    target_link_libraries(apriltag_detector_node ${OPENJP2_LIBRARIES})
+    target_include_directories(apriltag_detector_node PRIVATE ${OPENJP2_INCLUDE_DIRS})
+  endif()
 endif()
 
 # ============================================================================

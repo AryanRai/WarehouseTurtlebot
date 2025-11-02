@@ -1222,7 +1222,7 @@ double DeliveryRobot::calculateTourCost(
 
 // Precise docking for delivery zones (similar to home docking)
 void DeliveryRobot::preciseZoneDocking(const geometry_msgs::msg::Pose& current_pose, 
-                                       const DeliveryZone& zone, 
+                                       const DeliveryData::DeliveryZone& zone, 
                                        double distance_to_zone) {
     // Calculate direction to zone
     double dx = zone.position.x - current_pose.position.x;

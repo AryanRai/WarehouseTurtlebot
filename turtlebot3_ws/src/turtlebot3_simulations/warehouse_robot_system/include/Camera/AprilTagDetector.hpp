@@ -134,11 +134,15 @@ class CAprilTagDetector : public CImageProcessorNode
         const std::string kDetectionOutputTopic = "/apriltag_detections";
         const int kQueueSize = 10;
         const double kTagSize = 0.0778; // Tag size in meters (77.8mm standard)
-        const double kDecimation = 2.0; // Image decimation for performance
+        const double kDecimation = 1.5; // Image decimation for performance (lower = more accurate)
         const double kBlur = 0.0; // Gaussian blur sigma (0 = disabled)
         const int kThreads = 1; // Number of detection threads
         const double kRefineEdges = 1; // Subpixel edge refinement
         const double kDecodeSharpening = 0.25; // Decode sharpening
+        
+        // Quality thresholds to reduce false positives
+        const double kMinDecisionMargin = 80.0; // Minimum decision margin (higher = stricter)
+        const int kMaxHammingDistance = 0; // Maximum bit errors allowed (0 = perfect match only)
 };
 
 #endif // APRIL_TAG_DETECTOR_HPP

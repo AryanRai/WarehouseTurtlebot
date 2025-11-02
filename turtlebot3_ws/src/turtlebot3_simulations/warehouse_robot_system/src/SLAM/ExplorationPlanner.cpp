@@ -57,7 +57,7 @@ std::vector<FrontierSearch::Frontier> ExplorationPlanner::getTopFrontiers(
     
     std::vector<FrontierSearch::Frontier> sorted_frontiers = frontiers;
     std::sort(sorted_frontiers.begin(), sorted_frontiers.end(),
-              [](const Frontier& a, const Frontier& b) {
+              [](const FrontierSearch::Frontier& a, const FrontierSearch::Frontier& b) {
                   return a.size > b.size;
               });
     

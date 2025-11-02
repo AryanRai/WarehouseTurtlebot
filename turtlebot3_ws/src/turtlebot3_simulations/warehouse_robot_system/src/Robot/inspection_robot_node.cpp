@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
         
         if (!sites.empty()) {
             for (size_t i = 0; i < sites.size(); i++) {
-                InspectionRequest req;
+                InspectionData::InspectionRequest req;
                 req.site_name = sites[i].name;
                 req.priority = i + 1;
                 
