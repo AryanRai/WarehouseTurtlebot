@@ -1006,29 +1006,11 @@ EOF
             done
             
             if [ "$TF_STABLE" = false ]; then
-                echo ""
-                echo "   ⚠️  WARNING: TF transforms not stable after ${MAX_TF_CHECKS} checks"
-                echo "   The robot may appear white in RViz initially"
-                echo ""
-                echo "   This is usually fine - TF should stabilize within a few seconds."
-                echo ""
-                echo -n "   Continue anyway? (yes/no): "
-                read -r -t 15 tf_continue || tf_continue="yes"
-                
-                if [[ "$tf_continue" != "yes" ]]; then
-                    echo "   Returning to menu..."
-                    sleep 1
-                    offer_mode_selection
-                    return
-                fi
-                
-                echo "   ⚠️  Proceeding with unstable TF (robot may be white)"
+                echo "   ℹ️  TF transforms still initializing (this is normal with camera on TurtleBot)"
             fi
             
-            # Additional wait for robot to appear in RViz
-            echo ""
-            echo "   ⏳ Allowing extra time for robot to appear in RViz..."
-            sleep 3
+            # Brief wait for robot to appear in RViz
+            sleep 1
             
             # Start inspection robot in exploration mode
             echo "   Starting Inspection Robot in exploration mode..."
@@ -1113,6 +1095,9 @@ EOF
             
             # Set up trap for inspection exploration cleanup
             trap 'cleanup_inspection_exploration' SIGINT SIGTERM
+            
+            # Clean up any old marker files
+            rm -f /tmp/inspection_exploration_complete.marker
             
             # Wait for inspection exploration to complete
             EXPLORATION_COMPLETE=false

@@ -38,6 +38,9 @@ DeliveryRobot::DeliveryRobot(rclcpp::Node::SharedPtr node)
     slam_controller_ = std::make_unique<SlamController>(node);
     motion_controller_ = std::make_unique<MotionController>(node);
     
+    // Set fast speeds for delivery
+    motion_controller_->setDeliverySpeeds();
+    
     // Set file paths
     zones_file_ = "delivery_zones.yaml";
     delivery_log_file_ = "delivery_log.csv";

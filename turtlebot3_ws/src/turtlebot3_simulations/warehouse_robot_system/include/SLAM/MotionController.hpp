@@ -44,6 +44,12 @@ public:
     void setEnabled(bool enabled);
     bool isEnabled() const;
     
+    // Speed configuration
+    void setMaxSpeeds(double linear_speed, double angular_speed);
+    void setInspectionSpeeds();  // Slow speeds for AprilTag detection
+    void setDeliverySpeeds();    // Fast speeds for delivery
+    void setExplorationSpeeds(); // Fast speeds for exploration
+    
 private:
     rclcpp::Node::SharedPtr node_;
     
@@ -56,10 +62,20 @@ private:
     // Pure pursuit parameters
     static constexpr double LOOKAHEAD_DISTANCE = 0.18;  // m
     static constexpr double WHEEL_BASE = 0.16;  // m
-    static constexpr double MAX_DRIVE_SPEED = 0.06;  // m/s - slower for better AprilTag detection
-    static constexpr double MAX_TURN_SPEED = 0.8;  // rad/s - slower turns
     static constexpr double TURN_SPEED_KP = 1.25;
     static constexpr double DISTANCE_TOLERANCE = 0.1;  // m
+    
+    // Speed limits (configurable per robot type)
+    double max_drive_speed_;   // m/s
+    double max_turn_speed_;    // rad/s
+    
+    // Default speed profiles
+    static constexpr double INSPECTION_LINEAR_SPEED = 0.06;   // m/s - slow for AprilTag detection
+    static constexpr double INSPECTION_ANGULAR_SPEED = 0.8;   // rad/s
+    static constexpr double DELIVERY_LINEAR_SPEED = 0.10;     // m/s - moderate speed for deliveries
+    static constexpr double DELIVERY_ANGULAR_SPEED = 1.25;    // rad/s
+    static constexpr double EXPLORATION_LINEAR_SPEED = 0.10;  // m/s - moderate speed for exploration
+    static constexpr double EXPLORATION_ANGULAR_SPEED = 1.25; // rad/s
     
     // Obstacle avoidance parameters
     static constexpr double OBSTACLE_AVOIDANCE_GAIN = 0.3;

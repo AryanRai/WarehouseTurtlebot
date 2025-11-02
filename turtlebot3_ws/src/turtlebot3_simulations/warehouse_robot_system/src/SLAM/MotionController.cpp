@@ -21,7 +21,9 @@ MotionController::MotionController(rclcpp::Node::SharedPtr node)
       reversed_(false),
       alpha_(0.0),
       closest_distance_(std::numeric_limits<double>::infinity()),
-      debug_mode_(false) {
+      debug_mode_(false),
+      max_drive_speed_(INSPECTION_LINEAR_SPEED),   // Default to inspection speeds
+      max_turn_speed_(INSPECTION_ANGULAR_SPEED) {
     
     // Check if debug mode is enabled
     if (!node_->has_parameter("debug")) {
@@ -313,7 +315,7 @@ geometry_msgs::msg::Twist MotionController::computeVelocityCommand(
     
     double radius_of_curvature = lookahead_distance / (2.0 * sin_alpha);
     
-    double drive_speed = (reversed_ ? -1.0 : 1.0) * MAX_DRIVE_SPEED;
+    double drive_speed = (reversed_ ? -1.0 : 1.0) * max_drive_speed_;
     
     // Check if at goal
     double distance_to_goal = distance(current_pose.position.x, current_pose.position.y,
@@ -337,7 +339,7 @@ geometry_msgs::msg::Twist MotionController::computeVelocityCommand(
     turn_speed += calculateSteeringAdjustment(current_pose, map);
     
     // Clamp turn speed
-    turn_speed = std::clamp(turn_speed, -MAX_TURN_SPEED, MAX_TURN_SPEED);
+    turn_speed = std::clamp(turn_speed, -max_turn_speed_, max_turn_speed_);
     
     // Slow down if close to obstacle
     if (closest_distance_ < OBSTACLE_AVOIDANCE_MAX_SLOW_DOWN_DISTANCE) {
@@ -360,4 +362,31 @@ geometry_msgs::msg::Twist MotionController::computeVelocityCommand(
     cmd_vel_pub_->publish(cmd_vel_stamped);
     
     return cmd_vel;
+}
+
+// ============================================================================
+// Speed Configuration
+// ============================================================================
+
+void MotionController::setMaxSpeeds(double linear_speed, double angular_speed) {
+    max_drive_speed_ = linear_speed;
+    max_turn_speed_ = angular_speed;
+    RCLCPP_INFO(node_->get_logger(), 
+               "Motion speeds set: linear=%.3f m/s, angular=%.3f rad/s", 
+               linear_speed, angular_speed);
+}
+
+void MotionController::setInspectionSpeeds() {
+    setMaxSpeeds(INSPECTION_LINEAR_SPEED, INSPECTION_ANGULAR_SPEED);
+    RCLCPP_INFO(node_->get_logger(), "Using INSPECTION speed profile (slow for AprilTag detection)");
+}
+
+void MotionController::setDeliverySpeeds() {
+    setMaxSpeeds(DELIVERY_LINEAR_SPEED, DELIVERY_ANGULAR_SPEED);
+    RCLCPP_INFO(node_->get_logger(), "Using DELIVERY speed profile (fast)");
+}
+
+void MotionController::setExplorationSpeeds() {
+    setMaxSpeeds(EXPLORATION_LINEAR_SPEED, EXPLORATION_ANGULAR_SPEED);
+    RCLCPP_INFO(node_->get_logger(), "Using EXPLORATION speed profile (fast)");
 }

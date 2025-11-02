@@ -44,6 +44,9 @@ AutonomousExplorationRobot::AutonomousExplorationRobot(rclcpp::Node::SharedPtr n
     exploration_planner_ = std::make_unique<ExplorationPlanner>(node);
     motion_controller_ = std::make_unique<MotionController>(node);
     
+    // Set fast speeds for exploration
+    motion_controller_->setExplorationSpeeds();
+    
     // Create publishers (MotionController already publishes cmd_vel)
     path_pub_ = node_->create_publisher<nav_msgs::msg::Path>("/exploration/path", 10);
     recovery_cmd_vel_pub_ = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);

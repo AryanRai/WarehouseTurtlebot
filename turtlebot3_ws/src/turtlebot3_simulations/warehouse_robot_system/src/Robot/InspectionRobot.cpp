@@ -53,6 +53,9 @@ InspectionRobot::InspectionRobot(rclcpp::Node::SharedPtr node)
     slam_controller_ = std::make_unique<SlamController>(node);
     motion_controller_ = std::make_unique<MotionController>(node);
     
+    // Set slow speeds for inspection (better AprilTag detection)
+    motion_controller_->setInspectionSpeeds();
+    
     // Set file paths
     sites_file_ = "damage_sites.yaml";
     inspection_log_file_ = "inspection_log.csv";
