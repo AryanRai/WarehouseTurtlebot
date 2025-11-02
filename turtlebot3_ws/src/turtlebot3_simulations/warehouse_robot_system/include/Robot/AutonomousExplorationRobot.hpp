@@ -65,9 +65,9 @@ private:
     // Configuration
     static constexpr double UPDATE_RATE = 20.0;  // Hz
     static constexpr double MIN_REPLAN_INTERVAL = 2.0;  // seconds - minimum time between replans
-    static constexpr int MAX_NO_PATH_BEFORE_RECOVERY = 8;  // attempts before recovery (matches dynamic lookahead cycle time)
+    static constexpr int MAX_NO_PATH_BEFORE_RECOVERY = 3;  // attempts before recovery (reduced to trigger faster when stuck)
     static constexpr double RECOVERY_DURATION = 3.0;  // seconds to rotate during recovery
-    static constexpr int MAX_RECOVERY_ATTEMPTS = 15;  // max recovery attempts before giving up (increased from 3)
+    static constexpr int MAX_RECOVERY_ATTEMPTS = 10;  // max recovery attempts before giving up (balanced for thorough exploration)
     
     // Home position
     geometry_msgs::msg::Point home_position_;
@@ -104,7 +104,7 @@ private:
                        const nav_msgs::msg::OccupancyGrid& map);  // Check clear path with robot footprint
     
     // Docking thresholds
-    static constexpr double DOCKING_DISTANCE = 0.5;  // Enter docking mode within 50cm
+    static constexpr double DOCKING_DISTANCE = 0.15;  // Enter docking mode within 15cm (reduced to avoid wall collisions)
     static constexpr double HOME_TOLERANCE = 0.05;   // Success within 5cm
     static constexpr double DOCKING_LINEAR_SPEED = 0.05;  // Slow speed for docking
     static constexpr double DOCKING_ANGULAR_SPEED = 0.3;  // Moderate rotation for alignment

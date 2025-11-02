@@ -224,10 +224,8 @@ nav_msgs::msg::Path ExplorationPlanner::planExplorationPath(
     if (frontiers_checked == 0) {
         if (frontiers_within_goal_tolerance > 0) {
             RCLCPP_WARN(node_->get_logger(), 
-                       "All %d frontiers are within goal tolerance (< %.2fm) - triggering recovery to move away", 
+                       "All %d frontiers are within goal tolerance (< %.2fm) - robot should move to discover new areas", 
                        frontiers_within_goal_tolerance, GOAL_TOLERANCE);
-            // Increment counter to trigger recovery - robot is stuck at explored frontiers
-            no_path_found_counter_ += 5;  // Jump ahead to trigger recovery faster
         } else if (frontiers_too_close > 0) {
             RCLCPP_INFO(node_->get_logger(), 
                        "All %d frontiers were too close (< %.2fm) - waiting for map to update", 
@@ -259,11 +257,11 @@ nav_msgs::msg::Path ExplorationPlanner::planExplorationPath(
             // Skip if within goal tolerance (robot is already there)
             if (goal_distance < GOAL_TOLERANCE) {
                 RCLCPP_WARN(node_->get_logger(), 
-                           "Best path goal at (%.2f, %.2f) is within goal tolerance (%.3fm < %.2fm) - triggering immediate recovery", 
+                           "Best path goal at (%.2f, %.2f) is within goal tolerance (%.3fm < %.2fm) - robot needs to move away", 
                            goal_pos.x, goal_pos.y, goal_distance, GOAL_TOLERANCE);
-                // Increment counter multiple times to trigger immediate recovery
-                // This ensures the robot moves away quickly instead of getting stuck
-                no_path_found_counter_ += 5;  // Jump ahead to trigger recovery faster
+                // Reset dynamic lookahead so isReducingLookahead() returns false
+                // This ensures consecutive_no_path_count_ increments in AutonomousExplorationRobot
+                resetDynamicLookahead();
                 return empty_path;
             }
             
@@ -303,7 +301,17 @@ nav_msgs::msg::Path ExplorationPlanner::planExplorationPath(
             RCLCPP_INFO(node_->get_logger(), "No paths found");
             no_path_found_counter_++;
             
-            if (no_path_found_counter_ >= NUM_EXPLORE_FAILS_BEFORE_FINISH) {
+            // If very few frontiers remain and we can't reach them, exploration is likely complete
+            // Use lower threshold when near completion to avoid unnecessary recovery
+            int completion_threshold = NUM_EXPLORE_FAILS_BEFORE_FINISH;
+            if (top_frontiers.size() <= 2) {
+                completion_threshold = 15;  // Much lower threshold when only 1-2 frontiers left
+                RCLCPP_DEBUG(node_->get_logger(), 
+                           "Near completion (%zu frontiers), using reduced threshold (%d/%d)",
+                           top_frontiers.size(), no_path_found_counter_, completion_threshold);
+            }
+            
+            if (no_path_found_counter_ >= completion_threshold) {
                 RCLCPP_INFO(node_->get_logger(), "Exploration complete - no valid paths");
                 is_finished_exploring_ = true;
             }

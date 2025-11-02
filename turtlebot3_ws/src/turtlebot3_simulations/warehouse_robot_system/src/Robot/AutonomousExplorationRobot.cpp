@@ -948,11 +948,23 @@ void AutonomousExplorationRobot::update() {
                                      "No path yet, but dynamic lookahead is reducing distance - not counting as failure");
             }
             
+            // If we've had many "no frontiers" results, skip recovery and go home
+            // Recovery is risky when map is complete - robot might hit walls
+            if (consecutive_no_frontiers_count_ >= 8) {
+                RCLCPP_WARN(node_->get_logger(), 
+                           "No frontiers found for %d consecutive attempts - map appears complete", 
+                           consecutive_no_frontiers_count_);
+                RCLCPP_INFO(node_->get_logger(), "Skipping recovery, initiating return to home");
+                returning_home_ = true;
+                recovery_attempt_ = 0;
+                return;
+            }
+            
             // If we've had many "no frontiers" results, reduce recovery attempts
             int max_recovery = MAX_RECOVERY_ATTEMPTS;
-            if (consecutive_no_frontiers_count_ >= 10) {
-                max_recovery = 5;  // Reduce to 5 attempts when map seems complete
-                RCLCPP_DEBUG(node_->get_logger(), "Map appears complete, reducing recovery attempts to %d", max_recovery);
+            if (consecutive_no_frontiers_count_ >= 5) {
+                max_recovery = 3;  // Reduce to 3 attempts when map seems nearly complete
+                RCLCPP_DEBUG(node_->get_logger(), "Map appears nearly complete, reducing recovery attempts to %d", max_recovery);
             }
             
             // If we've failed too many times, enter recovery mode

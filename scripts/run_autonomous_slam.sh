@@ -163,6 +163,18 @@ fi
 
 source install/setup.bash
 
+# Run comprehensive cleanup to prevent TF errors
+echo "🧹 Checking for stale processes..."
+STALE_PROCESSES=$(pgrep -f "slam_toolbox\|autonomous_slam_node\|delivery_robot_node\|inspection_robot_node" | tr '\n' ' ')
+if [ ! -z "$STALE_PROCESSES" ]; then
+    echo "   Found stale processes: $STALE_PROCESSES"
+    echo "   Running cleanup script..."
+    "$SCRIPT_DIR/cleanup_slam_processes.sh"
+else
+    echo "   ✅ No stale processes found"
+    echo ""
+fi
+
 # Check for and kill any existing rosbridge instances
 EXISTING_ROSBRIDGE=$(pgrep -f "rosbridge_websocket" | tr '\n' ' ')
 if [ ! -z "$EXISTING_ROSBRIDGE" ]; then
@@ -1422,9 +1434,24 @@ cleanup() {
         sleep 0.5
     fi
     
+    # Enhanced SLAM Toolbox cleanup - kill all instances
     if [ ! -z "$SLAM_TOOLBOX_PID" ] && ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
-        echo "   Stopping SLAM Toolbox..."
+        echo "   Stopping SLAM Toolbox (PID: $SLAM_TOOLBOX_PID)..."
         kill -TERM $SLAM_TOOLBOX_PID 2>/dev/null
+        sleep 1
+        # Force kill if still running
+        if ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
+            kill -9 $SLAM_TOOLBOX_PID 2>/dev/null
+        fi
+    fi
+    
+    # Kill any remaining SLAM Toolbox processes
+    REMAINING_SLAM=$(pgrep -f "slam_toolbox" | tr '\n' ' ')
+    if [ ! -z "$REMAINING_SLAM" ]; then
+        echo "   Cleaning up remaining SLAM Toolbox processes: $REMAINING_SLAM"
+        for pid in $REMAINING_SLAM; do
+            kill -9 $pid 2>/dev/null
+        done
         sleep 0.5
     fi
     
@@ -1622,7 +1649,17 @@ EOF
     SLAM_TOOLBOX_PID=$!
 else
     echo "3️⃣ Starting SLAM Toolbox in MAPPING mode (output redirected to /tmp/slam_toolbox.log)..."
-    ros2 launch slam_toolbox online_async_launch.py use_sim_time:=$USE_SIM_TIME > /tmp/slam_toolbox.log 2>&1 &
+    
+    # Use custom params for physical robot to handle time sync issues
+    if [ "$USE_PHYSICAL_ROBOT" = true ]; then
+        SLAM_PARAMS="$(pwd)/slam_toolbox_physical_robot.yaml"
+        echo "   Using physical robot params with extended TF buffer: $SLAM_PARAMS"
+        ros2 launch slam_toolbox online_async_launch.py \
+            use_sim_time:=$USE_SIM_TIME \
+            slam_params_file:=$SLAM_PARAMS > /tmp/slam_toolbox.log 2>&1 &
+    else
+        ros2 launch slam_toolbox online_async_launch.py use_sim_time:=$USE_SIM_TIME > /tmp/slam_toolbox.log 2>&1 &
+    fi
     SLAM_TOOLBOX_PID=$!
 fi
 
@@ -1632,8 +1669,42 @@ sleep 5
 # Check if SLAM Toolbox started successfully
 if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
     echo "❌ SLAM Toolbox failed to start!"
+    echo "   Check logs: tail -f /tmp/slam_toolbox.log"
     cleanup
     exit 1
+fi
+
+# Wait for SLAM Toolbox to publish map frame
+echo "   Waiting for SLAM Toolbox to publish TF frames..."
+TF_WAIT_COUNT=0
+TF_MAX_WAIT=15
+MAP_FRAME_READY=false
+
+while [ $TF_WAIT_COUNT -lt $TF_MAX_WAIT ]; do
+    # Check if map frame exists in TF tree
+    if ros2 run tf2_ros tf2_echo map odom 2>&1 | grep -q "At time" 2>/dev/null; then
+        MAP_FRAME_READY=true
+        echo "   ✅ SLAM Toolbox TF frames ready (map → odom)"
+        break
+    fi
+    sleep 1
+    TF_WAIT_COUNT=$((TF_WAIT_COUNT + 1))
+    if [ $((TF_WAIT_COUNT % 5)) -eq 0 ]; then
+        echo "   Still waiting for TF frames... ($TF_WAIT_COUNT/${TF_MAX_WAIT}s)"
+    fi
+done
+
+if [ "$MAP_FRAME_READY" = false ]; then
+    echo "   ⚠️  WARNING: Map frame not ready after ${TF_MAX_WAIT}s"
+    echo "   SLAM Toolbox may not be working correctly!"
+    echo "   Check logs: tail -f /tmp/slam_toolbox.log"
+    echo ""
+    echo "   Continue anyway? (yes/no)"
+    read -r -t 10 tf_response || tf_response="no"
+    if [[ "$tf_response" != "yes" ]]; then
+        cleanup
+        exit 1
+    fi
 fi
 
 echo "4️⃣ Starting rosbridge for web dashboard..."

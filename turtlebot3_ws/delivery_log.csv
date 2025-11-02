@@ -160,3 +160,5 @@ Timestamp,RequestID,FromZone,ToZone,Distance(m),Time(s),Status,Notes
 2025-11-01 04:33:24,,Zone_2,Zone_6,0.000000,0.000000,SUCCESS,Delivery completed successfully
 2025-11-01 04:33:42,,Zone_6,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
 2025-11-01 05:17:31,,Start,Zone_3,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-02 18:15:20,,Start,Zone_1,0.000000,0.000000,SUCCESS,Delivery completed successfully
+2025-11-02 18:15:39,,Zone_1,Zone_2,0.000000,0.000000,SUCCESS,Delivery completed successfully

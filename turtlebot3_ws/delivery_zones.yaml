@@ -1,33 +1,9 @@
 delivery_zones:
   - name: Zone_1
-    x: 0.81975173950195312
-    y: 0.74344432353973389
+    x: 1.6643610000610352
+    y: -0.81243312358856201
     description: Delivery zone added via RViz
   - name: Zone_2
-    x: -0.96206903457641602
-    y: 0.91483199596405029
-    description: Delivery zone added via RViz
-  - name: Zone_3
-    x: 0.58883732557296753
-    y: -0.34495404362678528
-    description: Delivery zone added via RViz
-  - name: Zone_4
-    x: -0.99437057971954346
-    y: -0.49966928362846375
-    description: Delivery zone added via RViz
-  - name: Zone_5
-    x: -0.15171200037002563
-    y: -0.76127821207046509
-    description: Delivery zone added via RViz
-  - name: Zone_6
-    x: -0.038235314190387726
-    y: 0.73051053285598755
-    description: Delivery zone added via RViz
-  - name: Zone_7
-    x: 0.47888064384460449
-    y: -0.92140990495681763
-    description: Delivery zone added via RViz
-  - name: Zone_8
-    x: -0.99292731285095215
-    y: 0.0083800163120031357
+    x: 1.800929069519043
+    y: -1.6366868019104004
     description: Delivery zone added via RViz
