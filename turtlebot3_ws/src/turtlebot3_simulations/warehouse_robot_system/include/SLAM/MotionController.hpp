@@ -1,5 +1,12 @@
-// Motion Controller - Pure Pursuit path following with obstacle avoidance
-// Adapted from SLAM_Reference.md pure_pursuit.py
+// ============================================================================
+// MTRX3760 Project 2 - 
+// File: MotionController.hpp
+// Description: Header for MotionController class. Defines Pure Pursuit path
+//              following with obstacle avoidance and adaptive navigation for
+//              precise robot motion control in warehouse environments.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
 
 #ifndef MOTION_CONTROLLER_HPP
 #define MOTION_CONTROLLER_HPP

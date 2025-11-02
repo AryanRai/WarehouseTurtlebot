@@ -1,5 +1,12 @@
-// PathPlanner - A* pathfinding with cost map support
-// Adapted from SLAM_Reference.md path_planner.py
+// ============================================================================
+// MTRX3760 Project 2 - 
+// File: PathPlanner.hpp
+// Description: Header for CPathPlanner class. Defines A* pathfinding with
+//              cost map support and TSP optimization for efficient multi-point
+//              navigation in warehouse environments.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
 
 #ifndef PATH_PLANNER_HPP
 #define PATH_PLANNER_HPP

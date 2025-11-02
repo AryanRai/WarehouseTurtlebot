@@ -1,3 +1,13 @@
+// ============================================================================
+// MTRX3760 Project 2 - 
+// File: DeliveryRobot.hpp
+// Description: Header for CDeliveryRobot class. Defines autonomous warehouse
+//              delivery robot with TSP optimization, AprilTag docking, and
+//              multi-zone package management capabilities.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
+
 #ifndef DELIVERY_ROBOT_HPP
 #define DELIVERY_ROBOT_HPP
 

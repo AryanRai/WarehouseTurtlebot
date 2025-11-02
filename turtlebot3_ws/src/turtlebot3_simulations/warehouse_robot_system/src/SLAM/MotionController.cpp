@@ -1,3 +1,13 @@
+// ============================================================================
+// MTRX3760 Project 2 - 
+// File: MotionController.cpp
+// Description: Implementation of MotionController. Provides low-level robot
+//              motion control with obstacle avoidance, precise positioning,
+//              and adaptive navigation for warehouse automation tasks.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
+
 #include "SLAM/MotionController.hpp"
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>

@@ -1,10 +1,11 @@
 // ============================================================================
-// File: CameraNode.hpp
-// Description: ROS2 node that subscribes to all available camera topics and
-//              republishes image data on a unified topic for modular access.
-//              Provides single point of camera data distribution.
+// MTRX3760 Project 2 - 
+// File: Camera_Node.hpp
+// Description: Header for CCameraNode class. Defines ROS2 node that subscribes
+//              to all available camera topics and republishes image data on a
+//              unified topic for modular access and distribution.
 // Author(s): Dylan George
-// Last Edited: 2025-10-27
+// Last Edited: 2025-11-02
 // ============================================================================
 
 #ifndef CAMERA_NODE_HPP

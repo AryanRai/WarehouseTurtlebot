@@ -1,3 +1,13 @@
+// ============================================================================
+// MTRX3760 Project 2 - 
+// File: AutonomousExplorationRobot.cpp
+// Description: Implementation of CAutonomousExplorationRobot. Performs
+//              frontier-based autonomous exploration to map unknown warehouse
+//              environments and save maps for subsequent robot operations.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
+
 #include "Robot/AutonomousExplorationRobot.hpp"
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>

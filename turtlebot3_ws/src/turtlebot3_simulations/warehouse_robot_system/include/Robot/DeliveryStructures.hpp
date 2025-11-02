@@ -1,3 +1,13 @@
+// ============================================================================
+// MTRX3760 Project 2 - 
+// File: DeliveryStructures.hpp
+// Description: Data structures for delivery robot operations. Defines zones,
+//              tasks, and delivery state information for warehouse package
+//              management and route optimization systems.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
+
 #ifndef DELIVERY_STRUCTURES_HPP
 #define DELIVERY_STRUCTURES_HPP
 

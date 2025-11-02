@@ -1,5 +1,12 @@
-// Exploration Planner - Frontier-based exploration
-// Adapted from SLAM_Reference.md frontier_exploration.py
+// ============================================================================
+// MTRX3760 Project 2 - 
+// File: ExplorationPlanner.hpp
+// Description: Header for ExplorationPlanner class. Defines frontier-based
+//              exploration system for autonomous mapping and systematic
+//              discovery of unknown warehouse environments.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
 
 #ifndef EXPLORATION_PLANNER_HPP
 #define EXPLORATION_PLANNER_HPP

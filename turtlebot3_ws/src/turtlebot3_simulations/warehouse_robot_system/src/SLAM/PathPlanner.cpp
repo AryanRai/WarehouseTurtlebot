@@ -1,3 +1,13 @@
+// ============================================================================
+// MTRX3760 Project 2 - 
+// File: PathPlanner.cpp
+// Description: Implementation of CPathPlanner. Provides A* path planning with
+//              dynamic obstacle avoidance and TSP route optimization for
+//              efficient multi-waypoint navigation in warehouse environments.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
+
 #include "SLAM/PathPlanner.hpp"
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>

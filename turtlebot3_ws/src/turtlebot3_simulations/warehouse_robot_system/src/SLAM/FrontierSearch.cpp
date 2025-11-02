@@ -1,3 +1,13 @@
+// ============================================================================
+// MTRX3760 Project 2 - 
+// File: FrontierSearch.cpp
+// Description: Implementation of FrontierSearch algorithm. Identifies frontier
+//              cells for autonomous exploration, enabling systematic discovery
+//              of unmapped areas in warehouse environments.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
+
 #include "SLAM/FrontierSearch.hpp"
 #include <unordered_map>
 #include <queue>

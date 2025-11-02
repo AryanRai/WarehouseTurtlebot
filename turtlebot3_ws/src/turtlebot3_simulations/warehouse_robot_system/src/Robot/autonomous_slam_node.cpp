@@ -1,5 +1,12 @@
-// Autonomous SLAM Exploration Node
-// Standalone node for autonomous mapping using frontier exploration
+// ============================================================================
+// MTRX3760 Project 2 - 
+// File: autonomous_slam_node.cpp
+// Description: ROS2 node for autonomous SLAM exploration. Implements frontier
+//              exploration to systematically map unknown environments using
+//              the exploration robot's capabilities.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
 
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>

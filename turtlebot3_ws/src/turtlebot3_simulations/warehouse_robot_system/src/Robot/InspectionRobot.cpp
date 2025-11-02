@@ -1,8 +1,12 @@
 // ============================================================================
+// MTRX3760 Project 2 - 
 // File: InspectionRobot.cpp
-// Description: Implementation of inspection robot for warehouse damage
-//              detection using camera and AprilTag markers.
-// Author(s): Warehouse Robot System Team
+// Description: Implementation of CInspectionRobot for warehouse damage
+//              detection using camera and AprilTag markers. Performs systematic
+//              inspection routes and generates damage reports.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
 // Last Edited: 2025-11-01
 // ============================================================================
 

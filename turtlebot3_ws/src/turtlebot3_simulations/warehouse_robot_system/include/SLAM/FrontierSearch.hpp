@@ -1,5 +1,12 @@
-// Frontier Search - Expanding Wavefront Frontier Detection
-// Adapted from SLAM_Reference.md frontier_search.py
+// ============================================================================
+// MTRX3760 Project 2 - 
+// File: FrontierSearch.hpp
+// Description: Header for FrontierSearch class. Defines expanding wavefront
+//              frontier detection algorithm for autonomous exploration and
+//              systematic mapping of unknown warehouse areas.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
 
 #ifndef FRONTIER_SEARCH_HPP
 #define FRONTIER_SEARCH_HPP

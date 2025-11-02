@@ -1,11 +1,11 @@
 // ============================================================================
+// MTRX3760 Project 2 - 
 // File: AprilTagDetector.hpp
-// Description: Independent AprilTag detection node for 16h5 family tags.
-//              Uses native apriltag library directly for detection, extracts
-//              pose/orientation data, and publishes for other nodes to consume.
-//              Includes GUI visualization with bounding boxes and ID labels.
+// Description: Header for AprilTag detection node for 16h5 family tags.
+//              Defines independent AprilTag detection using native library
+//              with pose extraction and GUI visualization capabilities.
 // Author(s): Dylan George
-// Last Edited: 2025-11-01
+// Last Edited: 2025-11-02
 // ============================================================================
 
 #ifndef APRIL_TAG_DETECTOR_HPP

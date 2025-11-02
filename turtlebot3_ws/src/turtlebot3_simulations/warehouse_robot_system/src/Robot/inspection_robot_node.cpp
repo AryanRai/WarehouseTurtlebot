@@ -1,8 +1,12 @@
 // ============================================================================
+// MTRX3760 Project 2 - 
 // File: inspection_robot_node.cpp
-// Description: Inspection Robot Node - Handles damage detection operations
-//              using camera and AprilTag markers
-// Author(s): Warehouse Robot System Team
+// Description: ROS2 node entry point for inspection robot operations. Handles
+//              damage detection operations using camera and AprilTag markers
+//              to identify and classify warehouse infrastructure damage.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
 // Last Edited: 2025-11-01
 // ============================================================================
 

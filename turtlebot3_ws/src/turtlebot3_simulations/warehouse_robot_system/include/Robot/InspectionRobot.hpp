@@ -1,10 +1,11 @@
 // ============================================================================
+// MTRX3760 Project 2 - 
 // File: InspectionRobot.hpp
-// Description: Inspection robot for warehouse damage detection using camera
-//              and AprilTag markers. Supports exploration mode to discover
-//              damage sites and inspection mode to visit selected sites.
-// Author(s): Warehouse Robot System Team
-// Last Edited: 2025-11-01
+// Description: Header for CInspectionRobot class. Defines warehouse damage
+//              detection robot using camera and AprilTag markers. Supports
+//              exploration and inspection modes for damage site management.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
 // ============================================================================
 
 #ifndef INSPECTION_ROBOT_HPP

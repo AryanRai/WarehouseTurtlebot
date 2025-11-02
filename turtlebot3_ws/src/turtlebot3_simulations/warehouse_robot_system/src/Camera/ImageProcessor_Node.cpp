@@ -1,10 +1,11 @@
 // ============================================================================
+// MTRX3760 Project 2 - 
 // File: ImageProcessor_Node.cpp
 // Description: Implementation of CImageProcessorNode base class. Handles
 //              subscription to camera data, image format conversion, and
 //              validation. Provides infrastructure for derived detector nodes.
 // Author(s): Dylan George
-// Last Edited: 2025-10-27
+// Last Edited: 2025-11-02
 // ============================================================================
 
 #include "Camera/ImageProcessor_Node.hpp"

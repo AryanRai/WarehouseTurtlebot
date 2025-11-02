@@ -1,5 +1,12 @@
-// Zone Marker Node - Interactive zone definition with visualization
-// Subscribes to /clicked_point and publishes zone markers
+// ============================================================================
+// MTRX3760 Project 2 - 
+// File: zone_marker_node.cpp
+// Description: ROS2 node for interactive zone definition with visualization.
+//              Subscribes to clicked points and publishes zone markers for
+//              warehouse area definition and robot task assignment.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
 
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/point_stamped.hpp>

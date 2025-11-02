@@ -1,5 +1,12 @@
-// SLAM Controller - Manages SLAM Toolbox integration
-// Coordinates mapping, localization, and map saving
+// ============================================================================
+// MTRX3760 Project 2 - 
+// File: SlamController.hpp
+// Description: Header for SlamController class. Defines SLAM Toolbox
+//              integration for mapping, localization, and map management
+//              operations in warehouse environments.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
 
 #ifndef SLAM_CONTROLLER_HPP
 #define SLAM_CONTROLLER_HPP

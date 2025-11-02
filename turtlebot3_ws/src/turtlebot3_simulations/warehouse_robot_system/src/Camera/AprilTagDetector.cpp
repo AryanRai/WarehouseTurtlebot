@@ -1,10 +1,11 @@
 // ============================================================================
+// MTRX3760 Project 2 - 
 // File: AprilTagDetector.cpp
 // Description: Implementation of independent AprilTag detection using native
 //              apriltag library. Detects 16h5 tags, computes orientation,
 //              provides GUI visualization, and publishes for color detection.
 // Author(s): Dylan George
-// Last Edited: 2025-11-01
+// Last Edited: 2025-11-02
 // ============================================================================
 
 #include "Camera/AprilTagDetector.hpp"

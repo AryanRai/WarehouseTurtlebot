@@ -1,10 +1,11 @@
 // ============================================================================
-// File: CImageProcessorNode.hpp
-// Description: Base ROS2 node for image processing. Subscribes to unified
-//              camera topic and provides shared infrastructure for derived
-//              detector nodes. Handles image conversion and basic validation.
+// MTRX3760 Project 2 - 
+// File: ImageProcessor_Node.hpp
+// Description: Header for CImageProcessorNode base class. Defines ROS2 node
+//              for image processing with unified camera topic subscription
+//              and shared infrastructure for derived detector nodes.
 // Author(s): Dylan George
-// Last Edited: 2025-10-27
+// Last Edited: 2025-11-02
 // ============================================================================
 
 #ifndef IMAGE_PROCESSOR_NODE_HPP

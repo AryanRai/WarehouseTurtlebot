@@ -1,3 +1,13 @@
+// ============================================================================
+// MTRX3760 Project 2 - 
+// File: ExplorationPlanner.cpp
+// Description: Implementation of ExplorationPlanner. Manages frontier-based
+//              autonomous exploration for systematic mapping of unknown
+//              warehouse environments using intelligent waypoint selection.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
+
 #include "SLAM/ExplorationPlanner.hpp"
 #include <algorithm>
 

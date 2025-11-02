@@ -1,5 +1,12 @@
-// Autonomous Exploration Robot - SLAM-based autonomous mapping
-// Integrates SlamController, ExplorationPlanner, and MotionController
+// ============================================================================
+// MTRX3760 Project 2 - 
+// File: AutonomousExplorationRobot.hpp
+// Description: Header for CAutonomousExplorationRobot class. Defines SLAM-based
+//              autonomous mapping robot that integrates SlamController,
+//              ExplorationPlanner, and MotionController for warehouse mapping.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
 
 #ifndef AUTONOMOUS_EXPLORATION_ROBOT_HPP
 #define AUTONOMOUS_EXPLORATION_ROBOT_HPP

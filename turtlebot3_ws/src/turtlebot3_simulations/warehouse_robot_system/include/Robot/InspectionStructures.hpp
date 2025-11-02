@@ -1,10 +1,11 @@
 // ============================================================================
+// MTRX3760 Project 2 - 
 // File: InspectionStructures.hpp
 // Description: Data structures for inspection robot operations including
 //              damage sites (AprilTag locations), inspection requests, and
-//              inspection records for logging.
-// Author(s): Warehouse Robot System Team
-// Last Edited: 2025-11-01
+//              inspection records for warehouse damage management logging.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
 // ============================================================================
 
 #ifndef INSPECTION_STRUCTURES_HPP

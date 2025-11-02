@@ -1,3 +1,13 @@
+// ============================================================================
+// MTRX3760 Project 2 - 
+// File: DeliveryRobot.cpp
+// Description: Implementation of CDeliveryRobot. Handles autonomous warehouse
+//              delivery operations including package pickup, routing via TSP
+//              optimization, and precise AprilTag-based docking for deliveries.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
+
 #include "Robot/DeliveryRobot.hpp"
 #include <yaml-cpp/yaml.h>
 #include <ctime>

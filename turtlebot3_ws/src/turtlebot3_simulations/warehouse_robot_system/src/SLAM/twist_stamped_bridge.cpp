@@ -1,4 +1,13 @@
-// Simple bridge to convert Twist to TwistStamped for Gazebo compatibility
+// ============================================================================
+// MTRX3760 Project 2 - 
+// File: twist_stamped_bridge.cpp
+// Description: Simple bridge to convert Twist to TwistStamped messages for
+//              Gazebo compatibility. Ensures proper message timing and format
+//              conversion for simulation environment integration.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
+
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>

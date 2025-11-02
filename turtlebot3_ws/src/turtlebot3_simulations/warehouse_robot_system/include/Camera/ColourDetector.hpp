@@ -1,11 +1,11 @@
 // ============================================================================
-// File: CColourDetector.hpp
-// Description: Colour detection node that analyses regions around detected
-//              AprilTags to identify damage type. Uses HSV colour space to
-//              classify damage (green=mould, blue=water, red=blood).
-//              Includes interactive calibration mode with visual feedback.
+// MTRX3760 Project 2 - 
+// File: ColourDetector.hpp
+// Description: Header for CColourDetector class. Defines colour detection node
+//              that analyses regions around AprilTags to identify damage types
+//              using HSV colour space classification with calibration mode.
 // Author(s): Dylan George
-// Last Edited: 2025-11-01
+// Last Edited: 2025-11-02
 // ============================================================================
 
 #ifndef COLOUR_DETECTOR_HPP

@@ -1,5 +1,12 @@
-// Priority Queue for A* pathfinding
-// Based on Python implementation from SLAM_Reference.md
+// ============================================================================
+// MTRX3760 Project 2 - 
+// File: priority_queue.hpp
+// Description: Priority queue implementation for A* pathfinding algorithm.
+//              Provides efficient priority-based node selection for optimal
+//              path planning in warehouse navigation systems.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
 
 #ifndef PRIORITY_QUEUE_HPP
 #define PRIORITY_QUEUE_HPP

@@ -1,5 +1,12 @@
-// Delivery Robot Node
-// Handles delivery operations using saved map from SLAM
+// ============================================================================
+// MTRX3760 Project 2 - 
+// File: delivery_robot_node.cpp
+// Description: ROS2 node entry point for delivery robot operations. Manages
+//              the lifecycle of the delivery robot and coordinates with
+//              the warehouse management system for package delivery tasks.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
 
 #include <rclcpp/rclcpp.hpp>
 #include "Robot/DeliveryRobot.hpp"

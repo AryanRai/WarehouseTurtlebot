@@ -1,3 +1,13 @@
+// ============================================================================
+// MTRX3760 Project 2 - 
+// File: SlamController.cpp
+// Description: Implementation of SlamController. Manages SLAM toolbox
+//              operations including map saving, loading, and coordination
+//              with navigation stack for autonomous mapping operations.
+// Author(s): Dylan George
+// Last Edited: 2025-11-02
+// ============================================================================
+
 #include "SLAM/SlamController.hpp"
 #include <fstream>
 #include <sys/wait.h>
