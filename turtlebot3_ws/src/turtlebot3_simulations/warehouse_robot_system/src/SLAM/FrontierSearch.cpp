@@ -12,7 +12,7 @@
 #include <unordered_map>
 #include <queue>
 
-std::pair<FrontierList, std::vector<GridCell>> FrontierSearch::search(
+std::pair<FrontierSearch::FrontierList, std::vector<GridCell>> FrontierSearch::search(
     const nav_msgs::msg::OccupancyGrid& mapdata,
     const GridCell& start,
     bool include_frontier_cells) {
@@ -22,12 +22,12 @@ std::pair<FrontierList, std::vector<GridCell>> FrontierSearch::search(
     queue.push_back(start);
     
     // Initialize dictionaries for visited and frontier cells
-    std::unordered_map<GridCell, bool, std::hash<std::pair<int, int>>> visited;
-    std::unordered_map<GridCell, bool, std::hash<std::pair<int, int>>> is_frontier;
+    std::unordered_map<GridCell, bool, FrontierSearch::GridCellHash> visited;
+    std::unordered_map<GridCell, bool, FrontierSearch::GridCellHash> is_frontier;
     visited[start] = true;
     
     // Initialize list of frontiers
-    std::vector<Frontier> frontiers;
+    std::vector<FrontierSearch::Frontier> frontiers;
     std::vector<GridCell> frontier_cells;
     
     while (!queue.empty()) {
@@ -65,13 +65,13 @@ std::pair<FrontierList, std::vector<GridCell>> FrontierSearch::search(
         }
     }
     
-    return {FrontierList{frontiers}, frontier_cells};
+    return {FrontierSearch::FrontierList{frontiers}, frontier_cells};
 }
 
 bool FrontierSearch::isNewFrontierCell(
     const nav_msgs::msg::OccupancyGrid& mapdata,
     const GridCell& cell,
-    const std::unordered_map<GridCell, bool, std::hash<std::pair<int, int>>>& is_frontier) {
+    const std::unordered_map<GridCell, bool, FrontierSearch::GridCellHash>& is_frontier) {
     
     // Cell must be unknown and not already a frontier
     if (PathPlanner::getCellValue(mapdata, cell) != -1 || 
@@ -90,10 +90,10 @@ bool FrontierSearch::isNewFrontierCell(
     return false;
 }
 
-std::pair<Frontier, std::vector<GridCell>> FrontierSearch::buildNewFrontier(
+std::pair<FrontierSearch::Frontier, std::vector<GridCell>> FrontierSearch::buildNewFrontier(
     const nav_msgs::msg::OccupancyGrid& mapdata,
     const GridCell& initial_cell,
-    std::unordered_map<GridCell, bool, std::hash<std::pair<int, int>>>& is_frontier,
+    std::unordered_map<GridCell, bool, FrontierSearch::GridCellHash>& is_frontier,
     bool include_frontier_cells) {
     
     // Initialize frontier fields
@@ -141,5 +141,5 @@ std::pair<Frontier, std::vector<GridCell>> FrontierSearch::buildNewFrontier(
         mapdata, {static_cast<int>(centroid_x), static_cast<int>(centroid_y)}
     );
     
-    return {Frontier(size, centroid), frontier_cells};
+    return {FrontierSearch::Frontier(size, centroid), frontier_cells};
 }

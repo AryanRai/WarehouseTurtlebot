@@ -17,13 +17,7 @@
 #include <fstream>
 #include <vector>
 #include <string>
-
-struct DeliveryZone {
-    std::string name;
-    double x;
-    double y;
-    std::string description;
-};
+#include "Robot/DeliveryStructures.hpp"
 
 class ZoneMarkerNode : public rclcpp::Node {
 public:
@@ -67,14 +61,15 @@ private:
     void onPointClicked(const geometry_msgs::msg::PointStamped::SharedPtr msg) {
         DeliveryZone zone;
         zone.name = "Zone_" + std::to_string(zones_.size() + 1);
-        zone.x = msg->point.x;
-        zone.y = msg->point.y;
+        zone.position.x = msg->point.x;
+        zone.position.y = msg->point.y;
+        zone.position.z = 0.0;
         zone.description = "Delivery zone added via RViz";
         
         zones_.push_back(zone);
         
         RCLCPP_INFO(this->get_logger(), "✓ Added %s at (%.2f, %.2f)", 
-                   zone.name.c_str(), zone.x, zone.y);
+                   zone.name.c_str(), zone.position.x, zone.position.y);
         
         saveZones();
         publishMarkers();
@@ -89,8 +84,9 @@ private:
                 for (const auto& zone_node : config["delivery_zones"]) {
                     DeliveryZone zone;
                     zone.name = zone_node["name"].as<std::string>();
-                    zone.x = zone_node["x"].as<double>();
-                    zone.y = zone_node["y"].as<double>();
+                    zone.position.x = zone_node["x"].as<double>();
+                    zone.position.y = zone_node["y"].as<double>();
+                    zone.position.z = 0.0;
                     zone.description = zone_node["description"].as<std::string>("");
                     zones_.push_back(zone);
                 }
@@ -109,8 +105,8 @@ private:
         for (const auto& zone : zones_) {
             out << YAML::BeginMap;
             out << YAML::Key << "name" << YAML::Value << zone.name;
-            out << YAML::Key << "x" << YAML::Value << zone.x;
-            out << YAML::Key << "y" << YAML::Value << zone.y;
+            out << YAML::Key << "x" << YAML::Value << zone.position.x;
+            out << YAML::Key << "y" << YAML::Value << zone.position.y;
             out << YAML::Key << "description" << YAML::Value << zone.description;
             out << YAML::EndMap;
         }
@@ -170,8 +166,8 @@ private:
             marker.type = visualization_msgs::msg::Marker::CYLINDER;
             marker.action = visualization_msgs::msg::Marker::ADD;
             
-            marker.pose.position.x = zone.x;
-            marker.pose.position.y = zone.y;
+            marker.pose.position.x = zone.position.x;
+            marker.pose.position.y = zone.position.y;
             marker.pose.position.z = 0.15;  // Half height above ground
             marker.pose.orientation.w = 1.0;
             
@@ -199,8 +195,8 @@ private:
             text_marker.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
             text_marker.action = visualization_msgs::msg::Marker::ADD;
             
-            text_marker.pose.position.x = zone.x;
-            text_marker.pose.position.y = zone.y;
+            text_marker.pose.position.x = zone.position.x;
+            text_marker.pose.position.y = zone.position.y;
             text_marker.pose.position.z = 0.5;  // Above the cylinder
             text_marker.pose.orientation.w = 1.0;
             

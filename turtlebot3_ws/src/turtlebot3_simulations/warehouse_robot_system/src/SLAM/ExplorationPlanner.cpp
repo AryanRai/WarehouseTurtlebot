@@ -49,14 +49,13 @@ ExplorationPlanner::ExplorationPlanner(rclcpp::Node::SharedPtr node)
         );
     }
     
-    RCLCPP_INFO(node_->get_logger(), "Exploration Planner initialized (debug=%s)", 
-                debug_mode_ ? "true" : "false");
+    RCLCPP_INFO(node_->get_logger(), "Exploration Planner initialized");
 }
 
-std::vector<Frontier> ExplorationPlanner::getTopFrontiers(
-    const std::vector<Frontier>& frontiers, int n) {
+std::vector<FrontierSearch::Frontier> ExplorationPlanner::getTopFrontiers(
+    const std::vector<FrontierSearch::Frontier>& frontiers, int n) {
     
-    std::vector<Frontier> sorted_frontiers = frontiers;
+    std::vector<FrontierSearch::Frontier> sorted_frontiers = frontiers;
     std::sort(sorted_frontiers.begin(), sorted_frontiers.end(),
               [](const Frontier& a, const Frontier& b) {
                   return a.size > b.size;

@@ -69,7 +69,7 @@ private:
     static constexpr double DISTANCE_REDUCTION_STEP = 0.03;  // Reduce by 3cm each time
     
     // Helper functions
-    std::vector<Frontier> getTopFrontiers(const std::vector<Frontier>& frontiers, int n);
+    std::vector<FrontierSearch::Frontier> getTopFrontiers(const std::vector<FrontierSearch::Frontier>& frontiers, int n);
     void publishCostMap(const nav_msgs::msg::OccupancyGrid& mapdata, const cv::Mat& cost_map);
     void updateDynamicLookahead(const geometry_msgs::msg::Point& rejected_goal);
     void resetDynamicLookahead();

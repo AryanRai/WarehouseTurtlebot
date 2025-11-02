@@ -7,6 +7,7 @@ log/
 **/build/
 **/install/
 **/log/
+COLCON_IGNORE
 
 # CMake generated files
 CMakeCache.txt
@@ -15,6 +16,15 @@ cmake_install.cmake
 Makefile
 *.cmake
 !CMakeLists.txt
+CTestTestfile.cmake
+CTestConfiguration.ini
+CTestCustom.cmake
+install_manifest.txt
+colcon_build.rc
+colcon_command_prefix_build.sh
+colcon_command_prefix_build.sh.env
+cmake_args.last
+AMENT_IGNORE
 
 # Compiled binaries and libraries
 *.o
@@ -30,6 +40,15 @@ __pycache__/
 *.pyo
 *.pyd
 .Python
+*.egg-info/
+.eggs/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
 
 # IDE and editor files
 .vscode/settings.json
@@ -51,8 +70,24 @@ __pycache__/
 devel/
 .catkin_workspace
 
-# Gazebo logs
+# Gazebo logs and models
 *.log
+.gazebo/
+models/
+
+# Generated data files
+delivery_zones.yaml
+delivery_log.csv
+inspection_log.csv
+damage_sites.yaml
+*.bag
+*.db3
+
+# Map files (generated)
+*.pgm
+*.yaml
+!**/config/*.yaml
+!**/launch/*.yaml
 
 # Generated maze files (if not needed in repo)
 generated_mazes/
@@ -77,10 +112,19 @@ dist/
 test_*.sh
 *_test.log
 
+# Core dumps and debugging
+core
+core.*
+*.dmp
+
 # Documentation (optional - remove if you want to track these)
 **/CONDA_FIX_APPLIED.md
 **/START_WEB_DASHBOARD.md
+WAREHOUSE_ROBOT_BASE_README.md
 
 # System files
 Thumbs.db
 .directory
+
+# Lock files
+*.lock

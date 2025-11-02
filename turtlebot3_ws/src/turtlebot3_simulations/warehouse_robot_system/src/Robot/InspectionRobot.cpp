@@ -97,7 +97,7 @@ InspectionRobot::InspectionRobot(rclcpp::Node::SharedPtr node)
 
 void InspectionRobot::onPointClicked(const geometry_msgs::msg::PointStamped::SharedPtr msg) {
     // Add new damage site with auto-generated name
-    DamageSite site;
+    InspectionData::DamageSite site;
     site.name = "Damage_" + std::to_string(damage_sites_.size() + 1);
     site.position = msg->point;
     site.apriltag_id = -1;  // Will be detected later
@@ -193,7 +193,7 @@ void InspectionRobot::loadSitesFromFile(const std::string& filename) {
     
     if (config["damage_sites"]) {
         for (const auto& site_node : config["damage_sites"]) {
-            DamageSite site;
+            InspectionData::DamageSite site;
             site.name = site_node["name"].as<std::string>();
             site.position.x = site_node["x"].as<double>();
             site.position.y = site_node["y"].as<double>();
@@ -228,7 +228,7 @@ void InspectionRobot::saveSitesToFile(const std::string& filename) {
     fout << out.c_str();
 }
 
-void InspectionRobot::addSite(const DamageSite& site) {
+void InspectionRobot::addSite(const InspectionData::DamageSite& site) {
     damage_sites_.push_back(site);
     saveSitesToFile(sites_file_);
 }
@@ -238,7 +238,7 @@ void InspectionRobot::clearSites() {
     saveSitesToFile(sites_file_);
 }
 
-void InspectionRobot::addInspectionRequest(const InspectionRequest& request) {
+void InspectionRobot::addInspectionRequest(const InspectionData::InspectionRequest& request) {
     inspection_queue_.push_back(request);
 }
 
@@ -679,7 +679,7 @@ void InspectionRobot::update() {
             current_site.apriltag_id = last_detected_tag_id_;
             
             // Save inspection record
-            InspectionRecord record;
+            InspectionData::InspectionRecord record;
             record.site_name = current_site.name;
             record.apriltag_id = last_detected_tag_id_;
             record.position = current_site.position;
@@ -709,7 +709,7 @@ void InspectionRobot::update() {
                        current_site.name.c_str(), reading_elapsed);
             
             // Save failed inspection record
-            InspectionRecord record;
+            InspectionData::InspectionRecord record;
             record.site_name = current_site.name;
             record.apriltag_id = -1;
             record.position = current_site.position;
@@ -762,7 +762,7 @@ void InspectionRobot::update() {
     }
 }
 
-bool InspectionRobot::navigateToSite(const DamageSite& site) {
+bool InspectionRobot::navigateToSite(const InspectionData::DamageSite& site) {
     auto current_pose = slam_controller_->getCurrentPose();
     auto current_map = slam_controller_->getCurrentMap();
     
@@ -861,7 +861,7 @@ bool InspectionRobot::navigateToSite(const DamageSite& site) {
     return true;
 }
 
-DamageSite* InspectionRobot::findSite(const std::string& site_name) {
+InspectionData::DamageSite* InspectionRobot::findSite(const std::string& site_name) {
     for (auto& site : damage_sites_) {
         if (site.name == site_name) {
             return &site;
@@ -870,7 +870,7 @@ DamageSite* InspectionRobot::findSite(const std::string& site_name) {
     return nullptr;
 }
 
-bool InspectionRobot::isAtSite(const DamageSite& site) {
+bool InspectionRobot::isAtSite(const InspectionData::DamageSite& site) {
     auto current_pose = slam_controller_->getCurrentPose();
     double dx = site.position.x - current_pose.position.x;
     double dy = site.position.y - current_pose.position.y;
@@ -1007,7 +1007,7 @@ void InspectionRobot::preciseDocking(const geometry_msgs::msg::Pose& current_pos
 }
 
 void InspectionRobot::preciseSiteDocking(const geometry_msgs::msg::Pose& current_pose, 
-                                        const DamageSite& site, 
+                                        const InspectionData::DamageSite& site, 
                                         double distance_to_site) {
     double dx = site.position.x - current_pose.position.x;
     double dy = site.position.y - current_pose.position.y;
@@ -1132,11 +1132,11 @@ double InspectionRobot::checkMinDistanceToWalls(const geometry_msgs::msg::Point&
 }
 
 // Route optimization methods (simplified versions)
-std::vector<DamageSite> InspectionRobot::optimizeRoute(
+std::vector<InspectionData::DamageSite> InspectionRobot::optimizeRoute(
     const geometry_msgs::msg::Point& start,
-    const std::vector<InspectionRequest>& requests) {
+    const std::vector<InspectionData::InspectionRequest>& requests) {
     
-    std::vector<DamageSite> route;
+    std::vector<InspectionData::DamageSite> route;
     
     for (const auto& request : requests) {
         auto* site = findSite(request.site_name);
@@ -1180,7 +1180,7 @@ std::vector<DamageSite> InspectionRobot::optimizeRouteTSP(
     auto tour = simulatedAnnealing(distance_matrix, 0);
     
     // Convert tour indices to sites
-    std::vector<DamageSite> optimized_route;
+    std::vector<InspectionData::DamageSite> optimized_route;
     for (size_t i = 1; i < tour.size(); ++i) {  // Skip start (index 0)
         int site_idx = tour[i] - 1;  // Adjust for start position
         if (site_idx >= 0 && site_idx < static_cast<int>(sites.size())) {

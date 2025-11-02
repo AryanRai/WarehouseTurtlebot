@@ -42,14 +42,14 @@ public:
     // Damage site management
     void loadSitesFromFile(const std::string& filename);
     void saveSitesToFile(const std::string& filename);
-    void addSite(const DamageSite& site);
+    void addSite(const InspectionData::DamageSite& site);
     void clearSites();
-    std::vector<DamageSite> getSites() const { return damage_sites_; }
+    std::vector<InspectionData::DamageSite> getSites() const { return damage_sites_; }
     
     // Inspection management
-    void addInspectionRequest(const InspectionRequest& request);
+    void addInspectionRequest(const InspectionData::InspectionRequest& request);
     void clearInspectionQueue();
-    std::vector<InspectionRequest> getInspectionQueue() const { return inspection_queue_; }
+    std::vector<InspectionData::InspectionRequest> getInspectionQueue() const { return inspection_queue_; }
     
     // Route optimization mode
     void setOptimizationMode(bool use_tsp) { use_tsp_optimization_ = use_tsp; }
@@ -61,7 +61,7 @@ public:
     void startExploration();
     
     // Records
-    void saveInspectionRecord(const InspectionRecord& record);
+    void saveInspectionRecord(const InspectionData::InspectionRecord& record);
     
 private:
     rclcpp::Node::SharedPtr node_;
@@ -71,15 +71,15 @@ private:
     std::unique_ptr<MotionController> motion_controller_;
     
     // Inspection data
-    std::vector<DamageSite> damage_sites_;
-    std::vector<InspectionRequest> inspection_queue_;
-    std::vector<InspectionRecord> inspection_history_;
+    std::vector<InspectionData::DamageSite> damage_sites_;
+    std::vector<InspectionData::InspectionRequest> inspection_queue_;
+    std::vector<InspectionData::InspectionRecord> inspection_history_;
     
     // Current inspection state
     bool is_inspecting_;
     size_t current_inspection_index_;
-    std::vector<DamageSite> optimized_route_;
-    InspectionRequest current_request_;
+    std::vector<InspectionData::DamageSite> optimized_route_;
+    InspectionData::InspectionRequest current_request_;
     std::chrono::steady_clock::time_point inspection_start_time_;
     geometry_msgs::msg::Point inspection_start_position_;
     double total_distance_;
@@ -144,13 +144,13 @@ private:
         const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
         std::shared_ptr<std_srvs::srv::Trigger::Response> response);
     
-    std::vector<DamageSite> optimizeRoute(
+    std::vector<InspectionData::DamageSite> optimizeRoute(
         const geometry_msgs::msg::Point& start,
-        const std::vector<InspectionRequest>& requests);
+        const std::vector<InspectionData::InspectionRequest>& requests);
     
-    std::vector<DamageSite> optimizeRouteTSP(
+    std::vector<InspectionData::DamageSite> optimizeRouteTSP(
         const geometry_msgs::msg::Point& start,
-        const std::vector<InspectionRequest>& requests);
+        const std::vector<InspectionData::InspectionRequest>& requests);
     
     std::vector<std::vector<double>> buildDistanceMatrix(
         const geometry_msgs::msg::Point& start,
@@ -167,14 +167,14 @@ private:
         const std::vector<int>& tour,
         const std::vector<std::vector<double>>& distance_matrix);
     
-    DamageSite* findSite(const std::string& site_name);
-    bool navigateToSite(const DamageSite& site);
-    bool isAtSite(const DamageSite& site);
+    InspectionData::DamageSite* findSite(const std::string& site_name);
+    bool navigateToSite(const InspectionData::DamageSite& site);
+    bool isAtSite(const InspectionData::DamageSite& site);
     bool readAprilTag();
     void returnToHome();
     void preciseDocking(const geometry_msgs::msg::Pose& current_pose, double distance_to_home);
     void preciseSiteDocking(const geometry_msgs::msg::Pose& current_pose, 
-                           const DamageSite& site, 
+                           const InspectionData::DamageSite& site, 
                            double distance_to_site);
     bool hasLineOfSight(const geometry_msgs::msg::Point& from, 
                        const geometry_msgs::msg::Point& to,

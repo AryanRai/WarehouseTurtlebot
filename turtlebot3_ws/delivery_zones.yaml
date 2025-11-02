@@ -7,3 +7,7 @@ delivery_zones:
     x: 1.800929069519043
     y: -1.6366868019104004
     description: Delivery zone added via RViz
+  - name: Zone_3
+    x: 0.055271700024604797
+    y: -0.50647646188735962
+    description: Delivery zone added via RViz
