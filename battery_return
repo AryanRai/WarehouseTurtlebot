@@ -1,0 +1,35 @@
+#!/bin/bash
+# Battery Auto-Return Mode Script
+# Launches autonomous SLAM with battery auto-return enabled
+#
+# When battery falls below threshold (configured in battery_params.yaml),
+# the robot will immediately pause exploration and return home.
+#
+# Usage:
+#   ./battery_return          # Launch with auto-return enabled
+#   ./battery_return -web     # Launch with web dashboard
+
+# Pass through web dashboard flag if provided
+WEB_FLAG=""
+if [ "$1" == "-web" ] || [ "$1" == "--web" ]; then
+    WEB_FLAG="-web"
+fi
+
+# Get script directory
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+echo "🔋 Battery Auto-Return Mode"
+echo "============================"
+echo ""
+echo "This mode enables automatic return-to-home when battery is low."
+echo "The robot will pause exploration and return home when battery"
+echo "falls below the configured threshold."
+echo ""
+echo "Configuration: turtlebot3_ws/src/mtrx3760_battery/config/battery_params.yaml"
+echo "  - auto_return_home_enabled: Will be set to TRUE"
+echo "  - auto_return_threshold_pct: Configurable (default 20%)"
+echo ""
+
+# Launch the run_autonomous_slam.sh script with ROS parameter override
+exec "$SCRIPT_DIR/scripts/run_autonomous_slam.sh" $WEB_FLAG \
+    --ros-args -p auto_return_home_enabled:=true
