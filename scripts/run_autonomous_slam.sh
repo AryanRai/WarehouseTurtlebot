@@ -956,15 +956,14 @@ EOF
             #     ros2 run warehouse_robot_system colour_detector_node ...
             # fi
             
-            # Wait for TF transforms to stabilize
+            # Wait for TF transforms to stabilize (reduced since camera is on TurtleBot now)
             echo ""
             echo "🔄 Waiting for TF transforms to stabilize..."
-            echo "   (This prevents the 'white robot' issue in RViz)"
             echo ""
             
             TF_STABLE=false
             TF_CHECK_COUNT=0
-            MAX_TF_CHECKS=15
+            MAX_TF_CHECKS=3  # Reduced from 15 - camera on TurtleBot means less network load
             TOTAL_ATTEMPTS=0
             
             while [ $TOTAL_ATTEMPTS -lt $MAX_TF_CHECKS ]; do
@@ -995,18 +994,10 @@ EOF
             
             if [ "$TF_STABLE" = false ]; then
                 echo ""
-                echo "   ⚠️  WARNING: TF transforms not stable after ${MAX_TF_CHECKS} seconds"
-                echo "   The robot may appear white in RViz"
+                echo "   ⚠️  WARNING: TF transforms not stable after ${MAX_TF_CHECKS} checks"
+                echo "   The robot may appear white in RViz initially"
                 echo ""
-                echo "   Common causes:"
-                echo "   • SLAM Toolbox still initializing"
-                echo "   • Map not fully loaded"
-                echo "   • TF tree disrupted from mode switch"
-                echo ""
-                echo "   Recommended actions:"
-                echo "   1. Wait and see if robot appears (may take 10-30 seconds)"
-                echo "   2. If robot stays white, press Ctrl+C and restart system"
-                echo "   3. Use -preload flag next time to avoid mode switching"
+                echo "   This is usually fine - TF should stabilize within a few seconds."
                 echo ""
                 echo -n "   Continue anyway? (yes/no): "
                 read -r -t 15 tf_continue || tf_continue="yes"
@@ -1389,14 +1380,14 @@ EOF
         #     ros2 run warehouse_robot_system apriltag_detector_node ...
         # fi
         
-        # Wait for TF transforms to stabilize
+        # Wait for TF transforms to stabilize (reduced since camera is on TurtleBot now)
         echo ""
         echo "   🔄 Waiting for TF transforms to stabilize..."
         
         TF_STABLE=false
         TF_CHECK_COUNT=0
         TOTAL_ATTEMPTS=0
-        MAX_TF_CHECKS=15
+        MAX_TF_CHECKS=3  # Reduced from 15 - camera on TurtleBot means less network load
         
         while [ $TOTAL_ATTEMPTS -lt $MAX_TF_CHECKS ]; do
             TOTAL_ATTEMPTS=$((TOTAL_ATTEMPTS + 1))
@@ -1423,7 +1414,7 @@ EOF
             echo "   ⚠️  TF transforms not stable - robot may appear white in RViz"
         fi
         
-        sleep 2
+        sleep 0.5  # Reduced from 2s - faster startup with camera on TurtleBot
         
         # Start inspection robot node
         echo "   Starting Inspection Robot node..."

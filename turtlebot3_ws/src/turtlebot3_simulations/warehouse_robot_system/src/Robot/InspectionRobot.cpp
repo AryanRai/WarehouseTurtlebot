@@ -137,6 +137,14 @@ void InspectionRobot::onAprilTagDetection(
     if (exploration_mode_ && is_inspecting_) {
         auto current_pose = slam_controller_->getCurrentPose();
         
+        // Don't save tags detected at home (within 0.5m of origin)
+        double dist_from_home = std::sqrt(current_pose.position.x * current_pose.position.x + 
+                                         current_pose.position.y * current_pose.position.y);
+        if (dist_from_home < 0.5) {
+            RCLCPP_DEBUG(node_->get_logger(), "Ignoring tag detection at home position");
+            return;
+        }
+        
         // Check if we've already discovered this tag at this location
         bool already_discovered = false;
         for (const auto& site : damage_sites_) {
