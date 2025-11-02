@@ -97,36 +97,47 @@ void CColourDetector::ProcessImage(const cv::Mat &aImage,
     // In calibration mode, show overlay if we have detections
     // Throttle display updates to reduce X11 overhead (update every 3rd frame)
     if (mCalibrationMode) {
-        static int frame_skip_counter = 0;
-        frame_skip_counter++;
+        // Check if we have a display (not running headless over SSH)
+        static bool has_display = (std::getenv("DISPLAY") != nullptr);
+        static bool display_warning_logged = false;
         
-        if (frame_skip_counter % 3 == 0) {  // Only update display every 3rd frame
-            if (!mLastDetections.empty()) {
-                DisplayCalibrationWindow(mLatestImage, mLastDetections);
-                int key = cv::waitKey(1);
-                if (key >= 0) {
-                    HandleKeyboardInput(key);
-                }
-            } else {
-                // No tags detected yet; still show raw image to confirm feed
-                try {
-                    static bool raw_window_ensured = false;
-                    if (!raw_window_ensured) {
-                        cv::namedWindow(mCalibrationWindowName, cv::WINDOW_AUTOSIZE);
-                        raw_window_ensured = true;
-                    }
-                    cv::imshow(mCalibrationWindowName, mLatestImage);
+        if (!has_display && !display_warning_logged) {
+            RCLCPP_WARN(GetLogger(), "⚠️ Calibration mode requires DISPLAY - running headless, GUI disabled");
+            display_warning_logged = true;
+        }
+        
+        if (has_display) {
+            static int frame_skip_counter = 0;
+            frame_skip_counter++;
+            
+            if (frame_skip_counter % 3 == 0) {  // Only update display every 3rd frame
+                if (!mLastDetections.empty()) {
+                    DisplayCalibrationWindow(mLatestImage, mLastDetections);
                     int key = cv::waitKey(1);
                     if (key >= 0) {
                         HandleKeyboardInput(key);
                     }
-                } catch (const std::exception &aEx) {
-                    // Fall back to file saving if GUI fails
-                    static int raw_frame_count = 0;
-                    std::string filename = "/tmp/raw_frame_" + std::to_string(raw_frame_count++) + ".jpg";
-                    cv::imwrite(filename, mLatestImage);
-                    RCLCPP_INFO_THROTTLE(GetLogger(), *this->get_clock(), 5000, 
-                                         "GUI failed, saving to: %s", filename.c_str());
+                } else {
+                    // No tags detected yet; still show raw image to confirm feed
+                    try {
+                        static bool raw_window_ensured = false;
+                        if (!raw_window_ensured) {
+                            cv::namedWindow(mCalibrationWindowName, cv::WINDOW_AUTOSIZE);
+                            raw_window_ensured = true;
+                        }
+                        cv::imshow(mCalibrationWindowName, mLatestImage);
+                        int key = cv::waitKey(1);
+                        if (key >= 0) {
+                            HandleKeyboardInput(key);
+                        }
+                    } catch (const std::exception &aEx) {
+                        // Fall back to file saving if GUI fails
+                        static int raw_frame_count = 0;
+                        std::string filename = "/tmp/raw_frame_" + std::to_string(raw_frame_count++) + ".jpg";
+                        cv::imwrite(filename, mLatestImage);
+                        RCLCPP_INFO_THROTTLE(GetLogger(), *this->get_clock(), 5000, 
+                                             "GUI failed, saving to: %s", filename.c_str());
+                    }
                 }
             }
         }
@@ -152,10 +163,14 @@ void CColourDetector::TagDetectionCallback(
 
     if (mCalibrationMode) {
         // In calibration mode, just update the display (no publishing of damage)
-        DisplayCalibrationWindow(mLatestImage, mLastDetections);
-        int key = cv::waitKey(1);
-        if (key >= 0) {
-            HandleKeyboardInput(key);
+        // Only show GUI if DISPLAY is available
+        static bool has_display = (std::getenv("DISPLAY") != nullptr);
+        if (has_display) {
+            DisplayCalibrationWindow(mLatestImage, mLastDetections);
+            int key = cv::waitKey(1);
+            if (key >= 0) {
+                HandleKeyboardInput(key);
+            }
         }
         return;
     }
@@ -275,22 +290,28 @@ void CColourDetector::TagDetectionCallback(
         }
     }
     
-    // Show detection window (try GUI, fallback to file) - only on display frames
+    // Show detection window (only if DISPLAY is available) - only on display frames
     if (should_display && !display_image.empty()) {
-        try {
-            static bool detection_window_created = false;
-            if (!detection_window_created) {
-                cv::namedWindow("AprilTag Detection", cv::WINDOW_AUTOSIZE);
-                detection_window_created = true;
+        // Check if we have a display (not running headless over SSH)
+        static bool has_display = (std::getenv("DISPLAY") != nullptr);
+        static bool display_check_logged = false;
+        
+        if (has_display) {
+            try {
+                static bool detection_window_created = false;
+                if (!detection_window_created) {
+                    cv::namedWindow("AprilTag Detection", cv::WINDOW_AUTOSIZE);
+                    detection_window_created = true;
+                }
+                cv::imshow("AprilTag Detection", display_image);
+                cv::waitKey(1);
+            } catch (const std::exception &ex) {
+                has_display = false;  // Disable GUI if it fails
+                if (!display_check_logged) {
+                    RCLCPP_WARN(GetLogger(), "Display not available, running headless");
+                    display_check_logged = true;
+                }
             }
-            cv::imshow("AprilTag Detection", display_image);
-            cv::waitKey(1);
-        } catch (const std::exception &ex) {
-            static int detection_frame_count = 0;
-            std::string filename = "/tmp/detection_frame_" + std::to_string(detection_frame_count++) + ".jpg";
-            cv::imwrite(filename, display_image);
-            RCLCPP_INFO_THROTTLE(GetLogger(), *this->get_clock(), 3000, 
-                             "Saved detection frame: %s", filename.c_str());
         }
     }
 
@@ -629,22 +650,35 @@ void CColourDetector::DisplayCalibrationWindow(
         }
     }
 
-    try {
-        // Window should already be created in constructor, but ensure it exists
-        static bool calibration_window_ensured = false;
-        if (!calibration_window_ensured) {
-            cv::namedWindow(mCalibrationWindowName, cv::WINDOW_AUTOSIZE);
-            calibration_window_ensured = true;
+    // Only show GUI if DISPLAY is available (not running headless)
+    static bool has_display = (std::getenv("DISPLAY") != nullptr);
+    
+    if (has_display) {
+        try {
+            // Window should already be created in constructor, but ensure it exists
+            static bool calibration_window_ensured = false;
+            if (!calibration_window_ensured) {
+                cv::namedWindow(mCalibrationWindowName, cv::WINDOW_AUTOSIZE);
+                calibration_window_ensured = true;
+            }
+            cv::imshow(mCalibrationWindowName, annotated);
+            cv::waitKey(1);
+        } catch (const std::exception &aEx) {
+            has_display = false;  // Disable GUI if it fails
+            RCLCPP_WARN(GetLogger(), "GUI display failed: %s", aEx.what());
         }
-        cv::imshow(mCalibrationWindowName, annotated);
-        cv::waitKey(1);
-    } catch (const std::exception &aEx) {
-        // Fall back to saving file if GUI display fails
+    }
+    
+    // If no display, save to file for debugging
+    if (!has_display) {
         static int frame_count = 0;
+        static bool save_warning_logged = false;
+        if (!save_warning_logged) {
+            RCLCPP_INFO(GetLogger(), "Running headless - calibration frames saved to /tmp/");
+            save_warning_logged = true;
+        }
         std::string filename = "/tmp/calibration_frame_" + std::to_string(frame_count++) + ".jpg";
         cv::imwrite(filename, annotated);
-        RCLCPP_INFO_THROTTLE(GetLogger(), *this->get_clock(), 2000, 
-                             "GUI failed, saved to: %s", filename.c_str());
     }
 }
 

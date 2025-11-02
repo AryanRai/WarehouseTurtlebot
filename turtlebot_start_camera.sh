@@ -73,7 +73,7 @@ ros2 run turtlebot_camera apriltag_detector_node \
     --ros-args \
     -p show_visualization:=false \
     -p print_detections:=true \
-    -p enable_temporal_filtering:=true &
+    -p enable_temporal_filtering:=false &
 
 APRILTAG_PID=$!
 sleep 2

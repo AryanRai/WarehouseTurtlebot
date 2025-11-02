@@ -127,8 +127,8 @@ private:
     rclcpp::Time relocalization_start_time_;
     bool is_reading_tag_;
     rclcpp::Time tag_reading_start_time_;
-    static constexpr double RELOCALIZATION_DURATION = 12.0;  // 12 seconds for slower, more thorough scan
-    static constexpr double RELOCALIZATION_SPEED = 0.52;  // rad/s (~30°/s) - slower for better AprilTag detection
+    static constexpr double RELOCALIZATION_DURATION = 20.0;  // 20 seconds for very slow, thorough scan
+    static constexpr double RELOCALIZATION_SPEED = 0.31;  // rad/s (~18°/s) - very slow for reliable AprilTag detection
     
     // Route optimization mode
     bool use_tsp_optimization_;

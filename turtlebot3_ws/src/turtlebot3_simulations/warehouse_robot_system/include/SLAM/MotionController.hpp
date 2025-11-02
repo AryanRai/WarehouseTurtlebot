@@ -56,8 +56,8 @@ private:
     // Pure pursuit parameters
     static constexpr double LOOKAHEAD_DISTANCE = 0.18;  // m
     static constexpr double WHEEL_BASE = 0.16;  // m
-    static constexpr double MAX_DRIVE_SPEED = 0.1;  // m/s
-    static constexpr double MAX_TURN_SPEED = 1.25;  // rad/s
+    static constexpr double MAX_DRIVE_SPEED = 0.06;  // m/s - slower for better AprilTag detection
+    static constexpr double MAX_TURN_SPEED = 0.8;  // rad/s - slower turns
     static constexpr double TURN_SPEED_KP = 1.25;
     static constexpr double DISTANCE_TOLERANCE = 0.1;  // m
     

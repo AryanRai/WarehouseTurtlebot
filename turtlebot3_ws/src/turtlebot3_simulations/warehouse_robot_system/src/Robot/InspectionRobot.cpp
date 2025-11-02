@@ -490,6 +490,36 @@ void InspectionRobot::update() {
             RCLCPP_INFO(node_->get_logger(), "Planning path home from (%.2f, %.2f)...",
                        current_pose.position.x, current_pose.position.y);
             
+            // Check if already very close to home
+            double dx_home = home_position.x - current_pose.position.x;
+            double dy_home = home_position.y - current_pose.position.y;
+            double dist_to_home = std::sqrt(dx_home*dx_home + dy_home*dy_home);
+            
+            if (dist_to_home < 0.15) {
+                RCLCPP_INFO(node_->get_logger(), "✅ Already at home! (%.2fm)", dist_to_home);
+                RCLCPP_INFO(node_->get_logger(), "🎉 Exploration complete! Discovered %zu damage sites", damage_sites_.size());
+                is_inspecting_ = false;
+                publishStatus("Exploration complete");
+                return;
+            }
+            
+            // Check if we're close enough to switch to docking mode (within 75cm)
+            // This handles the case where path planner can't get us closer
+            if (dist_to_home < DOCKING_DISTANCE * 1.5) {  // Within 75cm
+                // Check line of sight before switching to docking
+                bool has_clear_path = hasLineOfSight(current_pose.position, home_position, *current_map);
+                
+                if (has_clear_path) {
+                    RCLCPP_INFO(node_->get_logger(), 
+                               "Close to home (%.2fm) with clear line of sight - switching to docking mode", 
+                               dist_to_home);
+                    in_docking_mode_ = true;
+                    motion_controller_->clearPath();
+                    preciseDocking(current_pose, dist_to_home);
+                    return;
+                }
+            }
+            
             GridCell start = PathPlanner::worldToGrid(*current_map, current_pose.position);
             GridCell goal = PathPlanner::worldToGrid(*current_map, home_position);
             
@@ -500,6 +530,29 @@ void InspectionRobot::update() {
                 PathPlanner::aStar(cspace, cost_map, start, goal);
             
             if (path.empty()) {
+                // If path planning fails but we're close with line of sight, try docking
+                if (dist_to_home < DOCKING_DISTANCE * 1.5) {  // Within 75cm
+                    bool has_clear_path = hasLineOfSight(current_pose.position, home_position, *current_map);
+                    
+                    if (has_clear_path) {
+                        RCLCPP_INFO(node_->get_logger(), 
+                                   "Path planning failed but %.2fm from home with clear line of sight - switching to docking mode", 
+                                   dist_to_home);
+                        in_docking_mode_ = true;
+                        motion_controller_->clearPath();
+                        preciseDocking(current_pose, dist_to_home);
+                        return;
+                    }
+                }
+                
+                // If path planning fails but we're very close, consider it done
+                if (dist_to_home < 0.3) {
+                    RCLCPP_WARN(node_->get_logger(), "Path planning failed but close to home (%.2fm) - considering complete", dist_to_home);
+                    RCLCPP_INFO(node_->get_logger(), "🎉 Exploration complete! Discovered %zu damage sites", damage_sites_.size());
+                    is_inspecting_ = false;
+                    publishStatus("Exploration complete");
+                    return;
+                }
                 RCLCPP_ERROR(node_->get_logger(), "Cannot plan path home!");
                 is_inspecting_ = false;
                 return;
@@ -539,30 +592,49 @@ void InspectionRobot::update() {
                 motion_controller_->clearPath();
                 
                 // Perform 360° scan to detect AprilTags
-                RCLCPP_INFO(node_->get_logger(), "🔄 Performing 360° scan for AprilTags...");
+                // Stop at 6 angles (every 60°) and pause for 1 second at each
+                RCLCPP_INFO(node_->get_logger(), "🔄 Performing 360° scan for AprilTags (6 stops)...");
                 
-                double scan_duration = 4.0;  // 4 seconds for full rotation
-                double scan_speed = (2.0 * M_PI) / scan_duration;  // rad/s for 360° in 4s
+                const int num_stops = 6;
+                const double angle_increment = (2.0 * M_PI) / num_stops;  // 60° in radians
+                const double pause_duration = 1.0;  // 1 second pause at each angle
+                const double rotation_speed = 0.5;  // rad/s for turning between angles
                 
-                auto scan_start = node_->now();
-                while ((node_->now() - scan_start).seconds() < scan_duration) {
-                    geometry_msgs::msg::TwistStamped cmd_vel;
-                    cmd_vel.header.stamp = node_->now();
-                    cmd_vel.header.frame_id = "base_footprint";
-                    cmd_vel.twist.linear.x = 0.0;
-                    cmd_vel.twist.angular.z = scan_speed;
+                auto cmd_vel_pub = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
+                
+                for (int i = 0; i < num_stops; i++) {
+                    // Rotate to next angle
+                    double target_rotation = angle_increment;
+                    double rotation_time = target_rotation / rotation_speed;
                     
-                    auto cmd_vel_pub = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
-                    cmd_vel_pub->publish(cmd_vel);
+                    auto rotate_start = node_->now();
+                    while ((node_->now() - rotate_start).seconds() < rotation_time) {
+                        geometry_msgs::msg::TwistStamped cmd_vel;
+                        cmd_vel.header.stamp = node_->now();
+                        cmd_vel.header.frame_id = "base_footprint";
+                        cmd_vel.twist.linear.x = 0.0;
+                        cmd_vel.twist.angular.z = rotation_speed;
+                        cmd_vel_pub->publish(cmd_vel);
+                        rclcpp::sleep_for(std::chrono::milliseconds(50));
+                    }
                     
-                    rclcpp::sleep_for(std::chrono::milliseconds(100));
+                    // Stop and pause to detect AprilTags
+                    geometry_msgs::msg::TwistStamped stop_cmd;
+                    stop_cmd.header.stamp = node_->now();
+                    stop_cmd.header.frame_id = "base_footprint";
+                    cmd_vel_pub->publish(stop_cmd);
+                    
+                    RCLCPP_INFO(node_->get_logger(), "📸 Scan position %d/%d (angle: %d°)", 
+                               i + 1, num_stops, static_cast<int>((i + 1) * 60));
+                    
+                    // Pause for detection
+                    rclcpp::sleep_for(std::chrono::seconds(static_cast<int>(pause_duration)));
                 }
                 
-                // Stop rotation
+                // Final stop
                 geometry_msgs::msg::TwistStamped stop_cmd;
                 stop_cmd.header.stamp = node_->now();
                 stop_cmd.header.frame_id = "base_footprint";
-                auto cmd_vel_pub = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
                 cmd_vel_pub->publish(stop_cmd);
                 
                 RCLCPP_INFO(node_->get_logger(), "✓ Scan complete");

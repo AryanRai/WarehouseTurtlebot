@@ -154,7 +154,7 @@ class CAprilTagDetector : public CImageProcessorNode
         const double kDecodeSharpening = 0.25; // Decode sharpening
         
         // Quality thresholds to reduce false positives
-        const double kMinDecisionMargin = 45.0; // Minimum decision margin (higher = stricter)
+        const double kMinDecisionMargin = 35.0; // Minimum decision margin (higher = stricter)
         const int kMaxHammingDistance = 0; // Maximum bit errors allowed (0 = perfect match only)
         
         // Temporal filtering thresholds
