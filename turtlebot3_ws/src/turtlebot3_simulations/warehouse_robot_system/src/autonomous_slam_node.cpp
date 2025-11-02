@@ -4,7 +4,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include "AutonomousExplorationRobot.hpp"
-#include <std_msgs/msg/float32.hpp>
+#include <sensor_msgs/msg/battery_state.hpp>
 #include "std_srvs/srv/trigger.hpp"
 #include <memory>
 #include <signal.h>
@@ -14,6 +14,8 @@
 std::shared_ptr<AutonomousExplorationRobot> g_robot;
 std::shared_ptr<rclcpp::Node> g_node;
 float g_battery_level = 100.0;
+bool g_auto_return_enabled = false;
+double g_battery_return_threshold = 20.0;
 
 void signalHandler(int signum) {
     if (g_robot) {
@@ -27,14 +29,24 @@ void signalHandler(int signum) {
 }
 
 // Battery callback
-void batteryCallback(const std_msgs::msg::Float32::SharedPtr msg) {
-    g_battery_level = msg->data;
+void batteryCallback(const sensor_msgs::msg::BatteryState::SharedPtr msg) {
+    // Calculate percentage from voltage if not provided
+    if (msg->percentage != msg->percentage) {  // NaN check
+        // For 3S LiPo: 12.6V = 100%, 10.5V = 0%
+        g_battery_level = ((msg->voltage - 10.5) / (12.6 - 10.5)) * 100.0;
+        g_battery_level = std::max(0.0f, std::min(100.0f, g_battery_level));
+    } else {
+        g_battery_level = msg->percentage;
+    }
     
-    // Auto return home if battery < 20%
-    if (g_battery_level < 20.0 && g_robot && g_robot->isExploring()) {
+    // Auto return home if enabled and battery below threshold
+    if (g_auto_return_enabled && 
+        g_battery_level < g_battery_return_threshold && 
+        g_robot && 
+        g_robot->isExploring()) {
         RCLCPP_WARN(g_node->get_logger(), 
-                   "Low battery detected (%.1f%%)! Initiating return to home...", 
-                   g_battery_level);
+                   "Low battery detected (%.1f%% < %.1f%%)! Initiating return to home...", 
+                   g_battery_level, g_battery_return_threshold);
         g_robot->pauseExploration();
         // The robot will automatically return home through the exploration complete logic
     }
@@ -72,16 +84,29 @@ int main(int argc, char** argv) {
     RCLCPP_INFO(g_node->get_logger(), "  Based on Frontier Exploration");
     RCLCPP_INFO(g_node->get_logger(), "===========================================");
     
-    // Create battery subscriber
-    auto battery_sub = g_node->create_subscription<std_msgs::msg::Float32>(
-        "/battery/percentage", 10, batteryCallback);
+    // Declare and get parameters from battery config
+    g_node->declare_parameter("auto_return_home_enabled", false);
+    g_node->declare_parameter("auto_return_threshold_pct", 20.0);
+    
+    g_auto_return_enabled = g_node->get_parameter("auto_return_home_enabled").as_bool();
+    g_battery_return_threshold = g_node->get_parameter("auto_return_threshold_pct").as_double();
+    
+    RCLCPP_INFO(g_node->get_logger(), "Battery Auto-Return: %s", 
+                g_auto_return_enabled ? "ENABLED" : "DISABLED");
+    if (g_auto_return_enabled) {
+        RCLCPP_INFO(g_node->get_logger(), "Return threshold: %.1f%%", g_battery_return_threshold);
+    }
+    
+    // Create battery subscriber (BatteryState message)
+    auto battery_sub = g_node->create_subscription<sensor_msgs::msg::BatteryState>(
+        "/battery_state", 10, batteryCallback);
     
     // Create return home service
     auto return_home_service = g_node->create_service<std_srvs::srv::Trigger>(
         "/return_home", returnHomeCallback);
     
     RCLCPP_INFO(g_node->get_logger(), "Return home service available at /return_home");
-    RCLCPP_INFO(g_node->get_logger(), "Monitoring battery level on /battery/percentage");
+    RCLCPP_INFO(g_node->get_logger(), "Monitoring battery on /battery_state");
     
     // Create autonomous exploration robot
     g_robot = std::make_shared<AutonomousExplorationRobot>(g_node);

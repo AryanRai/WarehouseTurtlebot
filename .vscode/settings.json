@@ -58,5 +58,6 @@
   "C_Cpp_Runner.msvcSecureNoWarnings": false,
   "files.associations": {
     "random": "cpp"
-  }
+  },
+  "cmake.sourceDirectory": "/home/filipgus/Desktop/MTRX3760_Project_2/build/dynamixel_sdk_custom_interfaces/dynamixel_sdk_custom_interfaces__py"
 }
