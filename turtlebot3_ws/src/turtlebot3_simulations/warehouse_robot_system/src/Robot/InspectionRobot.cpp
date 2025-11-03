@@ -775,15 +775,15 @@ void InspectionRobot::update() {
     double dy = current_site.position.y - current_pose.position.y;
     double distance_to_site = std::sqrt(dx*dx + dy*dy);
     
-    // Check if we've reached the site
+    // Check if we've reached the site (or as close as we can get)
     bool site_reached = (distance_to_site < SITE_TOLERANCE) || 
-                       (site_path_completed_ && distance_to_site < SITE_REACHED_THRESHOLD);
+                       (site_path_completed_ && distance_to_site < SITE_REACHED_THRESHOLD) ||
+                       (motion_controller_->isAtGoal() && distance_to_site < 1.0);  // At path goal and reasonably close
     
-    if (site_reached) {
-        // If we haven't started reading the tag yet, start now
-        if (!is_reading_tag_) {
-            RCLCPP_INFO(node_->get_logger(), "✓ Reached site: %s (%.3fm) - Performing 360° scan...", 
-                       current_site.name.c_str(), distance_to_site);
+    if (site_reached && !is_reading_tag_) {
+        // Start the 360° scan
+        RCLCPP_INFO(node_->get_logger(), "✓ Reached site: %s (%.3fm) - Performing 360° scan...", 
+                   current_site.name.c_str(), distance_to_site);
             
             // Stop all motion
             motion_controller_->clearPath();
@@ -840,8 +840,10 @@ void InspectionRobot::update() {
             tag_detected_at_site_ = false;
             tag_reading_start_time_ = node_->now();
             return;
-        }
-        
+    }
+    
+    // If we're already reading the tag, check for detection or timeout
+    if (is_reading_tag_) {
         // Check if tag was detected during scan
         double reading_elapsed = (node_->now() - tag_reading_start_time_).seconds();
         
