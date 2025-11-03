@@ -60,7 +60,17 @@ public:
     bool isUsingTSP() const { return use_tsp_optimization_; }
     
     // Exploration mode
-    void setExplorationMode(bool exploration) { exploration_mode_ = exploration; }
+    void setExplorationMode(bool exploration) { 
+        exploration_mode_ = exploration;
+        // Set speeds based on mode
+        if (exploration) {
+            // Exploration mode: slow speeds for stable localization during patrol
+            motion_controller_->setInspectionSpeeds();
+        } else {
+            // Regular inspection: faster speeds for going to sites (like delivery)
+            motion_controller_->setDeliverySpeeds();
+        }
+    }
     bool isExplorationMode() const { return exploration_mode_; }
     void startExploration();
     

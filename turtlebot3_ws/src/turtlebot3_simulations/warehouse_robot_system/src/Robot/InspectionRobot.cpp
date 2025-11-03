@@ -53,8 +53,8 @@ InspectionRobot::InspectionRobot(rclcpp::Node::SharedPtr node)
     slam_controller_ = std::make_unique<SlamController>(node);
     motion_controller_ = std::make_unique<MotionController>(node);
     
-    // Set slow speeds for inspection (better AprilTag detection)
-    motion_controller_->setInspectionSpeeds();
+    // Speed will be set based on mode (exploration vs regular inspection)
+    // Default to inspection speeds, will be changed if exploration mode is detected
     
     // Set file paths
     sites_file_ = "damage_sites.yaml";
@@ -782,18 +782,59 @@ void InspectionRobot::update() {
     if (site_reached) {
         // If we haven't started reading the tag yet, start now
         if (!is_reading_tag_) {
-            RCLCPP_INFO(node_->get_logger(), "✓ Reached site: %s (%.3fm) - Reading AprilTag...", 
+            RCLCPP_INFO(node_->get_logger(), "✓ Reached site: %s (%.3fm) - Performing 360° scan...", 
                        current_site.name.c_str(), distance_to_site);
             
             // Stop all motion
+            motion_controller_->clearPath();
+            
+            // Perform 360° scan to detect AprilTags (same as exploration mode)
+            // Stop at 6 angles (every 60°) and pause for 1 second at each
+            RCLCPP_INFO(node_->get_logger(), "🔄 Performing 360° scan for AprilTags (6 stops)...");
+            
+            const int num_stops = 6;
+            const double angle_increment = (2.0 * M_PI) / num_stops;  // 60° in radians
+            const double pause_duration = 1.0;  // 1 second pause at each angle
+            const double rotation_speed = 0.3;  // rad/s - slow rotation to prevent localization drift
+            
+            auto cmd_vel_pub = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
+            
+            for (int i = 0; i < num_stops; i++) {
+                // Rotate to next angle
+                double target_rotation = angle_increment;
+                double rotation_time = target_rotation / rotation_speed;
+                
+                auto rotate_start = node_->now();
+                while ((node_->now() - rotate_start).seconds() < rotation_time) {
+                    geometry_msgs::msg::TwistStamped cmd_vel;
+                    cmd_vel.header.stamp = node_->now();
+                    cmd_vel.header.frame_id = "base_footprint";
+                    cmd_vel.twist.linear.x = 0.0;
+                    cmd_vel.twist.angular.z = rotation_speed;
+                    cmd_vel_pub->publish(cmd_vel);
+                    rclcpp::sleep_for(std::chrono::milliseconds(50));
+                }
+                
+                // Stop and pause to detect AprilTags
+                geometry_msgs::msg::TwistStamped stop_cmd;
+                stop_cmd.header.stamp = node_->now();
+                stop_cmd.header.frame_id = "base_footprint";
+                cmd_vel_pub->publish(stop_cmd);
+                
+                RCLCPP_INFO(node_->get_logger(), "📸 Scan position %d/%d (angle: %d°)", 
+                           i + 1, num_stops, static_cast<int>((i + 1) * 60));
+                
+                // Pause for detection
+                rclcpp::sleep_for(std::chrono::seconds(static_cast<int>(pause_duration)));
+            }
+            
+            // Final stop
             geometry_msgs::msg::TwistStamped stop_cmd;
             stop_cmd.header.stamp = node_->now();
             stop_cmd.header.frame_id = "base_footprint";
-            stop_cmd.twist.linear.x = 0.0;
-            stop_cmd.twist.angular.z = 0.0;
-            
-            auto cmd_vel_pub = node_->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
             cmd_vel_pub->publish(stop_cmd);
+            
+            RCLCPP_INFO(node_->get_logger(), "✓ Scan complete");
             
             is_reading_tag_ = true;
             tag_detected_at_site_ = false;
@@ -801,7 +842,7 @@ void InspectionRobot::update() {
             return;
         }
         
-        // Wait for tag detection or timeout
+        // Check if tag was detected during scan
         double reading_elapsed = (node_->now() - tag_reading_start_time_).seconds();
         
         if (tag_detected_at_site_) {
