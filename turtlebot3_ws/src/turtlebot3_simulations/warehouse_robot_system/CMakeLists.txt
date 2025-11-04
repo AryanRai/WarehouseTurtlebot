@@ -205,6 +205,75 @@ elseif(NLOHMANN_JSON_LIBRARIES)
 endif()
 
 # ============================================================================
+# ROBOT LIBRARIES - WITH BASE CLASS
+# ============================================================================
+
+# WarehouseRobot Base Class Library (NEW)
+add_library(warehouse_robot_base_lib
+  src/Robot/WarehouseRobot.cpp
+)
+ament_target_dependencies(warehouse_robot_base_lib
+  rclcpp
+  geometry_msgs
+  nav_msgs
+  sensor_msgs
+  std_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+)
+target_link_libraries(warehouse_robot_base_lib
+  slam_controller_lib
+  motion_controller_lib
+  path_planner_lib
+  ${OpenCV_LIBS}
+)
+
+# Delivery Robot Library (depends on base class)
+add_library(delivery_robot_lib
+  src/Robot/DeliveryRobot.cpp
+)
+ament_target_dependencies(delivery_robot_lib
+  rclcpp
+  geometry_msgs
+  nav_msgs
+  std_msgs
+  std_srvs
+)
+target_link_libraries(delivery_robot_lib
+  warehouse_robot_base_lib
+  slam_controller_lib
+  motion_controller_lib
+  path_planner_lib
+  yaml-cpp
+)
+
+# Inspection Robot Library (depends on base class)
+add_library(inspection_robot_lib
+  src/Robot/InspectionRobot.cpp
+)
+ament_target_dependencies(inspection_robot_lib
+  rclcpp
+  geometry_msgs
+  nav_msgs
+  sensor_msgs
+  std_msgs
+  std_srvs
+  apriltag_msgs
+  visualization_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+)
+target_link_libraries(inspection_robot_lib
+  warehouse_robot_base_lib
+  slam_controller_lib
+  motion_controller_lib
+  path_planner_lib
+  yaml-cpp
+)
+
+# ============================================================================
 # ROBOT EXECUTABLES
 # ============================================================================
 
@@ -228,25 +297,7 @@ target_link_libraries(autonomous_slam_node
   autonomous_exploration_lib
 )
 
-# Delivery Robot Library - UPDATED PATH
-add_library(delivery_robot_lib
-  src/Robot/DeliveryRobot.cpp
-)
-ament_target_dependencies(delivery_robot_lib
-  rclcpp
-  geometry_msgs
-  nav_msgs
-  std_msgs
-  std_srvs
-)
-target_link_libraries(delivery_robot_lib
-  slam_controller_lib
-  motion_controller_lib
-  path_planner_lib
-  yaml-cpp
-)
-
-# Delivery Robot Node - UPDATED PATH
+# Delivery Robot Node
 add_executable(delivery_robot_node
   src/Robot/delivery_robot_node.cpp
 )
@@ -261,27 +312,7 @@ target_link_libraries(delivery_robot_node
   delivery_robot_lib
 )
 
-# Inspection Robot Library - UPDATED PATH
-add_library(inspection_robot_lib
-  src/Robot/InspectionRobot.cpp
-)
-ament_target_dependencies(inspection_robot_lib
-  rclcpp
-  geometry_msgs
-  nav_msgs
-  std_msgs
-  std_srvs
-  apriltag_msgs
-  visualization_msgs
-)
-target_link_libraries(inspection_robot_lib
-  slam_controller_lib
-  motion_controller_lib
-  path_planner_lib
-  yaml-cpp
-)
-
-# Inspection Robot Node - UPDATED PATH
+# Inspection Robot Node
 add_executable(inspection_robot_node
   src/Robot/inspection_robot_node.cpp
 )
@@ -409,7 +440,7 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
-# Install all libraries
+# Install all libraries (INCLUDING NEW BASE CLASS)
 install(TARGETS
   path_planner_lib
   FrontierSearch
@@ -417,6 +448,7 @@ install(TARGETS
   exploration_planner_lib
   motion_controller_lib
   autonomous_exploration_lib
+  warehouse_robot_base_lib
   delivery_robot_lib
   inspection_robot_lib
   ARCHIVE DESTINATION lib

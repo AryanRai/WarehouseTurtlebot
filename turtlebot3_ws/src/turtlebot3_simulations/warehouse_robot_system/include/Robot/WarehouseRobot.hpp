@@ -1,21 +1,21 @@
 // ============================================================================
 // MTRX3760 Project 2 - 
-// File: WarehouseRobotBase.hpp
+// File: WarehouseRobot.hpp
 // Description: Base class for warehouse robots (Delivery & Inspection).
 //              Contains common functionality including SLAM integration,
 //              TSP route optimization, docking behavior, and navigation.
-//              Inherits from rclcpp::Node for direct ROS2 integration.
 // Author(s): Dylan George
 // Last Edited: 2025-11-02
 // ============================================================================
 
-#ifndef WAREHOUSE_ROBOT_BASE_HPP
-#define WAREHOUSE_ROBOT_BASE_HPP
+#ifndef WAREHOUSE_ROBOT_HPP
+#define WAREHOUSE_ROBOT_HPP
 
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/point.hpp>
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/point_stamped.hpp>
+#include <geometry_msgs/msg/twist_stamped.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <sensor_msgs/msg/battery_state.hpp>
@@ -25,36 +25,32 @@
 #include <memory>
 #include <vector>
 #include <chrono>
+#include <string>
 
 /**
  * @brief Base class for warehouse robots with common navigation and optimization functionality
  * 
- * Inherits from rclcpp::Node to provide ROS2 node functionality.
  * Provides shared capabilities for delivery and inspection robots including:
  * - SLAM controller and motion controller integration
  * - TSP-based route optimization using simulated annealing
- * - Precise docking behavior for home position
+ * - Precise docking behavior for home position and targets
+ * - Relocalization with 360° spin
  * - Line-of-sight and obstacle checking
  * - Status publishing and logging
+ * - Battery monitoring with emergency return
  */
-class Robot : public rclcpp::Node {
+class WarehouseRobot {
 public:
     /**
      * @brief Constructor
-     * @param node_name Name of the ROS2 node
+     * @param node Shared pointer to ROS2 node
      */
-    explicit Robot(const std::string& node_name);
+    explicit WarehouseRobot(rclcpp::Node::SharedPtr node);
     
     /**
      * @brief Virtual destructor for proper cleanup of derived classes
      */
-    virtual ~Robot() = default;
-    
-    /**
-     * @brief Initialize SLAM and motion controllers
-     * Must be called after construction (cannot use shared_from_this in constructor)
-     */
-    void initialize();
+    virtual ~WarehouseRobot() = default;
     
     /**
      * @brief Main update loop - must be implemented by derived classes
@@ -67,10 +63,23 @@ public:
      */
     bool hasValidMap() const;
     
+    /**
+     * @brief Set route optimization mode
+     * @param use_tsp True to use TSP optimization, false for ordered sequence
+     */
+    void setOptimizationMode(bool use_tsp) { use_tsp_optimization_ = use_tsp; }
+    
+    /**
+     * @brief Check if using TSP optimization
+     * @return True if TSP enabled
+     */
+    bool isUsingTSP() const { return use_tsp_optimization_; }
+    
 protected:
     // ========================================================================
     // ROS and SLAM Components
     // ========================================================================
+    rclcpp::Node::SharedPtr node_;
     std::unique_ptr<SlamController> slam_controller_;
     std::unique_ptr<MotionController> motion_controller_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr status_pub_;
@@ -79,10 +88,13 @@ protected:
     // Common State Variables
     // ========================================================================
     bool in_docking_mode_;
+    bool in_target_docking_mode_;  // For zone/site docking
     double initial_yaw_;
     bool has_relocalized_;
     rclcpp::Time relocalization_start_time_;
     bool use_tsp_optimization_;
+    bool path_completed_;  // Generic path completion tracking
+    double total_distance_;
     
     // Battery monitoring
     float battery_level_;
@@ -96,6 +108,8 @@ protected:
     // ========================================================================
     static constexpr double DOCKING_DISTANCE = 0.5;       // Enter docking mode within 50cm
     static constexpr double HOME_TOLERANCE = 0.05;        // Success within 5cm
+    static constexpr double TARGET_TOLERANCE = 0.08;      // Success within 8cm for targets
+    static constexpr double TARGET_REACHED_THRESHOLD = 0.3; // 30cm threshold
     static constexpr double DOCKING_LINEAR_SPEED = 0.05;  // Slow speed for docking
     static constexpr double DOCKING_ANGULAR_SPEED = 0.3;  // Moderate rotation for alignment
     static constexpr double RELOCALIZATION_DURATION = 8.0; // 8 seconds for 2 full rotations
@@ -107,7 +121,7 @@ protected:
     // ========================================================================
     
     /**
-     * @brief Build distance matrix for TSP optimization
+     * @brief Build distance matrix for TSP optimization using A*
      * @param start Starting position
      * @param points Vector of target points
      * @return 2D matrix of distances between all points
@@ -148,6 +162,7 @@ protected:
     
     /**
      * @brief Return robot to home position
+     * Can be overridden by derived classes for custom behavior
      */
     virtual void returnToHome();
     
@@ -159,6 +174,25 @@ protected:
     void preciseDocking(
         const geometry_msgs::msg::Pose& current_pose, 
         double distance_to_home);
+    
+    /**
+     * @brief Precise docking behavior for final approach to target (zone/site)
+     * @param current_pose Current robot pose
+     * @param target_position Target position
+     * @param distance_to_target Distance to target
+     * @param target_name Name of target for logging
+     */
+    void preciseTargetDocking(
+        const geometry_msgs::msg::Pose& current_pose,
+        const geometry_msgs::msg::Point& target_position,
+        double distance_to_target,
+        const std::string& target_name);
+    
+    /**
+     * @brief Perform relocalization spin at start
+     * @return True if relocalization complete, false if still spinning
+     */
+    bool performRelocalization();
     
     /**
      * @brief Check line of sight between two points
@@ -206,6 +240,7 @@ protected:
     
     /**
      * @brief Handle emergency low battery return to home
+     * Can be overridden by derived classes
      */
     virtual void emergencyReturnHome();
     
@@ -241,6 +276,11 @@ protected:
      * @return Yaw angle in radians
      */
     double getYawFromQuaternion(const geometry_msgs::msg::Quaternion& orientation) const;
+    
+    /**
+     * @brief Stop all robot motion
+     */
+    void stopMotion();
 };
 
-#endif // WAREHOUSE_ROBOT_BASE_HPP
+#endif // WAREHOUSE_ROBOT_HPP

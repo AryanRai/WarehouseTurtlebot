@@ -1,9 +1,10 @@
 // ============================================================================
 // MTRX3760 Project 2 - 
 // File: InspectionRobot.hpp
-// Description: Header for CInspectionRobot class. Defines warehouse damage
-//              detection robot using camera and AprilTag markers. Supports
-//              exploration and inspection modes for damage site management.
+// Description: Header for InspectionRobot class (inherits from WarehouseRobot).
+//              Handles autonomous warehouse inspection operations including
+//              damage site inspection, AprilTag detection, exploration mode,
+//              and Tier 1 Safety features.
 // Author(s): Dylan George
 // Last Edited: 2025-11-02
 // ============================================================================
@@ -11,80 +12,152 @@
 #ifndef INSPECTION_ROBOT_HPP
 #define INSPECTION_ROBOT_HPP
 
-#include <rclcpp/rclcpp.hpp>
-#include <geometry_msgs/msg/point_stamped.hpp>
-#include <geometry_msgs/msg/pose_stamped.hpp>
-#include <nav_msgs/msg/occupancy_grid.hpp>
-#include <sensor_msgs/msg/laser_scan.hpp>
-#include <sensor_msgs/msg/battery_state.hpp>
-#include <std_srvs/srv/trigger.hpp>
-#include <std_msgs/msg/string.hpp>
-#include <apriltag_msgs/msg/april_tag_detection_array.hpp>
-#include <visualization_msgs/msg/marker.hpp>
-#include <visualization_msgs/msg/marker_array.hpp>
+#include "Robot/WarehouseRobot.hpp"
 #include "Robot/InspectionStructures.hpp"
-#include "SLAM/SlamController.hpp"
-#include "SLAM/MotionController.hpp"
-#include "SLAM/PathPlanner.hpp"
+#include <apriltag_msgs/msg/april_tag_detection_array.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
+#include <std_srvs/srv/trigger.hpp>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
 #include <fstream>
 #include <memory>
 #include <vector>
-#include <queue>
+#include <chrono>
 
-class InspectionRobot {
+/**
+ * @brief Inspection robot for warehouse damage site inspection operations
+ * 
+ * Inherits common functionality from WarehouseRobot and adds inspection-specific features:
+ * - Damage site management (add, load, save sites)
+ * - Inspection request queue management
+ * - AprilTag detection and recording
+ * - 360° scanning at inspection sites
+ * - Exploration mode with patrol point generation
+ * - Tier 1 Safety: TF health monitoring and obstacle avoidance
+ * - RViz marker visualization
+ */
+class InspectionRobot : public WarehouseRobot {
 public:
-    InspectionRobot(rclcpp::Node::SharedPtr node);
+    /**
+     * @brief Constructor
+     * @param node Shared pointer to ROS2 node
+     */
+    explicit InspectionRobot(rclcpp::Node::SharedPtr node);
+    
+    /**
+     * @brief Destructor
+     */
     ~InspectionRobot() = default;
     
-    // Main control
-    void update();
-    void startInspections();
-    void stopInspections();
-    bool isInspecting() const { return is_inspecting_; }
-    bool hasValidMap() const;
+    // ========================================================================
+    // Main Control (Override from base)
+    // ========================================================================
     
-    // Damage site management
+    /**
+     * @brief Main update loop for inspection operations
+     */
+    void update() override;
+    
+    /**
+     * @brief Start inspection operations
+     */
+    void startInspections();
+    
+    /**
+     * @brief Stop inspection operations
+     */
+    void stopInspections();
+    
+    /**
+     * @brief Check if currently inspecting
+     * @return True if inspection in progress
+     */
+    bool isInspecting() const { return is_inspecting_; }
+    
+    // ========================================================================
+    // Site Management
+    // ========================================================================
+    
+    /**
+     * @brief Load damage sites from YAML file
+     * @param filename Path to YAML file
+     */
     void loadSitesFromFile(const std::string& filename);
+    
+    /**
+     * @brief Save damage sites to YAML file
+     * @param filename Path to YAML file
+     */
     void saveSitesToFile(const std::string& filename);
+    
+    /**
+     * @brief Add a new damage site
+     * @param site Site to add
+     */
     void addSite(const InspectionData::DamageSite& site);
+    
+    /**
+     * @brief Clear all damage sites
+     */
     void clearSites();
+    
+    /**
+     * @brief Get all damage sites
+     * @return Vector of damage sites
+     */
     std::vector<InspectionData::DamageSite> getSites() const { return damage_sites_; }
     
-    // Inspection management
+    // ========================================================================
+    // Inspection Management
+    // ========================================================================
+    
+    /**
+     * @brief Add an inspection request to queue
+     * @param request Inspection request to add
+     */
     void addInspectionRequest(const InspectionData::InspectionRequest& request);
+    
+    /**
+     * @brief Clear inspection queue
+     */
     void clearInspectionQueue();
-    std::vector<InspectionData::InspectionRequest> getInspectionQueue() const { return inspection_queue_; }
     
-    // Route optimization mode
-    void setOptimizationMode(bool use_tsp) { use_tsp_optimization_ = use_tsp; }
-    bool isUsingTSP() const { return use_tsp_optimization_; }
-    
-    // Exploration mode
-    void setExplorationMode(bool exploration) { 
-        exploration_mode_ = exploration;
-        // Set speeds based on mode
-        if (exploration) {
-            // Exploration mode: slow speeds for stable localization during patrol
-            motion_controller_->setInspectionSpeeds();
-        } else {
-            // Regular inspection: faster speeds for going to sites (like delivery)
-            motion_controller_->setDeliverySpeeds();
-        }
+    /**
+     * @brief Get current inspection queue
+     * @return Vector of inspection requests
+     */
+    std::vector<InspectionData::InspectionRequest> getInspectionQueue() const { 
+        return inspection_queue_; 
     }
-    bool isExplorationMode() const { return exploration_mode_; }
-    void startExploration();
     
-    // Records
-    void saveInspectionRecord(const InspectionData::InspectionRecord& record);
+    // ========================================================================
+    // Exploration Mode
+    // ========================================================================
+    
+    /**
+     * @brief Enable exploration mode
+     * @param enable True to enable, false to disable
+     */
+    void setExplorationMode(bool enable) { exploration_mode_ = enable; }
+    
+    /**
+     * @brief Check if exploration mode is enabled
+     * @return True if exploration mode enabled
+     */
+    bool isExplorationMode() const { return exploration_mode_; }
+    
+    /**
+     * @brief Generate patrol points for exploration
+     * @param map Occupancy grid map
+     * @return Vector of patrol points
+     */
+    std::vector<geometry_msgs::msg::Point> generatePatrolPoints(
+        const nav_msgs::msg::OccupancyGrid& map);
     
 private:
-    rclcpp::Node::SharedPtr node_;
-    
-    // SLAM components (reuse existing)
-    std::unique_ptr<SlamController> slam_controller_;
-    std::unique_ptr<MotionController> motion_controller_;
-    
-    // Inspection data
+    // ========================================================================
+    // Inspection-Specific Data
+    // ========================================================================
     std::vector<InspectionData::DamageSite> damage_sites_;
     std::vector<InspectionData::InspectionRequest> inspection_queue_;
     std::vector<InspectionData::InspectionRecord> inspection_history_;
@@ -93,144 +166,204 @@ private:
     bool is_inspecting_;
     size_t current_inspection_index_;
     std::vector<InspectionData::DamageSite> optimized_route_;
-    InspectionData::InspectionRequest current_request_;
-    std::chrono::steady_clock::time_point inspection_start_time_;
-    geometry_msgs::msg::Point inspection_start_position_;
-    double total_distance_;
-    bool site_path_completed_;  // Track if we've completed path to current site
     
-    // AprilTag detection
-    bool tag_detected_at_site_;
-    int last_detected_tag_id_;
-    rclcpp::Time last_tag_detection_time_;
-    
-    // ROS interfaces
-    rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr clicked_point_sub_;
-    rclcpp::Subscription<apriltag_msgs::msg::AprilTagDetectionArray>::SharedPtr apriltag_sub_;
-    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr start_inspection_srv_;
-    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr save_sites_srv_;
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr status_pub_;
-    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_pub_;
-    
-    // Configuration
-    std::string sites_file_;
-    std::string inspection_log_file_;
-    static constexpr double SITE_REACHED_THRESHOLD = 0.3;  // 30cm
-    static constexpr double UPDATE_RATE = 10.0;  // Hz
-    
-    // Docking parameters (same as delivery robot)
-    static constexpr double DOCKING_DISTANCE = 0.5;  // Enter docking mode within 50cm
-    static constexpr double HOME_TOLERANCE = 0.05;   // Success within 5cm
-    static constexpr double SITE_TOLERANCE = 0.08;   // Success within 8cm for damage sites
-    static constexpr double DOCKING_LINEAR_SPEED = 0.05;  // Slow speed for docking
-    static constexpr double DOCKING_ANGULAR_SPEED = 0.3;  // Moderate rotation for alignment
-    static constexpr double SITE_DOCKING_DISTANCE = 0.25;  // Enter site docking within 25cm
-    
-    // Tag reading parameters
-    static constexpr double TAG_READING_DURATION = 3.0;  // Seconds to read tag at site
-    static constexpr double TAG_DETECTION_TIMEOUT = 5.0;  // Max seconds to wait for tag
-    
-    // Docking state
-    bool in_docking_mode_;
-    bool in_site_docking_mode_;  // Separate flag for site docking
-    double initial_yaw_;  // Store initial orientation to return to
-    bool has_relocalized_;  // Track if we've done initial spin
-    rclcpp::Time relocalization_start_time_;
-    bool is_reading_tag_;
-    rclcpp::Time tag_reading_start_time_;
-    static constexpr double RELOCALIZATION_DURATION = 20.0;  // 20 seconds for very slow, thorough scan
-    
-    // Battery monitoring
-    float battery_level_;
-    double battery_low_threshold_;
-    bool battery_monitoring_enabled_;
-    bool low_battery_return_triggered_;
-    rclcpp::Subscription<sensor_msgs::msg::BatteryState>::SharedPtr battery_sub_;
-    void onBatteryState(const sensor_msgs::msg::BatteryState::SharedPtr msg);
-    bool checkLowBattery();
-    static constexpr double RELOCALIZATION_SPEED = 0.31;  // rad/s (~18°/s) - very slow for reliable AprilTag detection
-    
-    // Route optimization mode
-    bool use_tsp_optimization_;
+    // Scanning state
+    bool is_scanning_;
+    double scan_start_yaw_;
+    rclcpp::Time scan_start_time_;
+    static constexpr double SCAN_DURATION = 8.0;  // 8 seconds for full 360° scan
+    static constexpr double SCAN_SPEED = 0.785;   // rad/s (45°/s for smooth scan)
     
     // Exploration mode
     bool exploration_mode_;
     std::vector<geometry_msgs::msg::Point> patrol_points_;
     size_t current_patrol_index_;
     
-    // TF2 Health Monitoring (Tier 1 Safety)
-    rclcpp::Time last_valid_tf_time_;
-    bool tf_is_healthy_;
-    static constexpr double TF_TIMEOUT = 2.0;  // Stop if no TF for 2 seconds
+    // AprilTag detection
+    rclcpp::Subscription<apriltag_msgs::msg::AprilTagDetectionArray>::SharedPtr apriltag_sub_;
+    std::vector<int> detected_tags_;
     
-    // Obstacle Avoidance (Tier 1 Safety)
+    // RViz visualization
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_pub_;
+    
+    // ROS interfaces
+    rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr clicked_point_sub_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr start_inspection_srv_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr save_sites_srv_;
+    
+    // Tier 1 Safety - TF Health Monitoring
+    std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+    rclcpp::Time last_tf_check_time_;
+    bool tf_health_ok_;
+    static constexpr double TF_CHECK_INTERVAL = 1.0;  // Check TF every 1 second
+    static constexpr double TF_TIMEOUT = 2.0;          // TF considered stale after 2s
+    
+    // Tier 1 Safety - Obstacle Avoidance
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laser_sub_;
-    sensor_msgs::msg::LaserScan::SharedPtr latest_scan_;
-    static constexpr double OBSTACLE_STOP_DISTANCE = 0.35;  // 35cm safety margin
-    static constexpr double OBSTACLE_WARN_DISTANCE = 0.50;  // 50cm warning
+    bool obstacle_detected_;
+    double min_obstacle_distance_;
+    static constexpr double OBSTACLE_STOP_DISTANCE = 0.3;  // Stop if obstacle within 30cm
+    static constexpr double OBSTACLE_SLOW_DISTANCE = 0.5;  // Slow down if within 50cm
     
-    // Helper methods
-    void onPointClicked(const geometry_msgs::msg::PointStamped::SharedPtr msg);
+    // Configuration
+    std::string sites_file_;
+    std::string inspection_log_file_;
+    
+    // ========================================================================
+    // Scanning Methods
+    // ========================================================================
+    
+    /**
+     * @brief Perform 360° scan at current site
+     * @return True if scan complete, false if still scanning
+     */
+    bool performSiteScan();
+    
+    /**
+     * @brief Check if robot is at site
+     * @param site Site to check
+     * @return True if at site
+     */
+    bool isAtSite(const InspectionData::DamageSite& site);
+    
+    // ========================================================================
+    // AprilTag Detection
+    // ========================================================================
+    
+    /**
+     * @brief AprilTag detection callback
+     * @param msg AprilTag detection array message
+     */
     void onAprilTagDetection(const apriltag_msgs::msg::AprilTagDetectionArray::SharedPtr msg);
-    void onStartInspectionService(
-        const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
-        std::shared_ptr<std_srvs::srv::Trigger::Response> response);
-    void onSaveSitesService(
-        const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
-        std::shared_ptr<std_srvs::srv::Trigger::Response> response);
     
+    /**
+     * @brief Check if tag has already been detected
+     * @param tag_id Tag ID to check
+     * @return True if already detected
+     */
+    bool isTagAlreadyDetected(int tag_id) const;
+    
+    // ========================================================================
+    // Tier 1 Safety Methods
+    // ========================================================================
+    
+    /**
+     * @brief Check TF transform health
+     * @return True if TF is healthy
+     */
+    bool checkTFHealth();
+    
+    /**
+     * @brief Laser scan callback for obstacle detection
+     * @param msg Laser scan message
+     */
+    void onLaserScan(const sensor_msgs::msg::LaserScan::SharedPtr msg);
+    
+    /**
+     * @brief Check for obstacles in path
+     * @return True if safe to proceed
+     */
+    bool isSafeToMove();
+    
+    /**
+     * @brief Emergency stop due to safety issue
+     * @param reason Reason for emergency stop
+     */
+    void emergencyStop(const std::string& reason);
+    
+    // ========================================================================
+    // Route Optimization
+    // ========================================================================
+    
+    /**
+     * @brief Optimize route (ordered sequence mode)
+     * @param start Starting position
+     * @param requests Inspection requests
+     * @return Optimized route
+     */
     std::vector<InspectionData::DamageSite> optimizeRoute(
         const geometry_msgs::msg::Point& start,
         const std::vector<InspectionData::InspectionRequest>& requests);
     
-    void publishSiteMarkers();
-    
+    /**
+     * @brief Optimize route using TSP
+     * @param start Starting position
+     * @param requests Inspection requests
+     * @return TSP-optimized route
+     */
     std::vector<InspectionData::DamageSite> optimizeRouteTSP(
         const geometry_msgs::msg::Point& start,
         const std::vector<InspectionData::InspectionRequest>& requests);
     
-    std::vector<std::vector<double>> buildDistanceMatrix(
-        const geometry_msgs::msg::Point& start,
-        const std::vector<geometry_msgs::msg::Point>& points);
+    // ========================================================================
+    // Exploration Methods
+    // ========================================================================
     
-    std::vector<int> simulatedAnnealing(
-        const std::vector<std::vector<double>>& distance_matrix,
-        int start_idx,
-        double initial_temp = 10000.0,
-        double cooling_rate = 0.995,
-        int max_iterations = 10000);
+    /**
+     * @brief Execute exploration behavior
+     */
+    void executeExploration();
     
-    double calculateTourCost(
-        const std::vector<int>& tour,
-        const std::vector<std::vector<double>>& distance_matrix);
+    /**
+     * @brief Check if point is valid for patrol
+     * @param point Point to check
+     * @param map Occupancy grid map
+     * @return True if valid patrol point
+     */
+    bool isValidPatrolPoint(
+        const geometry_msgs::msg::Point& point,
+        const nav_msgs::msg::OccupancyGrid& map);
     
+    // ========================================================================
+    // Visualization Methods
+    // ========================================================================
+    
+    /**
+     * @brief Publish RViz markers for damage sites
+     */
+    void publishSiteMarkers();
+    
+    /**
+     * @brief Create marker for damage site
+     * @param site Damage site
+     * @param id Marker ID
+     * @return Visualization marker
+     */
+    visualization_msgs::msg::Marker createSiteMarker(
+        const InspectionData::DamageSite& site, 
+        int id);
+    
+    // ========================================================================
+    // Helper Methods
+    // ========================================================================
+    
+    /**
+     * @brief Handle clicked point from RViz (for site marking)
+     * @param msg Point stamped message
+     */
+    void onPointClicked(const geometry_msgs::msg::PointStamped::SharedPtr msg);
+    
+    /**
+     * @brief Service callback to start inspections
+     */
+    void onStartInspectionService(
+        const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+        std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+    
+    /**
+     * @brief Service callback to save sites
+     */
+    void onSaveSitesService(
+        const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+        std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+    
+    /**
+     * @brief Find site by name
+     * @param site_name Name of site
+     * @return Pointer to site or nullptr if not found
+     */
     InspectionData::DamageSite* findSite(const std::string& site_name);
-    bool navigateToSite(const InspectionData::DamageSite& site);
-    bool isAtSite(const InspectionData::DamageSite& site);
-    bool readAprilTag();
-    void returnToHome();
-    void preciseDocking(const geometry_msgs::msg::Pose& current_pose, double distance_to_home);
-    void preciseSiteDocking(const geometry_msgs::msg::Pose& current_pose, 
-                           const InspectionData::DamageSite& site, 
-                           double distance_to_site);
-    bool hasLineOfSight(const geometry_msgs::msg::Point& from, 
-                       const geometry_msgs::msg::Point& to,
-                       const nav_msgs::msg::OccupancyGrid& map);
-    
-    // Exploration mode helpers
-    void generatePatrolPoints(const nav_msgs::msg::OccupancyGrid& map);
-    
-    // Tier 1 Safety Methods
-    bool checkTFHealth();
-    bool isPathClear();
-    void onLaserScan(const sensor_msgs::msg::LaserScan::SharedPtr msg);
-    bool navigateToPatrolPoint(const geometry_msgs::msg::Point& point);
-    void processAprilTagDetections();
-    void saveDiscoveredSite(int tag_id, const geometry_msgs::msg::Point& position);
-    double checkMinDistanceToWalls(const geometry_msgs::msg::Point& position,
-                                   const nav_msgs::msg::OccupancyGrid& map);
-    void publishStatus(const std::string& status);
-    std::string getCurrentTimestamp();
 };
 
 #endif // INSPECTION_ROBOT_HPP
