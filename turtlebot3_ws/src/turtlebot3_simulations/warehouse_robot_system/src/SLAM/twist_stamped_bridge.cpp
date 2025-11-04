@@ -4,7 +4,7 @@
 // Description: Simple bridge to convert Twist to TwistStamped messages for
 //              Gazebo compatibility. Ensures proper message timing and format
 //              conversion for simulation environment integration.
-// Author(s): Dylan George
+// Author(s): Aryan Rai, Inez Dumas
 // Last Edited: 2025-11-02
 // ============================================================================
 

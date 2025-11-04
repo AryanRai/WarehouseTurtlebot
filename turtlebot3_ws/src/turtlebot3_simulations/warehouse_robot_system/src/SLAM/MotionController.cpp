@@ -4,7 +4,7 @@
 // Description: Implementation of MotionController. Provides low-level robot
 //              motion control with obstacle avoidance, precise positioning,
 //              and adaptive navigation for warehouse automation tasks.
-// Author(s): Dylan George
+// Author(s): Inez Dumas, Tony Bechara
 // Last Edited: 2025-11-02
 // ============================================================================
 

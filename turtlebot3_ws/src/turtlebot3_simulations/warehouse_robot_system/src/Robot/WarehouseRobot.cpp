@@ -4,7 +4,7 @@
 // Description: Implementation of WarehouseRobot base class. Provides common
 //              functionality for delivery and inspection robots including
 //              TSP optimization, docking, relocalization, and navigation utilities.
-// Author(s): Dylan George
+// Author(s): Aryan Rai, Inez Dumas, Dylan George
 // Last Edited: 2025-11-02
 // ============================================================================
 

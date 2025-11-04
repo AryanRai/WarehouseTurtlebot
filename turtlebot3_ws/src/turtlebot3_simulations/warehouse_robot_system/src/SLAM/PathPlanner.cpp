@@ -4,7 +4,7 @@
 // Description: Implementation of CPathPlanner. Provides A* path planning with
 //              dynamic obstacle avoidance and TSP route optimization for
 //              efficient multi-waypoint navigation in warehouse environments.
-// Author(s): Dylan George
+// Author(s): Inez Dumas, Aryan Rai
 // Last Edited: 2025-11-02
 // ============================================================================
 

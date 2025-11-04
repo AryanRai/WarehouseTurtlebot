@@ -4,7 +4,7 @@
 // Description: Implementation of SlamController. Manages SLAM toolbox
 //              operations including map saving, loading, and coordination
 //              with navigation stack for autonomous mapping operations.
-// Author(s): Dylan George
+// Author(s): Aryan Rai
 // Last Edited: 2025-11-02
 // ============================================================================
 

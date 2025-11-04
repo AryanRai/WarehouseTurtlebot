@@ -16,57 +16,100 @@
 #include <vector>
 #include <string>
 
-// CCameraNode
-// Aggregates multiple camera topics and republishes on a single unified topic.
-// Subscribes to all camera sources defined in ROS parameters and forwards
-// image messages to downstream processing nodes. This decouples the camera
-// hardware interface from processing logic.
-// Ownership: Manages its own publishers and subscribers via rclcpp.
+/**
+ * @class CCameraNode
+ * @brief Aggregates multiple camera topics and republishes on a single unified topic.
+ * @details Subscribes to all camera sources defined in ROS parameters and forwards
+ *          image messages to downstream processing nodes. This decouples the camera
+ *          hardware interface from processing logic.
+ */
 class CCameraNode : public rclcpp::Node
 {
     public:
-        // Constructor
-        // Initialises the node, loads camera topic parameters, creates subscribers
-        // for each camera source, and sets up the unified publisher.
+        // ====================================================================
+        /// @name Constructor & Destructor
+        // ====================================================================
+        /// @{
+        
+        /**
+         * @brief Constructor - Initialises the node, loads camera topic parameters, creates subscribers
+         *        for each camera source, and sets up the unified publisher.
+         */
         CCameraNode();
 
-        // Destructor
-        // Cleans up ROS resources (handled automatically by rclcpp).
+        /**
+         * @brief Destructor - Cleans up ROS resources (handled automatically by rclcpp).
+         */
         ~CCameraNode();
+        
+        /// @}
 
     private:
-        // ImageCallback
-        // Callback invoked when a new image arrives from any subscribed camera topic.
-        // aMsg: incoming image message from camera
-        // Simply forwards the message to the unified output topic.
+        // ====================================================================
+        /// @name Core Callback Methods
+        // ====================================================================
+        /// @{
+        
+        /**
+         * @brief Callback invoked when a new image arrives from any subscribed camera topic.
+         * @param aMsg incoming image message from camera
+         * @details Simply forwards the message to the unified output topic.
+         */
         void ImageCallback(const sensor_msgs::msg::Image::SharedPtr aMsg);
+        
+        /// @}
 
-        // LoadCameraTopics
-        // Reads camera topic names from ROS parameters and populates mCameraTopics.
-        // If no parameter is set, uses default topic "/camera/image_raw".
+        // ====================================================================
+        /// @name Initialization & Setup Methods
+        // ====================================================================
+        /// @{
+        
+        /**
+         * @brief Reads camera topic names from ROS parameters and populates mCameraTopics.
+         * @details If no parameter is set, uses default topic "/camera/image_raw".
+         */
         void LoadCameraTopics();
 
-        // CreateSubscriptions
-        // Creates a subscriber for each topic in mCameraTopics.
-        // All subscribers use the same callback (ImageCallback).
+        /**
+         * @brief Creates a subscriber for each topic in mCameraTopics.
+         * @details All subscribers use the same callback (ImageCallback).
+         */
         void CreateSubscriptions();
+        
+        /// @}
 
-        // Member Variables
+        // ====================================================================
+        /// @name Member Variables - ROS Communication
+        // ====================================================================
+        /// @{
 
         rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mpUnifiedPublisher; 
-        // Publishes to unified camera topic; owned by this node, created in ctor
+        ///< Publishes to unified camera topic; owned by this node, created in ctor
 
         std::vector<rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> mCameraSubscribers;
-        // List of subscribers to various camera topics; owned by this node
+        ///< List of subscribers to various camera topics; owned by this node
+        
+        /// @}
+
+        // ====================================================================
+        /// @name Member Variables - Configuration
+        // ====================================================================
+        /// @{
 
         std::vector<std::string> mCameraTopics;
-        // List of camera topic names to subscribe to; loaded from parameters
+        ///< List of camera topic names to subscribe to; loaded from parameters
+        
+        /// @}
 
-        const std::string kUnifiedTopicName = "/camera/unified";
-        // Output topic name for republished images [string constant]
+        // ====================================================================
+        /// @name Constants - Configuration
+        // ====================================================================
+        /// @{
 
-        const int kQueueSize = 10;
-        // ROS publisher/subscriber queue depth [messages]
+        const std::string kUnifiedTopicName = "/camera/unified";  ///< Output topic name for republished images
+        const int kQueueSize = 10;  ///< ROS publisher/subscriber queue depth [messages]
+        
+        /// @}
 };
 
 #endif // CCAMERA_NODE_HPP

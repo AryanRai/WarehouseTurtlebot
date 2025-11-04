@@ -16,69 +16,107 @@
 #include <cv_bridge/cv_bridge.hpp>
 #include <opencv2/opencv.hpp>
 
-// CImageProcessorNode
-// Abstract base class for image processing nodes. Provides common functionality
-// for subscribing to camera data, converting ROS images to OpenCV format, and
-// basic image validation. Derived classes implement ProcessImage() to define
-// specific detection/processing algorithms.
-// Ownership: Manages camera subscription via rclcpp. Derived classes own their
-// specific publishers and processing logic.
+/**
+ * @class CImageProcessorNode
+ * @brief Abstract base class for image processing nodes.
+ * @details Provides common functionality for subscribing to camera data, converting ROS images 
+ *          to OpenCV format, and basic image validation. Derived classes implement ProcessImage() 
+ *          to define specific detection/processing algorithms.
+ */
 class CImageProcessorNode : public rclcpp::Node
 {
     public:
-        // Constructor
-        // aNodeName: name for this ROS node
-        // Initialises the node and subscribes to the unified camera topic.
+        // ====================================================================
+        /// @name Constructor & Destructor
+        // ====================================================================
+        /// @{
+        
+        /**
+         * @brief Constructor - Initialises the node and subscribes to the unified camera topic.
+         * @param aNodeName name for this ROS node
+         */
         explicit CImageProcessorNode(const std::string &aNodeName);
 
-        // Destructor
-        // Virtual to ensure proper cleanup in derived classes.
+        /**
+         * @brief Virtual destructor to ensure proper cleanup in derived classes.
+         */
         virtual ~CImageProcessorNode();
+        
+        /// @}
 
     protected:
-        // ProcessImage (pure virtual)
-        // Processes a single OpenCV image. Must be implemented by derived classes.
-        // aImage: OpenCV image in BGR8 format
-        // aTimestamp: ROS timestamp from original image message
-        // Called after image validation and conversion.
+        // ====================================================================
+        /// @name Pure Virtual Methods (Must be Implemented by Derived Classes)
+        // ====================================================================
+        /// @{
+        
+        /**
+         * @brief Processes a single OpenCV image. Must be implemented by derived classes.
+         * @param aImage OpenCV image in BGR8 format
+         * @param aTimestamp ROS timestamp from original image message
+         * @details Called after image validation and conversion.
+         */
         virtual void ProcessImage(const cv::Mat &aImage, 
                                  const rclcpp::Time &aTimestamp) = 0;
+        
+        /// @}
 
-        // ValidateImage
-        // Checks if an OpenCV image is valid for processing.
-        // aImage: image to validate
-        // Returns true if image is non-empty and has valid dimensions.
+        // ====================================================================
+        /// @name Utility Methods for Derived Classes
+        // ====================================================================
+        /// @{
+        
+        /**
+         * @brief Checks if an OpenCV image is valid for processing.
+         * @param aImage image to validate
+         * @return true if image is non-empty and has valid dimensions
+         */
         bool ValidateImage(const cv::Mat &aImage) const;
 
-        // GetLogger
-        // Provides access to ROS logger for derived classes.
-        // Returns reference to this node's logger.
+        /**
+         * @brief Provides access to ROS logger for derived classes.
+         * @return reference to this node's logger
+         */
         rclcpp::Logger GetLogger() const;
+        
+        /// @}
 
     private:
-        // ImageCallback
-        // Callback for incoming camera images. Converts ROS image to OpenCV format,
-        // validates it, and calls ProcessImage() if valid.
-        // aMsg: incoming image message from unified camera topic
+        // ====================================================================
+        /// @name Core Callback Methods
+        // ====================================================================
+        /// @{
+        
+        /**
+         * @brief Callback for incoming camera images.
+         * @param aMsg incoming image message from unified camera topic
+         * @details Converts ROS image to OpenCV format, validates it, and calls ProcessImage() if valid.
+         */
         void ImageCallback(const sensor_msgs::msg::Image::SharedPtr aMsg);
+        
+        /// @}
 
-        // Member Variables
+        // ====================================================================
+        /// @name Member Variables - ROS Communication
+        // ====================================================================
+        /// @{
 
         rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mpImageSubscriber;
-        // Subscribes to unified camera topic; owned by this node, created in ctor
+        ///< Subscribes to unified camera topic; owned by this node, created in ctor
+        
+        /// @}
 
-        const std::string kCameraTopicName = "/camera/image_raw";
-        // Input topic for camera data [string constant]
-        // Note: For unified camera system, use "/camera/unified" instead
+        // ====================================================================
+        /// @name Constants - Configuration
+        // ====================================================================
+        /// @{
 
-        const int kQueueSize = 10;
-        // Subscriber queue depth [messages]
-
-        const int kMinImageWidth = 10;
-        // Minimum acceptable image width [pixels]
-
-        const int kMinImageHeight = 10;
-        // Minimum acceptable image height [pixels]
+        const std::string kCameraTopicName = "/camera/image_raw";  ///< Input topic for camera data
+        const int kQueueSize = 10;  ///< Subscriber queue depth [messages]
+        const int kMinImageWidth = 10;  ///< Minimum acceptable image width [pixels]
+        const int kMinImageHeight = 10;  ///< Minimum acceptable image height [pixels]
+        
+        /// @}
 };
 
 #endif // IMAGE_PROCESSOR_NODE_HPP

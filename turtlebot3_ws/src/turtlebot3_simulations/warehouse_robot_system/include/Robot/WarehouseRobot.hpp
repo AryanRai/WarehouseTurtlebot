@@ -4,7 +4,7 @@
 // Description: Base class for warehouse robots (Delivery & Inspection).
 //              Contains common functionality including SLAM integration,
 //              TSP route optimization, docking behavior, and navigation.
-// Author(s): Dylan George
+// Author(s): Aryan, Inez Dumas
 // Last Edited: 2025-11-02
 // ============================================================================
 

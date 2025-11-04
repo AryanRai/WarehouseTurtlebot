@@ -4,7 +4,7 @@
 // Description: Implementation of ExplorationPlanner. Manages frontier-based
 //              autonomous exploration for systematic mapping of unknown
 //              warehouse environments using intelligent waypoint selection.
-// Author(s): Dylan George
+// Author(s): Aryan Rai, Inez Dumas
 // Last Edited: 2025-11-02
 // ============================================================================
 

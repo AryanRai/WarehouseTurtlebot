@@ -4,7 +4,7 @@
 // Description: Implementation of FrontierSearch algorithm. Identifies frontier
 //              cells for autonomous exploration, enabling systematic discovery
 //              of unmapped areas in warehouse environments.
-// Author(s): Dylan George
+// Author(s): Aryan Rai
 // Last Edited: 2025-11-02
 // ============================================================================
 

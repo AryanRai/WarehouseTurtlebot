@@ -4,7 +4,7 @@
 // Description: Header for CAutonomousExplorationRobot class. Defines SLAM-based
 //              autonomous mapping robot that integrates SlamController,
 //              ExplorationPlanner, and MotionController for warehouse mapping.
-// Author(s): Dylan George
+// Author(s): Inez Dumas
 // Last Edited: 2025-11-02
 // ============================================================================
 

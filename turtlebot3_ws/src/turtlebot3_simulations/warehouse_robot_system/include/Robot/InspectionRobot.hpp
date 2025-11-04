@@ -5,7 +5,7 @@
 //              Handles autonomous warehouse inspection operations including
 //              damage site inspection, AprilTag detection, exploration mode,
 //              and Tier 1 Safety features.
-// Author(s): Dylan George
+// Author(s): Dylan George, Inez Dumas
 // Last Edited: 2025-11-02
 // ============================================================================
 

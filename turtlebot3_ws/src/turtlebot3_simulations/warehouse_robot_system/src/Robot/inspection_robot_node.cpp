@@ -4,12 +4,9 @@
 // Description: ROS2 node entry point for inspection robot operations. Handles
 //              damage detection operations using camera and AprilTag markers
 //              to identify and classify warehouse infrastructure damage.
-// Author(s): Dylan George
+// Author(s): Dylan George, Inez Dumas
 // Last Edited: 2025-11-02
 // ============================================================================
-// Last Edited: 2025-11-01
-// ============================================================================
-
 
 #include <rclcpp/rclcpp.hpp>
 #include "Robot/InspectionRobot.hpp"

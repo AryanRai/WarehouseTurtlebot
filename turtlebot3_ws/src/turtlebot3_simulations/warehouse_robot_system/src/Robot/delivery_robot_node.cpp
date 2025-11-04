@@ -4,7 +4,7 @@
 // Description: ROS2 node entry point for delivery robot operations. Manages
 //              the lifecycle of the delivery robot and coordinates with
 //              the warehouse management system for package delivery tasks.
-// Author(s): Dylan George
+// Author(s): Aryan, Inez Dumas, Tony Bechara
 // Last Edited: 2025-11-02
 // ============================================================================
 

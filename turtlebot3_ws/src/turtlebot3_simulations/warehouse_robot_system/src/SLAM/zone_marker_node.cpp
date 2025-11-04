@@ -4,7 +4,7 @@
 // Description: ROS2 node for interactive zone definition with visualization.
 //              Subscribes to clicked points and publishes zone markers for
 //              warehouse area definition and robot task assignment.
-// Author(s): Dylan George
+// Author(s): Aryan Rai, Inez Dumas
 // Last Edited: 2025-11-02
 // ============================================================================
 

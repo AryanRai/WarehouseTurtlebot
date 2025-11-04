@@ -4,7 +4,7 @@
 // Description: Implementation of CAutonomousExplorationRobot. Performs
 //              frontier-based autonomous exploration to map unknown warehouse
 //              environments and save maps for subsequent robot operations.
-// Author(s): Dylan George
+// Author(s): Aryan, Inez Dumas
 // Last Edited: 2025-11-02
 // ============================================================================
 

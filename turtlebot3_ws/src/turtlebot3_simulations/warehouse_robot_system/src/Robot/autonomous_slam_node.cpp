@@ -4,7 +4,7 @@
 // Description: ROS2 node for autonomous SLAM exploration. Implements frontier
 //              exploration to systematically map unknown environments using
 //              the exploration robot's capabilities.
-// Author(s): Dylan George
+// Author(s): Aryan, Inez Dumas
 // Last Edited: 2025-11-02
 // ============================================================================
 
