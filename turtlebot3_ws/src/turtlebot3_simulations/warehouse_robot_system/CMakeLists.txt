@@ -343,6 +343,32 @@ target_link_libraries(inspection_robot_node
   inspection_robot_lib
 )
 
+# Dynamic Warehouse Manager Node - NEW
+add_executable(warehouse_manager_node
+  src/Robot/warehouse_manager_node.cpp
+)
+ament_target_dependencies(warehouse_manager_node
+  rclcpp
+  geometry_msgs
+  nav_msgs
+  std_msgs
+  std_srvs
+  visualization_msgs
+  sensor_msgs
+  cv_bridge
+  OpenCV
+)
+
+# Add apriltag_msgs dependency if available
+if(apriltag_msgs_FOUND)
+  ament_target_dependencies(warehouse_manager_node apriltag_msgs)
+endif()
+target_link_libraries(warehouse_manager_node
+  delivery_robot_lib
+  inspection_robot_lib
+  camera_lib
+)
+
 # Twist to TwistStamped Bridge - UPDATED PATH
 add_executable(twist_stamped_bridge
   src/SLAM/twist_stamped_bridge.cpp
@@ -437,6 +463,7 @@ set(INSTALL_TARGETS
   autonomous_slam_node
   delivery_robot_node
   inspection_robot_node
+  warehouse_manager_node
   twist_stamped_bridge
   zone_marker_node
   camera_node
