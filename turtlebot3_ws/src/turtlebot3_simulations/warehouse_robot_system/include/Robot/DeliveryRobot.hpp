@@ -51,6 +51,36 @@ public:
      */
     void update() override;
     
+    // ========================================================================
+    // Polymorphic Interface Implementation
+    // ========================================================================
+    
+    /**
+     * @brief Get robot type
+     * @return RobotType::DELIVERY
+     */
+    RobotType getType() const override { return RobotType::DELIVERY; }
+    
+    /**
+     * @brief Start operations (polymorphic interface)
+     */
+    void startOperations() override { startDeliveries(); }
+    
+    /**
+     * @brief Stop operations (polymorphic interface)
+     */
+    void stopOperations() override { stopDeliveries(); }
+    
+    /**
+     * @brief Check if operating (polymorphic interface)
+     * @return True if delivery in progress
+     */
+    bool isOperating() const override { return isDelivering(); }
+    
+    // ========================================================================
+    // Delivery-Specific Methods
+    // ========================================================================
+    
     /**
      * @brief Start delivery operations
      */

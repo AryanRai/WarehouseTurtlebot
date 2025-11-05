@@ -28,6 +28,14 @@
 #include <string>
 
 /**
+ * @brief Robot type enumeration for polymorphic identification
+ */
+enum class RobotType {
+    INSPECTION,
+    DELIVERY
+};
+
+/**
  * @brief Base class for warehouse robots with common navigation and optimization functionality
  * 
  * Provides shared capabilities for delivery and inspection robots including:
@@ -56,6 +64,36 @@ public:
      * @brief Main update loop - must be implemented by derived classes
      */
     virtual void update() = 0;
+    
+    // ========================================================================
+    // Pure Virtual Interface for Polymorphism
+    // ========================================================================
+    
+    /**
+     * @brief Get robot type for identification
+     * @return Robot type enumeration
+     */
+    virtual RobotType getType() const = 0;
+    
+    /**
+     * @brief Start robot-specific operations (inspection/delivery)
+     */
+    virtual void startOperations() = 0;
+    
+    /**
+     * @brief Stop robot-specific operations
+     */
+    virtual void stopOperations() = 0;
+    
+    /**
+     * @brief Check if robot is currently performing operations
+     * @return True if operations in progress
+     */
+    virtual bool isOperating() const = 0;
+    
+    // ========================================================================
+    // Common Interface Methods
+    // ========================================================================
     
     /**
      * @brief Check if robot has a valid map

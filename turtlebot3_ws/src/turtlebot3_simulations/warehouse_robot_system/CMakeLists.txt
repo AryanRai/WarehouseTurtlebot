@@ -27,7 +27,7 @@ find_package(OpenCV REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(cv_bridge REQUIRED)
-find_package(apriltag_msgs REQUIRED)
+find_package(apriltag_msgs QUIET)
 
 # Try to find nlohmann_json
 find_package(nlohmann_json QUIET)
@@ -59,13 +59,6 @@ find_package(apriltag QUIET)
 if(apriltag_FOUND)
   message(STATUS "Found apriltag library - will build apriltag_detector_node")
   set(BUILD_APRILTAG_DETECTOR TRUE)
-  # Find CURL library (required by apriltag dependencies)
-  find_package(CURL REQUIRED)
-  # Find OpenJPEG (openjp2) library
-  find_package(PkgConfig QUIET)
-  if(PkgConfig_FOUND)
-    pkg_check_modules(OPENJP2 libopenjp2)
-  endif()
 else()
   message(WARNING "apriltag library not found - skipping apriltag_detector_node")
   message(WARNING "Install with: sudo apt install ros-${ROS_DISTRO}-apriltag")
@@ -78,6 +71,7 @@ include_directories(
   include/Camera
   include/Robot
   include/SLAM
+  include/Visualization
   ${OpenCV_INCLUDE_DIRS}
   ${YAML_CPP_INCLUDE_DIRS}
 )
@@ -205,75 +199,6 @@ elseif(NLOHMANN_JSON_LIBRARIES)
 endif()
 
 # ============================================================================
-# ROBOT LIBRARIES - WITH BASE CLASS
-# ============================================================================
-
-# WarehouseRobot Base Class Library (NEW)
-add_library(warehouse_robot_base_lib
-  src/Robot/WarehouseRobot.cpp
-)
-ament_target_dependencies(warehouse_robot_base_lib
-  rclcpp
-  geometry_msgs
-  nav_msgs
-  sensor_msgs
-  std_msgs
-  tf2
-  tf2_ros
-  tf2_geometry_msgs
-)
-target_link_libraries(warehouse_robot_base_lib
-  slam_controller_lib
-  motion_controller_lib
-  path_planner_lib
-  ${OpenCV_LIBS}
-)
-
-# Delivery Robot Library (depends on base class)
-add_library(delivery_robot_lib
-  src/Robot/DeliveryRobot.cpp
-)
-ament_target_dependencies(delivery_robot_lib
-  rclcpp
-  geometry_msgs
-  nav_msgs
-  std_msgs
-  std_srvs
-)
-target_link_libraries(delivery_robot_lib
-  warehouse_robot_base_lib
-  slam_controller_lib
-  motion_controller_lib
-  path_planner_lib
-  yaml-cpp
-)
-
-# Inspection Robot Library (depends on base class)
-add_library(inspection_robot_lib
-  src/Robot/InspectionRobot.cpp
-)
-ament_target_dependencies(inspection_robot_lib
-  rclcpp
-  geometry_msgs
-  nav_msgs
-  sensor_msgs
-  std_msgs
-  std_srvs
-  apriltag_msgs
-  visualization_msgs
-  tf2
-  tf2_ros
-  tf2_geometry_msgs
-)
-target_link_libraries(inspection_robot_lib
-  warehouse_robot_base_lib
-  slam_controller_lib
-  motion_controller_lib
-  path_planner_lib
-  yaml-cpp
-)
-
-# ============================================================================
 # ROBOT EXECUTABLES
 # ============================================================================
 
@@ -297,7 +222,67 @@ target_link_libraries(autonomous_slam_node
   autonomous_exploration_lib
 )
 
-# Delivery Robot Node
+# ============================================================================
+# ROBOT BASE CLASS AND MANAGER LIBRARIES
+# ============================================================================
+
+# Warehouse Robot Base Class Library
+add_library(warehouse_robot_base_lib
+  src/Robot/WarehouseRobot.cpp
+)
+ament_target_dependencies(warehouse_robot_base_lib
+  rclcpp
+  geometry_msgs
+  nav_msgs
+  std_msgs
+  sensor_msgs
+  tf2
+  tf2_ros
+)
+target_link_libraries(warehouse_robot_base_lib
+  slam_controller_lib
+  motion_controller_lib
+  path_planner_lib
+)
+
+# Warehouse Manager Library (Polymorphic Robot Control) - COMMENTED OUT due to missing dependencies
+# add_library(warehouse_manager_lib
+#   src/Robot/WarehouseManager.cpp
+# )
+# ament_target_dependencies(warehouse_manager_lib
+#   rclcpp
+#   geometry_msgs
+#   nav_msgs
+#   std_msgs
+# )
+# target_link_libraries(warehouse_manager_lib
+#   warehouse_robot_base_lib
+# )
+
+# ============================================================================
+# DERIVED ROBOT LIBRARIES
+# ============================================================================
+
+# Delivery Robot Library - UPDATED PATH
+add_library(delivery_robot_lib
+  src/Robot/DeliveryRobot.cpp
+)
+ament_target_dependencies(delivery_robot_lib
+  rclcpp
+  geometry_msgs
+  nav_msgs
+  std_msgs
+  std_srvs
+)
+target_link_libraries(delivery_robot_lib
+  warehouse_robot_base_lib
+  slam_controller_lib
+  motion_controller_lib
+  path_planner_lib
+  yaml-cpp
+)
+
+# Delivery Robot Node - UPDATED PATH
 add_executable(delivery_robot_node
   src/Robot/delivery_robot_node.cpp
 )
@@ -312,7 +297,32 @@ target_link_libraries(delivery_robot_node
   delivery_robot_lib
 )
 
-# Inspection Robot Node
+# Inspection Robot Library - UPDATED PATH
+add_library(inspection_robot_lib
+  src/Robot/InspectionRobot.cpp
+)
+ament_target_dependencies(inspection_robot_lib
+  rclcpp
+  geometry_msgs
+  nav_msgs
+  std_msgs
+  std_srvs
+  visualization_msgs
+)
+
+# Add apriltag_msgs dependency if available
+if(apriltag_msgs_FOUND)
+  ament_target_dependencies(inspection_robot_lib apriltag_msgs)
+endif()
+target_link_libraries(inspection_robot_lib
+  warehouse_robot_base_lib
+  slam_controller_lib
+  motion_controller_lib
+  path_planner_lib
+  yaml-cpp
+)
+
+# Inspection Robot Node - UPDATED PATH
 add_executable(inspection_robot_node
   src/Robot/inspection_robot_node.cpp
 )
@@ -322,9 +332,13 @@ ament_target_dependencies(inspection_robot_node
   nav_msgs
   std_msgs
   std_srvs
-  apriltag_msgs
   visualization_msgs
 )
+
+# Add apriltag_msgs dependency if available
+if(apriltag_msgs_FOUND)
+  ament_target_dependencies(inspection_robot_node apriltag_msgs)
+endif()
 target_link_libraries(inspection_robot_node
   inspection_robot_lib
 )
@@ -378,14 +392,6 @@ ament_target_dependencies(colour_detector_node
   apriltag_msgs 
   std_msgs
 )
-# Link CURL and OpenJPEG if apriltag detector is being built (shared dependency)
-if(BUILD_APRILTAG_DETECTOR AND CURL_FOUND)
-  target_link_libraries(colour_detector_node ${CURL_LIBRARIES})
-  if(OPENJP2_FOUND)
-    target_link_libraries(colour_detector_node ${OPENJP2_LIBRARIES})
-    target_include_directories(colour_detector_node PRIVATE ${OPENJP2_INCLUDE_DIRS})
-  endif()
-endif()
 
 # AprilTag Detector Node (conditional) - UPDATED PATHS
 if(BUILD_APRILTAG_DETECTOR)
@@ -405,15 +411,22 @@ if(BUILD_APRILTAG_DETECTOR)
 
   target_link_libraries(apriltag_detector_node 
     apriltag::apriltag
-    ${CURL_LIBRARIES}
   )
-  
-  # Link OpenJPEG if found
-  if(OPENJP2_FOUND)
-    target_link_libraries(apriltag_detector_node ${OPENJP2_LIBRARIES})
-    target_include_directories(apriltag_detector_node PRIVATE ${OPENJP2_INCLUDE_DIRS})
-  endif()
 endif()
+
+# Exploration Path Tracker Node (Visualization) - COMMENTED OUT - Missing files
+# add_executable(exploration_path_tracker_node
+#   src/Visualization/exploration_path_tracker_node.cpp
+#   src/Visualization/ExplorationPathTracker.cpp
+# )
+# 
+# ament_target_dependencies(exploration_path_tracker_node
+#   rclcpp
+#   nav_msgs
+#   geometry_msgs
+#   visualization_msgs
+#   std_msgs
+# )
 
 # ============================================================================
 # INSTALL
@@ -428,6 +441,7 @@ set(INSTALL_TARGETS
   zone_marker_node
   camera_node
   colour_detector_node
+  # exploration_path_tracker_node  # Commented out - missing files
 )
 
 # Add apriltag_detector_node if it was built
@@ -440,7 +454,7 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
-# Install all libraries (INCLUDING NEW BASE CLASS)
+# Install all libraries
 install(TARGETS
   path_planner_lib
   FrontierSearch
@@ -448,7 +462,6 @@ install(TARGETS
   exploration_planner_lib
   motion_controller_lib
   autonomous_exploration_lib
-  warehouse_robot_base_lib
   delivery_robot_lib
   inspection_robot_lib
   ARCHIVE DESTINATION lib
