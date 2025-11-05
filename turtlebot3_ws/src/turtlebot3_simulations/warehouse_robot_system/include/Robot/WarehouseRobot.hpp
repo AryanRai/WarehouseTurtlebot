@@ -112,6 +112,12 @@ public:
      * @return True if TSP enabled
      */
     bool isUsingTSP() const { return use_tsp_optimization_; }
+
+    /**
+     * @brief Get ROS2 node
+     * @return Shared pointer to ROS2 node
+     */
+    rclcpp::Node::SharedPtr getNode() const { return node_; }
     
 protected:
     // ========================================================================

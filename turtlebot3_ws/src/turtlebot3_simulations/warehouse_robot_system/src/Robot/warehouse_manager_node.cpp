@@ -254,8 +254,8 @@ private:
             mActiveRobot->startOperations();  // Virtual function call!
             
             response->success = true;
-            response->message = "Started operations for " + 
-                              (mActiveRobot->getType() == RobotType::INSPECTION ? "InspectionRobot" : "DeliveryRobot");
+            response->message = std::string("Started operations for ") +
+                   (mActiveRobot->getType() == RobotType::INSPECTION ? "InspectionRobot" : "DeliveryRobot");
             
             RCLCPP_INFO(this->get_logger(), "✅ Polymorphic operation started: %s", 
                        response->message.c_str());
@@ -289,8 +289,8 @@ private:
             mActiveRobot->stopOperations();  // Virtual function call!
             
             response->success = true;
-            response->message = "Stopped operations for " + 
-                              (mActiveRobot->getType() == RobotType::INSPECTION ? "InspectionRobot" : "DeliveryRobot");
+            response->message = std::string("Stopped operations for ") +
+                   (mActiveRobot->getType() == RobotType::INSPECTION ? "InspectionRobot" : "DeliveryRobot");
             
             RCLCPP_INFO(this->get_logger(), "⏹️ Polymorphic operation stopped: %s", 
                        response->message.c_str());
@@ -374,30 +374,28 @@ private:
      */
     bool startInspectionMode()
     {
-        // Start camera system first
-        if (!startCameraSystem()) {
-            return false;
-        }
+        if (!startCameraSystem()) return false;
 
         try {
-            // POLYMORPHIC CREATION - InspectionRobot* → WarehouseRobot* (upcast)
-            RCLCPP_INFO(this->get_logger(), "🎭 Creating InspectionRobot with polymorphic upcast...");
-            
-            auto inspectionRobot = std::make_shared<InspectionRobot>();
-            mActiveRobot = std::static_pointer_cast<WarehouseRobot>(inspectionRobot);  // Upcast to base
-            
-            mExecutor->add_node(mActiveRobot);
+            RCLCPP_INFO(this->get_logger(), "🎭 Creating InspectionRobot...");
+            auto insp_node = std::make_shared<rclcpp::Node>("inspection_robot_node");
+
+            // Create derived, upcast to base
+            mActiveRobot = std::make_shared<InspectionRobot>(insp_node);
+
+            // Add its underlying Node to the executor
+            mExecutor->add_node(mActiveRobot->getNode());
 
             RCLCPP_INFO(this->get_logger(), "✅ Polymorphic InspectionRobot created");
-            RCLCPP_INFO(this->get_logger(), "   Base pointer: %p", mActiveRobot.get());
-            RCLCPP_INFO(this->get_logger(), "   Points to: InspectionRobot instance");
+            RCLCPP_INFO(this->get_logger(), "   Base pointer: %p",
+                        reinterpret_cast<void*>(mActiveRobot.get()));
             return true;
-
         } catch (const std::exception& e) {
             RCLCPP_ERROR(this->get_logger(), "Failed to start inspection mode: %s", e.what());
             return false;
         }
     }
+
 
     /**
      * @brief Starts delivery mode with polymorphic robot creation
@@ -405,24 +403,25 @@ private:
     bool startDeliveryMode()
     {
         try {
-            // POLYMORPHIC CREATION - DeliveryRobot* → WarehouseRobot* (upcast)
-            RCLCPP_INFO(this->get_logger(), "🎭 Creating DeliveryRobot with polymorphic upcast...");
-            
-            auto deliveryRobot = std::make_shared<DeliveryRobot>();
-            mActiveRobot = std::static_pointer_cast<WarehouseRobot>(deliveryRobot);  // Upcast to base
-            
-            mExecutor->add_node(mActiveRobot);
+            RCLCPP_INFO(this->get_logger(), "🎭 Creating DeliveryRobot...");
+            auto deliv_node = std::make_shared<rclcpp::Node>("delivery_robot_node");
+
+            // Create derived, upcast to base
+            mActiveRobot = std::make_shared<DeliveryRobot>(deliv_node);
+
+            // Add its underlying Node to the executor
+            mExecutor->add_node(mActiveRobot->getNode());
 
             RCLCPP_INFO(this->get_logger(), "✅ Polymorphic DeliveryRobot created");
-            RCLCPP_INFO(this->get_logger(), "   Base pointer: %p", mActiveRobot.get());
-            RCLCPP_INFO(this->get_logger(), "   Points to: DeliveryRobot instance");
+            RCLCPP_INFO(this->get_logger(), "   Base pointer: %p",
+                        reinterpret_cast<void*>(mActiveRobot.get()));
             return true;
-
         } catch (const std::exception& e) {
             RCLCPP_ERROR(this->get_logger(), "Failed to start delivery mode: %s", e.what());
             return false;
         }
     }
+
 
     /**
      * @brief Provides type-safe downcasting for inspection-specific operations
@@ -463,7 +462,7 @@ private:
             RCLCPP_INFO(this->get_logger(), "   Type: %s", 
                        mActiveRobot->getType() == RobotType::INSPECTION ? "InspectionRobot" : "DeliveryRobot");
             
-            mExecutor->remove_node(mActiveRobot);
+            mExecutor->remove_node(mActiveRobot->getNode());
             mActiveRobot.reset();  // Destroys derived object through base pointer
             
             RCLCPP_INFO(this->get_logger(), "✅ Polymorphic robot destroyed");

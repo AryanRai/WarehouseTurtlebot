@@ -245,20 +245,6 @@ target_link_libraries(warehouse_robot_base_lib
   path_planner_lib
 )
 
-# Warehouse Manager Library (Polymorphic Robot Control) - COMMENTED OUT due to missing dependencies
-# add_library(warehouse_manager_lib
-#   src/Robot/WarehouseManager.cpp
-# )
-# ament_target_dependencies(warehouse_manager_lib
-#   rclcpp
-#   geometry_msgs
-#   nav_msgs
-#   std_msgs
-# )
-# target_link_libraries(warehouse_manager_lib
-#   warehouse_robot_base_lib
-# )
-
 # ============================================================================
 # DERIVED ROBOT LIBRARIES
 # ============================================================================
@@ -343,7 +329,59 @@ target_link_libraries(inspection_robot_node
   inspection_robot_lib
 )
 
-# Dynamic Warehouse Manager Node - NEW
+# ============================================================================
+# CAMERA LIBRARIES (for linking with warehouse_manager_node)
+# ============================================================================
+
+# Camera Node Library
+add_library(camera_node_lib
+  src/Camera/Camera_Node.cpp
+)
+ament_target_dependencies(camera_node_lib
+  rclcpp
+  sensor_msgs
+)
+
+# Colour Detector Library - FIXED: Added ImageProcessor_Node.cpp
+add_library(colour_detector_lib 
+  src/Camera/ColourDetector.cpp
+  src/Camera/ImageProcessor_Node.cpp
+)
+ament_target_dependencies(colour_detector_lib 
+  rclcpp 
+  sensor_msgs 
+  cv_bridge 
+  OpenCV 
+  apriltag_msgs 
+  std_msgs
+)
+
+# AprilTag Detector Library (conditional) - FIXED: Added ImageProcessor_Node.cpp
+if(BUILD_APRILTAG_DETECTOR)
+  add_library(apriltag_detector_lib 
+    src/Camera/AprilTagDetector.cpp
+    src/Camera/ImageProcessor_Node.cpp
+  )
+  
+  ament_target_dependencies(apriltag_detector_lib 
+    rclcpp 
+    sensor_msgs 
+    cv_bridge 
+    OpenCV 
+    apriltag_msgs 
+    std_msgs
+  )
+  
+  target_link_libraries(apriltag_detector_lib 
+    apriltag::apriltag
+  )
+endif()
+
+# ============================================================================
+# ROBOT MANAGER NODE
+# ============================================================================
+
+# Dynamic Warehouse Manager Node
 add_executable(warehouse_manager_node
   src/Robot/warehouse_manager_node.cpp
 )
@@ -356,18 +394,30 @@ ament_target_dependencies(warehouse_manager_node
   visualization_msgs
   sensor_msgs
   cv_bridge
-  OpenCV
 )
 
 # Add apriltag_msgs dependency if available
 if(apriltag_msgs_FOUND)
   ament_target_dependencies(warehouse_manager_node apriltag_msgs)
 endif()
+
 target_link_libraries(warehouse_manager_node
   delivery_robot_lib
   inspection_robot_lib
-  camera_lib
+  camera_node_lib
+  colour_detector_lib
 )
+
+# Add apriltag library if available
+if(BUILD_APRILTAG_DETECTOR)
+  target_link_libraries(warehouse_manager_node
+    apriltag_detector_lib
+  )
+endif()
+
+# ============================================================================
+# UTILITY NODES
+# ============================================================================
 
 # Twist to TwistStamped Bridge - UPDATED PATH
 add_executable(twist_stamped_bridge
@@ -393,10 +443,10 @@ target_link_libraries(zone_marker_node
 )
 
 # ============================================================================
-# CAMERA NODES
+# CAMERA NODES (Standalone Executables)
 # ============================================================================
 
-# Camera Node - UPDATED PATH
+# Camera Node
 add_executable(camera_node
   src/Camera/Camera_Node.cpp
 )
@@ -405,9 +455,8 @@ ament_target_dependencies(camera_node
   sensor_msgs
 )
 
-# Colour Detector Node - UPDATED PATHS
+# Colour Detector Node
 add_executable(colour_detector_node 
-  src/Camera/ColourDetector.cpp
   src/Camera/ImageProcessor_Node.cpp
 )
 ament_target_dependencies(colour_detector_node 
@@ -418,11 +467,13 @@ ament_target_dependencies(colour_detector_node
   apriltag_msgs 
   std_msgs
 )
+target_link_libraries(colour_detector_node
+  colour_detector_lib
+)
 
-# AprilTag Detector Node (conditional) - UPDATED PATHS
+# AprilTag Detector Node (conditional)
 if(BUILD_APRILTAG_DETECTOR)
   add_executable(apriltag_detector_node 
-    src/Camera/AprilTagDetector.cpp
     src/Camera/ImageProcessor_Node.cpp
   )
 
@@ -436,23 +487,9 @@ if(BUILD_APRILTAG_DETECTOR)
   )
 
   target_link_libraries(apriltag_detector_node 
-    apriltag::apriltag
+    apriltag_detector_lib
   )
 endif()
-
-# Exploration Path Tracker Node (Visualization) - COMMENTED OUT - Missing files
-# add_executable(exploration_path_tracker_node
-#   src/Visualization/exploration_path_tracker_node.cpp
-#   src/Visualization/ExplorationPathTracker.cpp
-# )
-# 
-# ament_target_dependencies(exploration_path_tracker_node
-#   rclcpp
-#   nav_msgs
-#   geometry_msgs
-#   visualization_msgs
-#   std_msgs
-# )
 
 # ============================================================================
 # INSTALL
@@ -468,7 +505,6 @@ set(INSTALL_TARGETS
   zone_marker_node
   camera_node
   colour_detector_node
-  # exploration_path_tracker_node  # Commented out - missing files
 )
 
 # Add apriltag_detector_node if it was built
@@ -489,12 +525,25 @@ install(TARGETS
   exploration_planner_lib
   motion_controller_lib
   autonomous_exploration_lib
+  warehouse_robot_base_lib
   delivery_robot_lib
   inspection_robot_lib
+  camera_node_lib
+  colour_detector_lib
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
+
+# Install apriltag_detector_lib if it was built
+if(BUILD_APRILTAG_DETECTOR)
+  install(TARGETS
+    apriltag_detector_lib
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+  )
+endif()
 
 # Install header files - UPDATED to include subdirectories
 install(DIRECTORY 
