@@ -40,9 +40,9 @@ AutonomousExplorationRobot::AutonomousExplorationRobot(rclcpp::Node::SharedPtr n
       relocalization_start_time_(node->now()) {
     
     // Initialize SLAM components
-    slam_controller_ = std::make_unique<SlamController>(node);
-    exploration_planner_ = std::make_unique<ExplorationPlanner>(node);
-    motion_controller_ = std::make_unique<MotionController>(node);
+    slam_controller_ = std::make_unique<SlamController>();
+    motion_controller_ = std::make_unique<MotionController>();
+    exploration_planner_ = std::make_unique<ExplorationPlanner>();
     
     // Set fast speeds for exploration
     motion_controller_->setExplorationSpeeds();

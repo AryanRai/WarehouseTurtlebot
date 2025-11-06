@@ -1,11 +1,10 @@
 // ============================================================================
 // MTRX3760 Project 2 - 
 // File: SlamController.hpp
-// Description: Header for SlamController class. Defines SLAM Toolbox
-//              integration for mapping, localization, and map management
-//              operations in warehouse environments.
+// Description: SlamController ROS2 node for SLAM Toolbox integration.
+//              Publishes map and pose data, manages localization state.
 // Author(s): Dylan George
-// Last Edited: 2025-11-02
+// Last Edited: 2025-11-06
 // ============================================================================
 
 #ifndef SLAM_CONTROLLER_HPP
@@ -14,43 +13,49 @@
 #include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav_msgs/msg/odometry.hpp>
-#include <sensor_msgs/msg/laser_scan.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
+#include <std_msgs/msg/bool.hpp>
+#include <std_msgs/msg/empty.hpp>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/buffer.h>
 #include <memory>
 #include <string>
 
-class SlamController {
+class SlamController : public rclcpp::Node {
 public:
-    SlamController(rclcpp::Node::SharedPtr node);
+    SlamController();
     ~SlamController() = default;
     
-    // Map access
-    nav_msgs::msg::OccupancyGrid::SharedPtr getCurrentMap() const;
-    bool hasValidMap() const;
+    // Public methods for backwards compatibility (if needed)
+    nav_msgs::msg::OccupancyGrid::SharedPtr getCurrentMap() const { return current_map_; }
+    bool hasValidMap() const { return has_valid_map_; }
+    geometry_msgs::msg::Pose getCurrentPose() const { return current_pose_; }
+    bool hasValidPose() const { return has_valid_pose_; }
+    bool isExplorationComplete() const { return exploration_complete_; }
     
-    // Pose access
-    geometry_msgs::msg::Pose getCurrentPose() const;
-    bool hasValidPose() const;
-    
-    // Map saving
+    // Public methods for controlling SLAM
     void saveMap(const std::string& map_name = "warehouse_map");
-    
-    // Exploration status
-    bool isExplorationComplete() const;
     void setExplorationComplete(bool complete);
     
 private:
-    rclcpp::Node::SharedPtr node_;
-    
     // Subscribers
     rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
     
+    // Publishers
+    rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr map_pub_;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr map_ready_pub_;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr exploration_status_pub_;
+    
     // TF2
     std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+    
+    // Timers
+    rclcpp::TimerBase::SharedPtr pose_publish_timer_;
+    rclcpp::TimerBase::SharedPtr map_republish_timer_;
     
     // State
     nav_msgs::msg::OccupancyGrid::SharedPtr current_map_;
@@ -59,12 +64,21 @@ private:
     bool has_valid_pose_;
     bool exploration_complete_;
     
+    // Parameters
+    double pose_publish_rate_;  // Hz
+    double map_republish_rate_;  // Hz
+    std::string map_frame_;
+    std::string base_frame_;
+    
     // Callbacks
     void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
     void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
+    void posePublishCallback();
+    void mapRepublishCallback();
     
     // Helper functions
     void updatePoseFromTF();
+    void declareParameters();
 };
 
 #endif // SLAM_CONTROLLER_HPP

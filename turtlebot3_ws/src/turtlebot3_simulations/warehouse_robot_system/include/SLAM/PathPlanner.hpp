@@ -1,11 +1,10 @@
 // ============================================================================
 // MTRX3760 Project 2 - 
 // File: PathPlanner.hpp
-// Description: Header for CPathPlanner class. Defines A* pathfinding with
-//              cost map support and TSP optimization for efficient multi-point
-//              navigation in warehouse environments.
+// Description: PathPlanner ROS2 node for A* pathfinding with cost map support.
+//              Provides path planning capability for navigation requests.
 // Author(s): Dylan George
-// Last Edited: 2025-11-02
+// Last Edited: 2025-11-06
 // ============================================================================
 
 #ifndef PATH_PLANNER_HPP
@@ -25,23 +24,40 @@
 
 using GridCell = std::pair<int, int>;
 
-class PathPlanner {
+// Simple path request/response structures (no nav2_msgs dependency)
+namespace path_planning {
+    struct PathRequest {
+        geometry_msgs::msg::PoseStamped start;
+        geometry_msgs::msg::PoseStamped goal;
+    };
+    
+    struct PathResponse {
+        nav_msgs::msg::Path path;
+        bool success;
+    };
+}
+
+class PathPlanner : public rclcpp::Node {
 public:
-    // Grid/World conversions
+    PathPlanner();
+    ~PathPlanner() = default;
+    
+    // Public method for direct path planning (backwards compatible)
+    nav_msgs::msg::Path planPath(const geometry_msgs::msg::PoseStamped& start,
+                                  const geometry_msgs::msg::PoseStamped& goal);
+    
+    // Static utility functions (kept as static for use by other nodes)
     static int gridToIndex(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p);
     static int8_t getCellValue(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p);
     static geometry_msgs::msg::Point gridToWorld(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p);
     static GridCell worldToGrid(const nav_msgs::msg::OccupancyGrid& mapdata, const geometry_msgs::msg::Point& wp);
     
-    // Distance calculations
     static double euclideanDistance(const GridCell& p1, const GridCell& p2);
     static double euclideanDistance(const std::pair<double, double>& p1, const std::pair<double, double>& p2);
     
-    // Cell validation
     static bool isCellInBounds(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p);
     static bool isCellWalkable(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p);
     
-    // Neighbor finding
     static std::vector<GridCell> neighborsOf4(const nav_msgs::msg::OccupancyGrid& mapdata, 
                                                const GridCell& p, bool must_be_walkable = true);
     static std::vector<GridCell> neighborsOf8(const nav_msgs::msg::OccupancyGrid& mapdata, 
@@ -49,41 +65,58 @@ public:
     static std::vector<std::pair<GridCell, double>> neighborsAndDistancesOf8(
         const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p, bool must_be_walkable = true);
     
-    // C-Space calculation
     static std::tuple<nav_msgs::msg::OccupancyGrid, nav_msgs::msg::GridCells> 
         calcCSpace(const nav_msgs::msg::OccupancyGrid& mapdata, bool include_cells = false);
     
-    // Cost map calculation
     static cv::Mat calcCostMap(const nav_msgs::msg::OccupancyGrid& mapdata);
     
-    // A* pathfinding
     static std::tuple<std::vector<GridCell>, double, GridCell, GridCell> 
         aStar(const nav_msgs::msg::OccupancyGrid& mapdata, const cv::Mat& cost_map,
               const GridCell& start, const GridCell& goal);
     
-    // Path conversion
     static nav_msgs::msg::Path pathToMessage(const nav_msgs::msg::OccupancyGrid& mapdata, 
                                               const std::vector<GridCell>& path);
     static std::vector<geometry_msgs::msg::PoseStamped> pathToPoses(
         const nav_msgs::msg::OccupancyGrid& mapdata, const std::vector<GridCell>& path);
     
-    // Grid cells message
     static nav_msgs::msg::GridCells getGridCells(const nav_msgs::msg::OccupancyGrid& mapdata, 
                                                   const std::vector<GridCell>& cells);
 
 private:
+    // Subscribers
+    rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
+    
+    // Publishers
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
+    rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr cspace_pub_;
+    rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr cost_map_pub_;
+    rclcpp::Publisher<nav_msgs::msg::GridCells>::SharedPtr path_cells_pub_;
+    
+    // State
+    nav_msgs::msg::OccupancyGrid::SharedPtr current_map_;
+    cv::Mat current_cost_map_;
+    bool has_valid_map_;
+    
+    // Parameters
     static constexpr int WALKABLE_THRESHOLD = 50;
-    static constexpr int CSPACE_PADDING = 3;  // Reduced from 5 to 3 (15cm vs 25cm inflation)
+    static constexpr int CSPACE_PADDING = 3;
     static constexpr double COST_MAP_WEIGHT = 1000.0;
     static constexpr int MIN_PATH_LENGTH = 12;
     static constexpr int POSES_TO_TRUNCATE = 8;
     
+    // Callbacks
+    void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
+    
+    // Helper functions
     static GridCell getFirstWalkableNeighbor(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& start);
     static double getCostMapValue(const cv::Mat& cost_map, const GridCell& p);
     static cv::Mat createHallwayMask(const nav_msgs::msg::OccupancyGrid& mapdata, 
                                      const cv::Mat& cost_map, int threshold);
     static bool isHallwayCell(const nav_msgs::msg::OccupancyGrid& mapdata, 
                               const cv::Mat& cost_map, const GridCell& p, int threshold);
+    
+    void updateCostMap();
+    void publishVisualization(const std::vector<GridCell>& path);
 };
 
 #endif // PATH_PLANNER_HPP

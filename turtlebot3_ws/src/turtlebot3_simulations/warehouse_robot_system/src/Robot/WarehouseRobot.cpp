@@ -34,8 +34,8 @@ WarehouseRobot::WarehouseRobot(rclcpp::Node::SharedPtr node)
       low_battery_return_triggered_(false)
 {
     // Initialize SLAM components
-    slam_controller_ = std::make_unique<SlamController>(node);
-    motion_controller_ = std::make_unique<MotionController>(node);
+    slam_controller_ = std::make_unique<SlamController>();
+    motion_controller_ = std::make_unique<MotionController>();
     
     // Create status publisher
     status_pub_ = node_->create_publisher<std_msgs::msg::String>("/robot_status", 10);

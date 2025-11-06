@@ -117,6 +117,7 @@ ament_target_dependencies(FrontierSearch
   geometry_msgs
 )
 target_link_libraries(FrontierSearch
+  motion_controller_lib
   path_planner_lib
 )
 
@@ -149,6 +150,7 @@ ament_target_dependencies(exploration_planner_lib
   std_msgs
 )
 target_link_libraries(exploration_planner_lib
+  motion_controller_lib
   FrontierSearch
   path_planner_lib
 )
@@ -188,6 +190,7 @@ target_link_libraries(autonomous_exploration_lib
   slam_controller_lib
   exploration_planner_lib
   motion_controller_lib
+  path_planner_lib
   yaml-cpp
 )
 
@@ -280,6 +283,7 @@ ament_target_dependencies(delivery_robot_node
   std_srvs
 )
 target_link_libraries(delivery_robot_node
+  motion_controller_lib
   delivery_robot_lib
 )
 
@@ -326,6 +330,7 @@ if(apriltag_msgs_FOUND)
   ament_target_dependencies(inspection_robot_node apriltag_msgs)
 endif()
 target_link_libraries(inspection_robot_node
+  motion_controller_lib
   inspection_robot_lib
 )
 
@@ -402,6 +407,7 @@ if(apriltag_msgs_FOUND)
 endif()
 
 target_link_libraries(warehouse_manager_node
+  motion_controller_lib
   delivery_robot_lib
   inspection_robot_lib
   camera_node_lib

@@ -1,11 +1,10 @@
 // ============================================================================
 // MTRX3760 Project 2 - 
 // File: PathPlanner.cpp
-// Description: Implementation of CPathPlanner. Provides A* path planning with
-//              dynamic obstacle avoidance and TSP route optimization for
-//              efficient multi-waypoint navigation in warehouse environments.
+// Description: Implementation of PathPlanner ROS2 node. Provides A* path
+//              planning service with cost map support for navigation.
 // Author(s): Inez Dumas, Aryan Rai
-// Last Edited: 2025-11-02
+// Last Edited: 2025-11-06
 // ============================================================================
 
 #include "SLAM/PathPlanner.hpp"
@@ -26,6 +25,124 @@ struct GridCellHash {
         return std::hash<int>()(cell.first) ^ (std::hash<int>()(cell.second) << 1);
     }
 };
+
+PathPlanner::PathPlanner()
+    : Node("path_planner"),
+      has_valid_map_(false) {
+    
+    // Subscribers
+    map_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
+        "/slam/map", 10,
+        std::bind(&PathPlanner::mapCallback, this, std::placeholders::_1)
+    );
+    
+    // Publishers
+    path_pub_ = this->create_publisher<nav_msgs::msg::Path>("/path_planner/path", 10);
+    cspace_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("/path_planner/cspace", 10);
+    cost_map_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("/path_planner/cost_map", 10);
+    path_cells_pub_ = this->create_publisher<nav_msgs::msg::GridCells>("/path_planner/path_cells", 10);
+    
+    // No service in simplified version - use public planPath() method instead
+    
+    RCLCPP_INFO(this->get_logger(), "PathPlanner node initialized");
+}
+
+void PathPlanner::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
+    current_map_ = msg;
+    has_valid_map_ = true;
+    
+    // Update cost map
+    updateCostMap();
+    
+    RCLCPP_DEBUG(this->get_logger(), "Map updated, cost map recalculated");
+}
+
+void PathPlanner::updateCostMap() {
+    if (!has_valid_map_ || !current_map_) return;
+    
+    current_cost_map_ = calcCostMap(*current_map_);
+    
+    // Optionally publish cost map for visualization
+    nav_msgs::msg::OccupancyGrid cost_map_msg;
+    cost_map_msg.header.stamp = this->now();
+    cost_map_msg.header.frame_id = "map";
+    cost_map_msg.info = current_map_->info;
+    
+    // Normalize cost map to [0, 100]
+    double max_val;
+    cv::minMaxLoc(current_cost_map_, nullptr, &max_val);
+    
+    cost_map_msg.data.resize(current_cost_map_.rows * current_cost_map_.cols);
+    for (int y = 0; y < current_cost_map_.rows; y++) {
+        for (int x = 0; x < current_cost_map_.cols; x++) {
+            int idx = y * current_cost_map_.cols + x;
+            double normalized = (current_cost_map_.at<uint8_t>(y, x) / max_val) * 100.0;
+            cost_map_msg.data[idx] = static_cast<int8_t>(normalized);
+        }
+    }
+    
+    cost_map_pub_->publish(cost_map_msg);
+}
+
+nav_msgs::msg::Path PathPlanner::planPath(const geometry_msgs::msg::PoseStamped& start,
+                                           const geometry_msgs::msg::PoseStamped& goal) {
+    nav_msgs::msg::Path empty_path;
+    empty_path.header.frame_id = "map";
+    empty_path.header.stamp = this->now();
+    
+    if (!has_valid_map_ || !current_map_) {
+        RCLCPP_WARN(this->get_logger(), "No valid map available for path planning");
+        return empty_path;
+    }
+    
+    // Extract start and goal
+    GridCell start_cell = worldToGrid(*current_map_, start.pose.position);
+    GridCell goal_cell = worldToGrid(*current_map_, goal.pose.position);
+    
+    RCLCPP_INFO(this->get_logger(), "Planning path from (%.2f, %.2f) to (%.2f, %.2f)",
+               start.pose.position.x, start.pose.position.y,
+               goal.pose.position.x, goal.pose.position.y);
+    
+    // Calculate C-space
+    auto [cspace, cspace_cells] = calcCSpace(*current_map_, false);
+    cspace_pub_->publish(cspace);
+    
+    // Execute A*
+    auto [path, cost, actual_start, actual_goal] = 
+        aStar(cspace, current_cost_map_, start_cell, goal_cell);
+    
+    if (path.empty()) {
+        RCLCPP_WARN(this->get_logger(), "No path found");
+        return empty_path;
+    }
+    
+    // Convert to path message
+    auto result_path = pathToMessage(*current_map_, path);
+    result_path.header.stamp = this->now();
+    
+    // Publish path
+    path_pub_->publish(result_path);
+    
+    // Publish visualization
+    publishVisualization(path);
+    
+    RCLCPP_INFO(this->get_logger(), "Path found with %zu waypoints, cost: %.2f", 
+               path.size(), cost);
+    
+    return result_path;
+}
+
+void PathPlanner::publishVisualization(const std::vector<GridCell>& path) {
+    if (!has_valid_map_ || !current_map_) return;
+    
+    auto grid_cells = getGridCells(*current_map_, path);
+    grid_cells.header.stamp = this->now();
+    path_cells_pub_->publish(grid_cells);
+}
+
+// ============================================================================
+// Static Utility Functions
+// ============================================================================
 
 int PathPlanner::gridToIndex(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p) {
     return p.second * mapdata.info.width + p.first;
