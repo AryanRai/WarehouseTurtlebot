@@ -1,12 +1,10 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: zone_marker_node.cpp
-// Description: ROS2 node for interactive zone definition with visualization.
-//              Subscribes to clicked points and publishes zone markers for
-//              warehouse area definition and robot task assignment.
-// Author(s): Aryan Rai, Inez Dumas
-// Last Edited: 2025-11-02
-// ============================================================================
+// Author(s): Aryan Rai
+//
+// Description: ROS2 node for managing delivery zone markers in RViz.
+//              Subscribes to clicked points to add zones, publishes markers,
+//              and provides service to clear all zones.
 
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/point_stamped.hpp>

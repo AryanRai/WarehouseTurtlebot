@@ -1,12 +1,9 @@
-// ============================================================================
-// File: CameraNode.cpp
-// Description: Implementation of CCameraNode. Subscribes to multiple camera
-//              topics and republishes all data to a single unified topic.
-//              Allows downstream nodes to receive camera data without knowing
-//              the specific camera hardware configuration.
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
+// File: Camera_Node.cpp
 // Author(s): Dylan George
-// Last Edited: 2025-10-27
-// ============================================================================
+//
+// Description: Implementation of unified camera node that subscribes to multiple
+//              camera topics and republishes images to a single output topic.
 
 #include "Camera/Camera_Node.hpp"
 

@@ -1,12 +1,8 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: AprilTagDetector.cpp
-// Description: Implementation of independent AprilTag detection using native
-//              apriltag library. Detects 16h5 tags, computes orientation,
-//              provides GUI visualization, and publishes for color detection.
 // Author(s): Dylan George
-// Last Edited: 2025-11-02
-// ============================================================================
+//
+// Description: Implementation of AprilTag 16h5 detector node using native AprilTag library.
 
 #include "Camera/AprilTagDetector.hpp"
 #include <opencv2/imgproc.hpp>

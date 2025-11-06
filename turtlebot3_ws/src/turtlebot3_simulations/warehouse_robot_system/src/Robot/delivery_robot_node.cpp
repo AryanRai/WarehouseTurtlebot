@@ -1,12 +1,9 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: delivery_robot_node.cpp
-// Description: ROS2 node entry point for delivery robot operations. Manages
-//              the lifecycle of the delivery robot and coordinates with
-//              the warehouse management system for package delivery tasks.
-// Author(s): Aryan, Inez Dumas, Tony Bechara
-// Last Edited: 2025-11-02
-// ============================================================================
+// Author(s): Inez Dumas, Aryan Rai
+//
+// Description: Implementation of delivery robot node for multi-point delivery
+//              with route optimization via TSP.
 
 #include <rclcpp/rclcpp.hpp>
 #include "Robot/DeliveryRobot.hpp"

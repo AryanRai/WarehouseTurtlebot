@@ -80,23 +80,23 @@ private:
     double closest_distance_;
     
     // Pure pursuit parameters
-    static constexpr double LOOKAHEAD_DISTANCE = 0.18;  // m
-    static constexpr double WHEEL_BASE = 0.16;  // m
+    static constexpr double LOOKAHEAD_DISTANCE = 0.18; 
+    static constexpr double WHEEL_BASE = 0.16;  
     static constexpr double TURN_SPEED_KP = 1.25;
-    static constexpr double DISTANCE_TOLERANCE = 0.1;  // m
-    static constexpr double CONTROL_RATE = 20.0;  // Hz
+    static constexpr double DISTANCE_TOLERANCE = 0.1; 
+    static constexpr double CONTROL_RATE = 20.0; 
     
     // Speed limits (configurable per robot type)
-    double max_drive_speed_;   // m/s
-    double max_turn_speed_;    // rad/s
+    double max_drive_speed_;   
+    double max_turn_speed_;    
     
     // Default speed profiles
-    static constexpr double INSPECTION_LINEAR_SPEED = 0.05;   // m/s
-    static constexpr double INSPECTION_ANGULAR_SPEED = 0.6;   // rad/s
-    static constexpr double DELIVERY_LINEAR_SPEED = 0.10;     // m/s
-    static constexpr double DELIVERY_ANGULAR_SPEED = 1.25;    // rad/s
-    static constexpr double EXPLORATION_LINEAR_SPEED = 0.10;  // m/s
-    static constexpr double EXPLORATION_ANGULAR_SPEED = 1.25; // rad/s
+    static constexpr double INSPECTION_LINEAR_SPEED = 0.05;  
+    static constexpr double INSPECTION_ANGULAR_SPEED = 0.6;  
+    static constexpr double DELIVERY_LINEAR_SPEED = 0.10;     
+    static constexpr double DELIVERY_ANGULAR_SPEED = 1.25;    
+    static constexpr double EXPLORATION_LINEAR_SPEED = 0.10;  
+    static constexpr double EXPLORATION_ANGULAR_SPEED = 1.25; 
     
     // Obstacle avoidance parameters
     static constexpr double OBSTACLE_AVOIDANCE_GAIN = 0.3;

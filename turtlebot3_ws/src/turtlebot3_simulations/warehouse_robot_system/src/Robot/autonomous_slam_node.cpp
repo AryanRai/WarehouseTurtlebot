@@ -1,12 +1,8 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: autonomous_slam_node.cpp
-// Description: ROS2 node for autonomous SLAM exploration. Implements frontier
-//              exploration to systematically map unknown environments using
-//              the exploration robot's capabilities.
-// Author(s): Aryan, Inez Dumas
-// Last Edited: 2025-11-02
-// ============================================================================
+// Author(s): Aryan Rai, Inez Dumas, Tony Bechara
+//
+// Description: Implementation of autonomous SLAM exploration node for warehouse robot.
 
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>

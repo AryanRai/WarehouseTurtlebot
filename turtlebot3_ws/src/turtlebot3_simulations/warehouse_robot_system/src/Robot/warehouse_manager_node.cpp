@@ -1,12 +1,10 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: warehouse_manager_node.cpp
-// Description: Polymorphic warehouse robot manager with dynamic robot 
-//              switching using base class pointers. Provides unified control
-//              interface equivalent to run_autonomous_slam.sh functionality.
-// Author(s): Dylan George
-// Last Edited: 2025-11-05
-// ============================================================================
+// Author(s): Aryan Rai, Inez Dumas
+//
+// Description: Implementation of polymorphic warehouse manager node
+//              that dynamically manages inspection and delivery robots
+//              using polymorphism and dynamic camera system control.
 
 #include "Robot/WarehouseRobot.hpp"
 #include "Robot/InspectionRobot.hpp"

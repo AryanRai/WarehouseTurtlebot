@@ -1,11 +1,8 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: SlamController.cpp
-// Description: Implementation of SlamController ROS2 node. Manages SLAM
-//              Toolbox integration, publishes map and pose data for system.
-// Author(s): Aryan Rai, Inez Dumas
-// Last Edited: 2025-11-06
-// ============================================================================
+// Author(s): Inez Dumas, Tony Bechara, Aryan Rai
+//
+// Description: Implementation of slam controller for managing SLAM operations.
 
 #include "SLAM/SlamController.hpp"
 #include <fstream>

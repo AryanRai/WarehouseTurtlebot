@@ -1,11 +1,8 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: ExplorationPlanner.cpp
-// Description: Implementation of ExplorationPlanner ROS2 node. Manages
-//              frontier-based autonomous exploration with timer-driven planning.
-// Author(s): Aryan Rai, Inez Dumas
-// Last Edited: 2025-11-06
-// ============================================================================
+// Author(s): Inez Dumas, Dylan George, Aryan Rai
+//
+// Description: Implementation of exploration planner for autonomous robot mapping.
 
 #include "SLAM/ExplorationPlanner.hpp"
 #include <algorithm>
@@ -47,18 +44,12 @@ ExplorationPlanner::ExplorationPlanner()
     );
     
     // Publishers
-    exploration_path_pub_ = this->create_publisher<nav_msgs::msg::Path>("/exploration/path", 10);
+    exploration_path_pub_ = this->create_publisher<nav_msgs::msg::Path>("/motion/path", 10);
     exploration_complete_pub_ = this->create_publisher<std_msgs::msg::Bool>("/exploration/complete", 10);
     
     if (debug_mode_) {
         frontier_cells_pub_ = this->create_publisher<nav_msgs::msg::GridCells>(
             "/exploration/frontiers", 10
-        );
-        start_pub_ = this->create_publisher<nav_msgs::msg::GridCells>(
-            "/exploration/start", 10
-        );
-        goal_pub_ = this->create_publisher<nav_msgs::msg::GridCells>(
-            "/exploration/goal", 10
         );
         cspace_pub_ = this->create_publisher<nav_msgs::msg::GridCells>(
             "/exploration/cspace", 10

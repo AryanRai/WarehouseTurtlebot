@@ -1,13 +1,9 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
-// File: DeliveryRobot.cpp
-// Description: Implementation of DeliveryRobot (inherits from WarehouseRobot).
-//              Handles autonomous warehouse delivery operations including
-//              package pickup, routing via TSP optimization, and precise
-//              docking for deliveries.
-// Author(s): Aryan Rai, Inez Dumas
-// Last Edited: 2025-11-02
-// ============================================================================
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
+// File: Camera_Node.cpp
+// Author(s): Inez Dumas, Aryan Rai
+//
+// Description: Implementation of delivery robot for multi-point delivery
+//              with route optimization via TSP.
 
 #include "Robot/DeliveryRobot.hpp"
 #include <yaml-cpp/yaml.h>

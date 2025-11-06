@@ -1,13 +1,8 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: ColourDetector.cpp
-// Description: Implementation of CColourDetector. Analyses colour in regions
-//              surrounding AprilTags to classify warehouse damage types.
-//              Combines tag location data with HSV colour analysis to generate
-//              complete damage reports for inspection robot.
 // Author(s): Dylan George
-// Last Edited: 2025-11-02
-// ============================================================================
+//
+// Description: Implementation of colour detector node for damage site classification
 
 #include "Camera/ColourDetector.hpp"
 #include <sstream>

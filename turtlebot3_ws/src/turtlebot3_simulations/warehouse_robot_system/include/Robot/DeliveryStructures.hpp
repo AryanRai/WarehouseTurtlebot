@@ -1,12 +1,8 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: DeliveryStructures.hpp
-// Description: Data structures for delivery robot operations. Defines zones,
-//              tasks, and delivery state information for warehouse package
-//              management and route optimization systems.
-// Author(s): Aryan
-// Last Edited: 2025-11-02
-// ============================================================================
+// Author(s): Aryan Rai
+//
+// Description: Data structures for delivery robot operations.
 
 #ifndef DELIVERY_STRUCTURES_HPP
 #define DELIVERY_STRUCTURES_HPP

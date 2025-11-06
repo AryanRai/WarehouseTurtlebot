@@ -1,11 +1,8 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
-// File: SlamController.hpp
-// Description: SlamController ROS2 node for SLAM Toolbox integration.
-//              Publishes map and pose data, manages localization state.
-// Author(s): Dylan George
-// Last Edited: 2025-11-06
-// ============================================================================
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
+// File: MotionController.hpp
+// Author(s): Inez Dumas, Tony Bechara, Aryan Rai, Filip Gusavac
+//
+// Description: slam controller for managing SLAM operations.
 
 #ifndef SLAM_CONTROLLER_HPP
 #define SLAM_CONTROLLER_HPP

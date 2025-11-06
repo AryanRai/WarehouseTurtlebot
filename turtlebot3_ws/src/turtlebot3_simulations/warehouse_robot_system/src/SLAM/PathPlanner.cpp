@@ -1,11 +1,8 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: PathPlanner.cpp
-// Description: Implementation of PathPlanner ROS2 node. Provides A* path
-//              planning service with cost map support for navigation.
-// Author(s): Inez Dumas, Aryan Rai
-// Last Edited: 2025-11-06
-// ============================================================================
+// Author(s): Filip Gusavac, Tony Bechara, Aryan Rai
+//
+// Description: Implementation of path planner for robot navigation.
 
 #include "SLAM/PathPlanner.hpp"
 #include <tf2/LinearMath/Quaternion.h>
@@ -140,9 +137,6 @@ void PathPlanner::publishVisualization(const std::vector<GridCell>& path) {
     path_cells_pub_->publish(grid_cells);
 }
 
-// ============================================================================
-// Static Utility Functions
-// ============================================================================
 
 int PathPlanner::gridToIndex(const nav_msgs::msg::OccupancyGrid& mapdata, const GridCell& p) {
     return p.second * mapdata.info.width + p.first;

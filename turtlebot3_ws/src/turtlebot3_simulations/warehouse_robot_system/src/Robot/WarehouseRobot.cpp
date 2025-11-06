@@ -1,12 +1,10 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: WarehouseRobot.cpp
+// Author(s): Inez Dumas, Aryan Rai, Dylan George, Tony Bechara, Filip Gusavac
+//
 // Description: Implementation of WarehouseRobot base class. Provides common
 //              functionality for delivery and inspection robots including
 //              TSP optimization, docking, relocalization, and navigation utilities.
-// Author(s): Aryan Rai, Inez Dumas, Dylan George
-// Last Edited: 2025-11-02
-// ============================================================================
 
 #include "Robot/WarehouseRobot.hpp"
 #include <cmath>
@@ -46,10 +44,6 @@ WarehouseRobot::WarehouseRobot(rclcpp::Node::SharedPtr node)
 bool WarehouseRobot::hasValidMap() const {
     return slam_controller_ && slam_controller_->hasValidMap();
 }
-
-// ============================================================================
-// TSP Route Optimization
-// ============================================================================
 
 std::vector<std::vector<double>> WarehouseRobot::buildDistanceMatrix(
     const geometry_msgs::msg::Point& start,
@@ -214,10 +208,6 @@ double WarehouseRobot::calculateTourCost(
     
     return total_cost;
 }
-
-// ============================================================================
-// Navigation and Docking
-// ============================================================================
 
 bool WarehouseRobot::performRelocalization() {
     auto current_pose = slam_controller_->getCurrentPose();
@@ -597,10 +587,6 @@ double WarehouseRobot::checkMinDistanceToWalls(
     return min_distance;
 }
 
-// ============================================================================
-// Battery Monitoring
-// ============================================================================
-
 void WarehouseRobot::initializeBatteryMonitoring(double threshold) {
     battery_low_threshold_ = threshold;
     battery_monitoring_enabled_ = (threshold >= 0.0);
@@ -662,10 +648,6 @@ void WarehouseRobot::emergencyReturnHome() {
     publishStatus("EMERGENCY: Low battery - returning home");
     returnToHome();
 }
-
-// ============================================================================
-// Utility Methods
-// ============================================================================
 
 void WarehouseRobot::publishStatus(const std::string& status) {
     std_msgs::msg::String msg;

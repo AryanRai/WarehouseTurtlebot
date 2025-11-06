@@ -1,12 +1,10 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: twist_stamped_bridge.cpp
-// Description: Simple bridge to convert Twist to TwistStamped messages for
-//              Gazebo compatibility. Ensures proper message timing and format
-//              conversion for simulation environment integration.
-// Author(s): Aryan Rai, Inez Dumas
-// Last Edited: 2025-11-02
-// ============================================================================
+// Author(s): Aryan Rai
+//
+// Description: ROS2 node that bridges geometry_msgs/Twist messages to
+//              geometry_msgs/TwistStamped messages for compatibility with
+//              MotionController which expects stamped messages.
 
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/twist.hpp>

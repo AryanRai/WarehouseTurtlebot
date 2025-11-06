@@ -1,12 +1,8 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: FrontierSearch.cpp
-// Description: Implementation of FrontierSearch algorithm. Identifies frontier
-//              cells for autonomous exploration, enabling systematic discovery
-//              of unmapped areas in warehouse environments.
 // Author(s): Aryan Rai
-// Last Edited: 2025-11-02
-// ============================================================================
+//
+// Description: Implementation of frontier search algorithm for autonomous exploration.
 
 #include "SLAM/FrontierSearch.hpp"
 #include <unordered_map>

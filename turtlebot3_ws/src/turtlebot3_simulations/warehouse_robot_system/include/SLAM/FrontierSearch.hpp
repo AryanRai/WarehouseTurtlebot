@@ -1,12 +1,8 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: FrontierSearch.hpp
-// Description: Header for FrontierSearch class. Defines expanding wavefront
-//              frontier detection algorithm for autonomous exploration and
-//              systematic mapping of unknown warehouse areas.
-// Author(s): Dylan George
-// Last Edited: 2025-11-02
-// ============================================================================
+// Author(s): Inez Dumas, Tony Bechara, Aryan Rai, Filip Gusavac
+//
+// Description: frontier search utility for autonomous exploration.
 
 #ifndef FRONTIER_SEARCH_HPP
 #define FRONTIER_SEARCH_HPP

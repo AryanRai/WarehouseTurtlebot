@@ -1,13 +1,10 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: DeliveryRobot.hpp
-// Description: Header for DeliveryRobot class (inherits from WarehouseRobot).
-//              Handles autonomous warehouse delivery operations including
-//              package pickup, routing via TSP optimization, and precise
-//              AprilTag-based docking for deliveries.
-// Author(s): Aryan
-// Last Edited: 2025-11-02
-// ============================================================================
+// Author(s): Inez Dumas, Tony Bechara, Aryan Rai, Filip Gusavac
+//
+// Description: header for CDeliveryRobot. Performs autonomous warehouse
+//              delivery operations including package pickup, routing via TSP
+//              optimization, and precise docking for deliveries.
 
 #ifndef DELIVERY_ROBOT_HPP
 #define DELIVERY_ROBOT_HPP
@@ -42,19 +39,11 @@ public:
      */
     ~DeliveryRobot() = default;
     
-    // ========================================================================
-    // Main Control (Override from base)
-    // ========================================================================
-    
     /**
      * @brief Main update loop for delivery operations
      */
     void update() override;
-    
-    // ========================================================================
-    // Polymorphic Interface Implementation
-    // ========================================================================
-    
+
     /**
      * @brief Get robot type
      * @return RobotType::DELIVERY
@@ -77,10 +66,6 @@ public:
      */
     bool isOperating() const override { return isDelivering(); }
     
-    // ========================================================================
-    // Delivery-Specific Methods
-    // ========================================================================
-    
     /**
      * @brief Start delivery operations
      */
@@ -96,10 +81,7 @@ public:
      * @return True if delivery in progress
      */
     bool isDelivering() const { return is_delivering_; }
-    
-    // ========================================================================
-    // Zone Management
-    // ========================================================================
+
     
     /**
      * @brief Load delivery zones from YAML file
@@ -130,10 +112,6 @@ public:
      */
     std::vector<DeliveryData::DeliveryZone> getZones() const { return zones_; }
     
-    // ========================================================================
-    // Delivery Management
-    // ========================================================================
-    
     /**
      * @brief Add a delivery request to queue
      * @param request Delivery request to add
@@ -158,9 +136,6 @@ public:
     void saveDeliveryRecord(const DeliveryData::DeliveryRecord& record);
     
 private:
-    // ========================================================================
-    // Delivery-Specific Data
-    // ========================================================================
     std::vector<DeliveryData::DeliveryZone> zones_;
     std::vector<DeliveryData::DeliveryRequest> delivery_queue_;
     std::vector<DeliveryData::DeliveryRecord> delivery_history_;
@@ -178,10 +153,6 @@ private:
     // Configuration
     std::string zones_file_;
     std::string delivery_log_file_;
-    
-    // ========================================================================
-    // Helper Methods
-    // ========================================================================
     
     /**
      * @brief Handle clicked point from RViz (for zone marking)

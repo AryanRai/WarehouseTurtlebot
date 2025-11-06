@@ -1,12 +1,10 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: WarehouseRobot.hpp
-// Description: Base class for warehouse robots (Delivery & Inspection).
-//              Contains common functionality including SLAM integration,
-//              TSP route optimization, docking behavior, and navigation.
-// Author(s): Aryan, Inez Dumas
-// Last Edited: 2025-11-02
-// ============================================================================
+// Author(s): Dylan George, Aryan Rai, Inez Dumas
+//
+// Description: Header for WarehouseRobot base class. Provides common
+//              functionality for delivery and inspection robots including
+//              TSP optimization, docking, relocalization, and navigation utilities.
 
 #ifndef WAREHOUSE_ROBOT_HPP
 #define WAREHOUSE_ROBOT_HPP
@@ -65,10 +63,6 @@ public:
      */
     virtual void update() = 0;
     
-    // ========================================================================
-    // Pure Virtual Interface for Polymorphism
-    // ========================================================================
-    
     /**
      * @brief Get robot type for identification
      * @return Robot type enumeration
@@ -90,10 +84,6 @@ public:
      * @return True if operations in progress
      */
     virtual bool isOperating() const = 0;
-    
-    // ========================================================================
-    // Common Interface Methods
-    // ========================================================================
     
     /**
      * @brief Check if robot has a valid map
@@ -120,17 +110,11 @@ public:
     rclcpp::Node::SharedPtr getNode() const { return node_; }
     
 protected:
-    // ========================================================================
-    // ROS and SLAM Components
-    // ========================================================================
     rclcpp::Node::SharedPtr node_;
     std::unique_ptr<SlamController> slam_controller_;
     std::unique_ptr<MotionController> motion_controller_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr status_pub_;
-    
-    // ========================================================================
-    // Common State Variables
-    // ========================================================================
+
     bool in_docking_mode_;
     bool in_target_docking_mode_;  // For zone/site docking
     double initial_yaw_;
@@ -146,10 +130,7 @@ protected:
     bool battery_monitoring_enabled_;
     bool low_battery_return_triggered_;
     rclcpp::Subscription<sensor_msgs::msg::BatteryState>::SharedPtr battery_sub_;
-    
-    // ========================================================================
-    // Common Constants
-    // ========================================================================
+
     static constexpr double DOCKING_DISTANCE = 0.5;       // Enter docking mode within 50cm
     static constexpr double HOME_TOLERANCE = 0.05;        // Success within 5cm
     static constexpr double TARGET_TOLERANCE = 0.08;      // Success within 8cm for targets
@@ -160,9 +141,6 @@ protected:
     static constexpr double RELOCALIZATION_SPEED = 1.57;  // rad/s (~90°/s)
     static constexpr double UPDATE_RATE = 10.0;           // Hz
     
-    // ========================================================================
-    // TSP Route Optimization
-    // ========================================================================
     
     /**
      * @brief Build distance matrix for TSP optimization using A*
@@ -200,9 +178,6 @@ protected:
         const std::vector<int>& tour,
         const std::vector<std::vector<double>>& distance_matrix);
     
-    // ========================================================================
-    // Navigation and Docking
-    // ========================================================================
     
     /**
      * @brief Return robot to home position
@@ -260,9 +235,6 @@ protected:
         const geometry_msgs::msg::Point& position,
         const nav_msgs::msg::OccupancyGrid& map);
     
-    // ========================================================================
-    // Battery Monitoring
-    // ========================================================================
     
     /**
      * @brief Initialize battery monitoring
@@ -288,9 +260,6 @@ protected:
      */
     virtual void emergencyReturnHome();
     
-    // ========================================================================
-    // Utility Methods
-    // ========================================================================
     
     /**
      * @brief Publish status message

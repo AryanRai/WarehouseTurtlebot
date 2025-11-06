@@ -1,12 +1,9 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: AutonomousExplorationRobot.cpp
-// Description: Implementation of CAutonomousExplorationRobot. Performs
-//              frontier-based autonomous exploration to map unknown warehouse
-//              environments and save maps for subsequent robot operations.
-// Author(s): Aryan, Inez Dumas
-// Last Edited: 2025-11-02
-// ============================================================================
+// Author(s): Aryan Rai
+//
+// Description: Implementation of CAutonomousExplorationRobot. Performs frontier-based
+//              autonomous exploration to map unknown warehouse environments.
 
 #include "Robot/AutonomousExplorationRobot.hpp"
 #include <tf2/LinearMath/Quaternion.h>

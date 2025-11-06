@@ -1,11 +1,8 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: MotionController.cpp
-// Description: Implementation of MotionController ROS2 node. Provides Pure
-//              Pursuit path following with obstacle avoidance at 20 Hz.
 // Author(s): Inez Dumas, Tony Bechara
-// Last Edited: 2025-11-06
-// ============================================================================
+//
+// Description: Implementation of motion controller for robot navigation.
 
 #include "SLAM/MotionController.hpp"
 #include <tf2/LinearMath/Quaternion.h>
@@ -396,9 +393,6 @@ geometry_msgs::msg::Twist MotionController::computeVelocityCommand() {
     return cmd_vel;
 }
 
-// ============================================================================
-// Speed Configuration
-// ============================================================================
 
 void MotionController::setMaxSpeeds(double linear_speed, double angular_speed) {
     max_drive_speed_ = linear_speed;

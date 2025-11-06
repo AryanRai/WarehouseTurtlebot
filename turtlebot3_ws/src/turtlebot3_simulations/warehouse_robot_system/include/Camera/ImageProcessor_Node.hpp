@@ -1,12 +1,8 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: ImageProcessor_Node.hpp
-// Description: Header for CImageProcessorNode base class. Defines ROS2 node
-//              for image processing with unified camera topic subscription
-//              and shared infrastructure for derived detector nodes.
 // Author(s): Dylan George
-// Last Edited: 2025-11-02
-// ============================================================================
+//
+// Description: Abstract base class for image processing nodes.
 
 #ifndef IMAGE_PROCESSOR_NODE_HPP
 #define IMAGE_PROCESSOR_NODE_HPP
@@ -26,10 +22,6 @@
 class CImageProcessorNode : public rclcpp::Node
 {
     public:
-        // ====================================================================
-        /// @name Constructor & Destructor
-        // ====================================================================
-        /// @{
         
         /**
          * @brief Constructor - Initialises the node and subscribes to the unified camera topic.
@@ -41,14 +33,8 @@ class CImageProcessorNode : public rclcpp::Node
          * @brief Virtual destructor to ensure proper cleanup in derived classes.
          */
         virtual ~CImageProcessorNode();
-        
-        /// @}
 
     protected:
-        // ====================================================================
-        /// @name Pure Virtual Methods (Must be Implemented by Derived Classes)
-        // ====================================================================
-        /// @{
         
         /**
          * @brief Processes a single OpenCV image. Must be implemented by derived classes.
@@ -59,12 +45,6 @@ class CImageProcessorNode : public rclcpp::Node
         virtual void ProcessImage(const cv::Mat &aImage, 
                                  const rclcpp::Time &aTimestamp) = 0;
         
-        /// @}
-
-        // ====================================================================
-        /// @name Utility Methods for Derived Classes
-        // ====================================================================
-        /// @{
         
         /**
          * @brief Checks if an OpenCV image is valid for processing.
@@ -78,14 +58,8 @@ class CImageProcessorNode : public rclcpp::Node
          * @return reference to this node's logger
          */
         rclcpp::Logger GetLogger() const;
-        
-        /// @}
 
     private:
-        // ====================================================================
-        /// @name Core Callback Methods
-        // ====================================================================
-        /// @{
         
         /**
          * @brief Callback for incoming camera images.
@@ -93,23 +67,8 @@ class CImageProcessorNode : public rclcpp::Node
          * @details Converts ROS image to OpenCV format, validates it, and calls ProcessImage() if valid.
          */
         void ImageCallback(const sensor_msgs::msg::Image::SharedPtr aMsg);
-        
-        /// @}
 
-        // ====================================================================
-        /// @name Member Variables - ROS Communication
-        // ====================================================================
-        /// @{
-
-        rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mpImageSubscriber;
-        ///< Subscribes to unified camera topic; owned by this node, created in ctor
-        
-        /// @}
-
-        // ====================================================================
-        /// @name Constants - Configuration
-        // ====================================================================
-        /// @{
+        rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mpImageSubscriber; 
 
         const std::string kCameraTopicName = "/camera/image_raw";  ///< Input topic for camera data
         const int kQueueSize = 10;  ///< Subscriber queue depth [messages]

@@ -1,13 +1,10 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: InspectionRobot.hpp
-// Description: Header for InspectionRobot class (inherits from WarehouseRobot).
-//              Handles autonomous warehouse inspection operations including
-//              damage site inspection, AprilTag detection, exploration mode,
-//              and Tier 1 Safety features.
-// Author(s): Dylan George, Inez Dumas
-// Last Edited: 2025-11-02
-// ============================================================================
+// Author(s): Dylan George, Inez Dumas, Aryan Rai
+//
+// Description: Header for CInspectionRobot. Performs damage site inspection
+//              operations including AprilTag detection, 360° scanning,
+//              exploration mode, and Tier 1 Safety features.
 
 #ifndef INSPECTION_ROBOT_HPP
 #define INSPECTION_ROBOT_HPP
@@ -49,18 +46,10 @@ public:
      */
     ~InspectionRobot() = default;
     
-    // ========================================================================
-    // Main Control (Override from base)
-    // ========================================================================
-    
     /**
      * @brief Main update loop for inspection operations
      */
     void update() override;
-    
-    // ========================================================================
-    // Polymorphic Interface Implementation
-    // ========================================================================
     
     /**
      * @brief Get robot type
@@ -84,10 +73,6 @@ public:
      */
     bool isOperating() const override { return isInspecting(); }
     
-    // ========================================================================
-    // Inspection-Specific Methods
-    // ========================================================================
-    
     /**
      * @brief Start inspection operations
      */
@@ -103,10 +88,6 @@ public:
      * @return True if inspection in progress
      */
     bool isInspecting() const { return is_inspecting_; }
-    
-    // ========================================================================
-    // Site Management
-    // ========================================================================
     
     /**
      * @brief Load damage sites from YAML file
@@ -137,10 +118,6 @@ public:
      */
     std::vector<InspectionData::DamageSite> getSites() const { return damage_sites_; }
     
-    // ========================================================================
-    // Inspection Management
-    // ========================================================================
-    
     /**
      * @brief Add an inspection request to queue
      * @param request Inspection request to add
@@ -159,10 +136,6 @@ public:
     std::vector<InspectionData::InspectionRequest> getInspectionQueue() const { 
         return inspection_queue_; 
     }
-    
-    // ========================================================================
-    // Exploration Mode
-    // ========================================================================
     
     /**
      * @brief Enable exploration mode
@@ -185,9 +158,6 @@ public:
         const nav_msgs::msg::OccupancyGrid& map);
     
 private:
-    // ========================================================================
-    // Inspection-Specific Data
-    // ========================================================================
     std::vector<InspectionData::DamageSite> damage_sites_;
     std::vector<InspectionData::InspectionRequest> inspection_queue_;
     std::vector<InspectionData::InspectionRecord> inspection_history_;
@@ -240,10 +210,6 @@ private:
     std::string sites_file_;
     std::string inspection_log_file_;
     
-    // ========================================================================
-    // Scanning Methods
-    // ========================================================================
-    
     /**
      * @brief Perform 360° scan at current site
      * @return True if scan complete, false if still scanning
@@ -257,10 +223,6 @@ private:
      */
     bool isAtSite(const InspectionData::DamageSite& site);
     
-    // ========================================================================
-    // AprilTag Detection
-    // ========================================================================
-    
     /**
      * @brief AprilTag detection callback
      * @param msg AprilTag detection array message
@@ -273,10 +235,6 @@ private:
      * @return True if already detected
      */
     bool isTagAlreadyDetected(int tag_id) const;
-    
-    // ========================================================================
-    // Tier 1 Safety Methods
-    // ========================================================================
     
     /**
      * @brief Check TF transform health
@@ -302,10 +260,6 @@ private:
      */
     void emergencyStop(const std::string& reason);
     
-    // ========================================================================
-    // Route Optimization
-    // ========================================================================
-    
     /**
      * @brief Optimize route (ordered sequence mode)
      * @param start Starting position
@@ -326,10 +280,6 @@ private:
         const geometry_msgs::msg::Point& start,
         const std::vector<InspectionData::InspectionRequest>& requests);
     
-    // ========================================================================
-    // Exploration Methods
-    // ========================================================================
-    
     /**
      * @brief Execute exploration behavior
      */
@@ -345,10 +295,6 @@ private:
         const geometry_msgs::msg::Point& point,
         const nav_msgs::msg::OccupancyGrid& map);
     
-    // ========================================================================
-    // Visualization Methods
-    // ========================================================================
-    
     /**
      * @brief Publish RViz markers for damage sites
      */
@@ -363,10 +309,6 @@ private:
     visualization_msgs::msg::Marker createSiteMarker(
         const InspectionData::DamageSite& site, 
         int id);
-    
-    // ========================================================================
-    // Helper Methods
-    // ========================================================================
     
     /**
      * @brief Handle clicked point from RViz (for site marking)

@@ -1,11 +1,8 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: ExplorationPlanner.hpp
-// Description: ExplorationPlanner ROS2 node for frontier-based exploration.
-//              Provides exploration path planning for autonomous mapping.
-// Author(s): Dylan George
-// Last Edited: 2025-11-06
-// ============================================================================
+// Author(s): Inez Dumas, Tony Bechara, Aryan Rai, Filip Gusavac
+//
+// Description: exploration planner for autonomous robot mapping.
 
 #ifndef EXPLORATION_PLANNER_HPP
 #define EXPLORATION_PLANNER_HPP
@@ -42,8 +39,6 @@ private:
     // Publishers
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr exploration_path_pub_;
     rclcpp::Publisher<nav_msgs::msg::GridCells>::SharedPtr frontier_cells_pub_;
-    rclcpp::Publisher<nav_msgs::msg::GridCells>::SharedPtr start_pub_;
-    rclcpp::Publisher<nav_msgs::msg::GridCells>::SharedPtr goal_pub_;
     rclcpp::Publisher<nav_msgs::msg::GridCells>::SharedPtr cspace_pub_;
     rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr cost_map_pub_;
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr exploration_complete_pub_;
@@ -75,10 +70,10 @@ private:
     static constexpr double FRONTIER_SIZE_COST_WEIGHT = 1.0;
     static constexpr int MAX_NUM_FRONTIERS_TO_CHECK = 8;
     static constexpr int NUM_EXPLORE_FAILS_BEFORE_FINISH = 100;
-    static constexpr double INITIAL_MIN_DISTANCE = 0.20;  // 20cm
-    static constexpr double MINIMUM_MIN_DISTANCE = 0.05;  // 5cm
-    static constexpr double DISTANCE_REDUCTION_STEP = 0.03;  // 3cm
-    static constexpr double EXPLORATION_RATE = 2.0;  // Hz
+    static constexpr double INITIAL_MIN_DISTANCE = 0.20;  
+    static constexpr double MINIMUM_MIN_DISTANCE = 0.05; 
+    static constexpr double DISTANCE_REDUCTION_STEP = 0.03; 
+    static constexpr double EXPLORATION_RATE = 2.0; 
     
     bool debug_mode_;
     

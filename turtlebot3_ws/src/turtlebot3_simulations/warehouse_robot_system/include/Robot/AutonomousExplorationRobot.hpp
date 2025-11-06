@@ -1,12 +1,9 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: AutonomousExplorationRobot.hpp
-// Description: Header for CAutonomousExplorationRobot class. Defines SLAM-based
-//              autonomous mapping robot that integrates SlamController,
-//              ExplorationPlanner, and MotionController for warehouse mapping.
-// Author(s): Inez Dumas
-// Last Edited: 2025-11-02
-// ============================================================================
+// Author(s): Aryan Rai, Inez Dumas
+//
+// Description: Header for CAutonomousExplorationRobot. Performs frontier-based
+//              autonomous exploration to map unknown warehouse environments
 
 #ifndef AUTONOMOUS_EXPLORATION_ROBOT_HPP
 #define AUTONOMOUS_EXPLORATION_ROBOT_HPP

@@ -1,12 +1,8 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: ImageProcessor_Node.cpp
-// Description: Implementation of CImageProcessorNode base class. Handles
-//              subscription to camera data, image format conversion, and
-//              validation. Provides infrastructure for derived detector nodes.
 // Author(s): Dylan George
-// Last Edited: 2025-11-02
-// ============================================================================
+//
+// Description: Implementation of base image processor node for camera image processing.
 
 #include "Camera/ImageProcessor_Node.hpp"
 

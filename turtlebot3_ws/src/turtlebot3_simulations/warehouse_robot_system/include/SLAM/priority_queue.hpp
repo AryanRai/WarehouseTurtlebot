@@ -1,12 +1,8 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: priority_queue.hpp
-// Description: Priority queue implementation for A* pathfinding algorithm.
-//              Provides efficient priority-based node selection for optimal
-//              path planning in warehouse navigation systems.
-// Author(s): Dylan George
-// Last Edited: 2025-11-02
-// ============================================================================
+// Author(s): Aryan Rai
+//
+// Description: generic priority queue implementation.
 
 #ifndef PRIORITY_QUEUE_HPP
 #define PRIORITY_QUEUE_HPP

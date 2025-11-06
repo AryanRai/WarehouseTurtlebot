@@ -1,13 +1,10 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: InspectionRobot.cpp
-// Description: Implementation of InspectionRobot (inherits from WarehouseRobot).
-//              Handles autonomous warehouse inspection operations including
-//              damage site inspection, AprilTag detection, exploration mode,
-//              and Tier 1 Safety features.
-// Author(s): Dylan George, Inez Dumas
-// Last Edited: 2025-11-02
-// ============================================================================
+// Author(s): Aryan Rai
+//
+// Description: Implementation of CInspectionRobot. Performs damage site inspection
+//              operations including AprilTag detection, 360° scanning,
+//              exploration mode, and Tier 1 Safety features.
 
 #include "Robot/InspectionRobot.hpp"
 #include <yaml-cpp/yaml.h>
@@ -93,9 +90,6 @@ InspectionRobot::InspectionRobot(rclcpp::Node::SharedPtr node)
     RCLCPP_INFO(node_->get_logger(), "Using %zu pre-defined damage sites", damage_sites_.size());
 }
 
-// ============================================================================
-// Site Management
-// ============================================================================
 
 void InspectionRobot::loadSitesFromFile(const std::string& filename) {
     YAML::Node config = YAML::LoadFile(filename);
@@ -147,9 +141,6 @@ void InspectionRobot::clearSites() {
     damage_sites_.clear();
 }
 
-// ============================================================================
-// Inspection Management
-// ============================================================================
 
 void InspectionRobot::addInspectionRequest(const InspectionData::InspectionRequest& request) {
     inspection_queue_.push_back(request);
@@ -207,10 +198,6 @@ void InspectionRobot::stopInspections() {
     RCLCPP_INFO(node_->get_logger(), "Inspections stopped");
     publishStatus("Inspections stopped");
 }
-
-// ============================================================================
-// Route Optimization
-// ============================================================================
 
 std::vector<InspectionData::DamageSite> InspectionRobot::optimizeRoute(
     const geometry_msgs::msg::Point& start,
@@ -295,10 +282,6 @@ std::vector<InspectionData::DamageSite> InspectionRobot::optimizeRouteTSP(
     
     return route;
 }
-
-// ============================================================================
-// Main Update Loop
-// ============================================================================
 
 void InspectionRobot::update() {
     // Tier 1 Safety: Check TF health periodically
@@ -510,9 +493,6 @@ void InspectionRobot::update() {
     }
 }
 
-// ============================================================================
-// Scanning Methods
-// ============================================================================
 
 bool InspectionRobot::performSiteScan() {
     auto current_pose = slam_controller_->getCurrentPose();
@@ -546,10 +526,6 @@ bool InspectionRobot::isAtSite(const InspectionData::DamageSite& site) {
     return distance < TARGET_REACHED_THRESHOLD;
 }
 
-// ============================================================================
-// AprilTag Detection
-// ============================================================================
-
 void InspectionRobot::onAprilTagDetection(
     const apriltag_msgs::msg::AprilTagDetectionArray::SharedPtr msg) {
 
@@ -569,10 +545,6 @@ bool InspectionRobot::isTagAlreadyDetected(int tag_id) const {
     return std::find(detected_tags_.begin(), detected_tags_.end(), tag_id) != detected_tags_.end();
 }
 
-
-// ============================================================================
-// Tier 1 Safety Methods
-// ============================================================================
 
 bool InspectionRobot::checkTFHealth() {
     try {
@@ -653,10 +625,6 @@ void InspectionRobot::emergencyStop(const std::string& reason) {
     // Note: We don't stop the inspection completely, just pause
     // Once the issue is resolved, the update loop will resume
 }
-
-// ============================================================================
-// Exploration Mode
-// ============================================================================
 
 std::vector<geometry_msgs::msg::Point> InspectionRobot::generatePatrolPoints(
     const nav_msgs::msg::OccupancyGrid& map) {
@@ -781,10 +749,6 @@ void InspectionRobot::executeExploration() {
                current_patrol_index_ + 1, patrol_points_.size());
 }
 
-// ============================================================================
-// Visualization Methods
-// ============================================================================
-
 void InspectionRobot::publishSiteMarkers() {
     visualization_msgs::msg::MarkerArray marker_array;
     
@@ -827,10 +791,6 @@ visualization_msgs::msg::Marker InspectionRobot::createSiteMarker(
     return marker;
 }
 
-// ============================================================================
-// Helper Methods
-// ============================================================================
-
 InspectionData::DamageSite* InspectionRobot::findSite(const std::string& site_name) {
     for (auto& site : damage_sites_) {
         if (site.name == site_name) {
@@ -839,11 +799,6 @@ InspectionData::DamageSite* InspectionRobot::findSite(const std::string& site_na
     }
     return nullptr;
 }
-
-
-// ============================================================================
-// Service Callbacks
-// ============================================================================
 
 void InspectionRobot::onPointClicked(const geometry_msgs::msg::PointStamped::SharedPtr msg) {
     // Add new site with auto-generated name

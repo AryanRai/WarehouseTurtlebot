@@ -1,12 +1,8 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: ColourDetector.hpp
-// Description: Header for CColourDetector class. Defines colour detection node
-//              that analyses regions around AprilTags to identify damage types
-//              using HSV colour space classification with calibration mode.
 // Author(s): Dylan George
-// Last Edited: 2025-11-02
-// ============================================================================
+//
+// Description: Analyses colour around AprilTags to classify damage type.
 
 #ifndef COLOUR_DETECTOR_HPP
 #define COLOUR_DETECTOR_HPP
@@ -56,10 +52,6 @@ struct SDamageReport
 class CColourDetector : public CImageProcessorNode
 {
     public:
-        // ====================================================================
-        /// @name Constructor & Destructor
-        // ====================================================================
-        /// @{
         
         /**
          * @brief Constructor - Initialises colour detector, sets up subscribers and publishers.
@@ -71,13 +63,7 @@ class CColourDetector : public CImageProcessorNode
          */
         ~CColourDetector();
         
-        /// @}
-
     protected:
-        // ====================================================================
-        /// @name Core Processing (Override from Base Class)
-        // ====================================================================
-        /// @{
         
         /**
          * @brief ProcessImage (override) - Stores latest image for processing when AprilTag detections arrive.
@@ -87,13 +73,7 @@ class CColourDetector : public CImageProcessorNode
         void ProcessImage(const cv::Mat &aImage, 
                           const rclcpp::Time &aTimestamp) override;
         
-        /// @}
-
     private:
-        // ====================================================================
-        /// @name Core Detection Methods
-        // ====================================================================
-        /// @{
         
         /**
          * @brief Processes AprilTag detections and analyses colour around each tag.
@@ -115,12 +95,6 @@ class CColourDetector : public CImageProcessorNode
                                            int aTagCenterY,
                                            int aTagSize);
         
-        /// @}
-
-        // ====================================================================
-        /// @name Region Extraction & Analysis Methods
-        // ====================================================================
-        /// @{
         
         /**
          * @brief Defines four sampling regions (above, below, left, right) around tag.
@@ -144,12 +118,6 @@ class CColourDetector : public CImageProcessorNode
          */
         eDamageType ClassifyColour(const cv::Mat &aRegion);
         
-        /// @}
-
-        // ====================================================================
-        /// @name Image Processing Utility Methods
-        // ====================================================================
-        /// @{
         
         /**
          * @brief Converts BGR image region to HSV colour space.
@@ -169,12 +137,6 @@ class CColourDetector : public CImageProcessorNode
                                 const cv::Scalar &aLowerBound,
                                 const cv::Scalar &aUpperBound) const;
         
-        /// @}
-
-        // ====================================================================
-        /// @name Output & Reporting Methods
-        // ====================================================================
-        /// @{
         
         /**
          * @brief Publishes damage report to output topic.
@@ -189,12 +151,6 @@ class CColourDetector : public CImageProcessorNode
          */
         std::string DamageTypeToString(eDamageType aDamageType) const;
         
-        /// @}
-
-        // ====================================================================
-        /// @name Calibration & Visualization Methods
-        // ====================================================================
-        /// @{
         
         /**
          * @brief Calibration UI: Display annotated image with sampling regions and HSV stats
@@ -239,12 +195,6 @@ class CColourDetector : public CImageProcessorNode
          */
         void HandleKeyboardInput(int aKeyCode);
         
-        /// @}
-
-        // ====================================================================
-        /// @name Member Variables - ROS Communication
-        // ====================================================================
-        /// @{
 
         rclcpp::Subscription<apriltag_msgs::msg::AprilTagDetectionArray>::SharedPtr mpTagSubscriber;
         ///< Subscribes to AprilTag detections; owned by this node, created in ctor
@@ -252,12 +202,6 @@ class CColourDetector : public CImageProcessorNode
         rclcpp::Publisher<std_msgs::msg::String>::SharedPtr mpDamagePublisher;
         ///< Publishes damage reports as JSON strings; owned by this node, created in ctor
         
-        /// @}
-
-        // ====================================================================
-        /// @name Member Variables - Image Processing State
-        // ====================================================================
-        /// @{
 
         cv::Mat mLatestImage;
         ///< Most recent camera image; stored for processing when tags detected
@@ -268,12 +212,6 @@ class CColourDetector : public CImageProcessorNode
         bool mHasImage;
         ///< Flag indicating whether valid image is available [boolean]
         
-        /// @}
-
-        // ====================================================================
-        /// @name Member Variables - Calibration Mode
-        // ====================================================================
-        /// @{
 
         bool mCalibrationMode;
         ///< Calibration mode flag (ROS parameter: calibration_mode)
@@ -284,35 +222,17 @@ class CColourDetector : public CImageProcessorNode
         std::vector<apriltag_msgs::msg::AprilTagDetection> mLastDetections;
         ///< Cache last received detections for calibration display
         
-        /// @}
-
-        // ====================================================================
-        /// @name Constants - ROS Communication
-        // ====================================================================
-        /// @{
 
         const std::string kTagInputTopic = "/apriltag_detections";  ///< Input topic for AprilTag detections
         const std::string kDamageOutputTopic = "/warehouse/damage_reports";  ///< Output topic for damage reports
         const int kQueueSize = 10;  ///< ROS publisher/subscriber queue depth [messages]
         
-        /// @}
-
-        // ====================================================================
-        /// @name Constants - Sampling Parameters
-        // ====================================================================
-        /// @{
 
         const int kSamplingOffset = 10;  ///< Distance from tag edge to start sampling [pixels]
         const int kSamplingWidth = 20;  ///< Width of sampling regions [pixels]
         const int kSamplingHeight = 20;  ///< Height of sampling regions [pixels]
         const double kColourZoneScale = 0.4;  ///< Zone size relative to tag size [ratio]
         
-        /// @}
-        
-        // ====================================================================
-        /// @name Constants - HSV Color Thresholds
-        // ====================================================================
-        /// @{
         
         const cv::Scalar kGreenLower = cv::Scalar(35, 40, 40);   ///< Green lower HSV threshold     
         const cv::Scalar kGreenUpper = cv::Scalar(85, 255, 255);  ///< Green upper HSV threshold
@@ -325,17 +245,10 @@ class CColourDetector : public CImageProcessorNode
         const cv::Scalar kRedLower2 = cv::Scalar(170, 50, 50);    ///< Red lower HSV threshold (range 2)    
         const cv::Scalar kRedUpper2 = cv::Scalar(180, 255, 255);  ///< Red upper HSV threshold (range 2)
         
-        /// @}
-
-        // ====================================================================
-        /// @name Constants - Detection Thresholds
-        // ====================================================================
-        /// @{
 
         const double kMinConfidenceThreshold = 0.5;  ///< Minimum confidence level for damage classification [0.0 to 1.0]
         const int kMinPixelCount = 50;  ///< Minimum number of colored pixels required for detection [pixels]
         
-        /// @}
 };
 
 #endif // COLOUR_DETECTOR_HPP

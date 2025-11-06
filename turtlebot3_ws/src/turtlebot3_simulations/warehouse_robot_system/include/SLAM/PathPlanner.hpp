@@ -1,11 +1,8 @@
-// ============================================================================
-// MTRX3760 Project 2 - 
+// MTRX3760 2025 Project 2: Warehouse Robot DevKit
 // File: PathPlanner.hpp
-// Description: PathPlanner ROS2 node for A* pathfinding with cost map support.
-//              Provides path planning capability for navigation requests.
-// Author(s): Dylan George
-// Last Edited: 2025-11-06
-// ============================================================================
+// Author(s): Inez Dumas, Tony Bechara, Aryan Rai, Filip Gusavac
+//
+// Description: path planner for A* path planning with cost map support.
 
 #ifndef PATH_PLANNER_HPP
 #define PATH_PLANNER_HPP
