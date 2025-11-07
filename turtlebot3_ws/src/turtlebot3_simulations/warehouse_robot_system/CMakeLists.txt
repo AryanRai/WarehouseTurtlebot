@@ -449,7 +449,7 @@ endif()
 
 # Twist to TwistStamped Bridge - UPDATED PATH
 add_executable(twist_stamped_bridge
-  src/SLAM/twist_stamped_bridge.cpp
+  src/SLAM/TwistStampedBridge.cpp
 )
 ament_target_dependencies(twist_stamped_bridge
   rclcpp
@@ -458,7 +458,7 @@ ament_target_dependencies(twist_stamped_bridge
 
 # Zone Marker Node - UPDATED PATH
 add_executable(zone_marker_node
-  src/SLAM/zone_marker_node.cpp
+  src/SLAM/ZoneMarkerNode.cpp
 )
 ament_target_dependencies(zone_marker_node
   rclcpp
