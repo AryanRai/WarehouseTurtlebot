@@ -21,31 +21,31 @@ SOURCE_DIR="$WORKSPACE_DIR/src/turtlebot3_simulations/warehouse_robot_system"
 TEMP_DIR="/tmp/turtlebot_camera"
 
 # Clean temp directory
-echo "🧹 Cleaning temporary directory..."
+echo " Cleaning temporary directory..."
 rm -rf "$TEMP_DIR"
 mkdir -p "$TEMP_DIR"
 
 # Create package structure
-echo "📁 Creating package structure..."
+echo " Creating package structure..."
 mkdir -p "$TEMP_DIR/src/Camera"
 mkdir -p "$TEMP_DIR/include/Camera"
 
 # Copy camera source files
-echo "📄 Copying camera source files..."
+echo " Copying camera source files..."
 cp "$SOURCE_DIR/src/Camera/AprilTagDetector.cpp" "$TEMP_DIR/src/Camera/"
 cp "$SOURCE_DIR/src/Camera/ImageProcessor_Node.cpp" "$TEMP_DIR/src/Camera/"
 cp "$SOURCE_DIR/src/Camera/ColourDetector.cpp" "$TEMP_DIR/src/Camera/"
-cp "$SOURCE_DIR/src/Camera/Camera_Node.cpp" "$TEMP_DIR/src/Camera/" 2>/dev/null || echo "   ⚠️  Camera_Node.cpp not found (optional)"
+cp "$SOURCE_DIR/src/Camera/Camera_Node.cpp" "$TEMP_DIR/src/Camera/" 2>/dev/null || echo "   ️  Camera_Node.cpp not found (optional)"
 
 # Copy camera header files
-echo "📄 Copying camera header files..."
+echo " Copying camera header files..."
 cp "$SOURCE_DIR/include/Camera/AprilTagDetector.hpp" "$TEMP_DIR/include/Camera/"
 cp "$SOURCE_DIR/include/Camera/ImageProcessor_Node.hpp" "$TEMP_DIR/include/Camera/"
 cp "$SOURCE_DIR/include/Camera/ColourDetector.hpp" "$TEMP_DIR/include/Camera/"
-cp "$SOURCE_DIR/include/Camera/Camera_Node.hpp" "$TEMP_DIR/include/Camera/" 2>/dev/null || echo "   ⚠️  Camera_Node.hpp not found (optional)"
+cp "$SOURCE_DIR/include/Camera/Camera_Node.hpp" "$TEMP_DIR/include/Camera/" 2>/dev/null || echo "   ️  Camera_Node.hpp not found (optional)"
 
 # Create minimal package.xml
-echo "📝 Creating package.xml..."
+echo " Creating package.xml..."
 cat > "$TEMP_DIR/package.xml" << 'EOF'
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
@@ -72,7 +72,7 @@ cat > "$TEMP_DIR/package.xml" << 'EOF'
 EOF
 
 # Create minimal CMakeLists.txt
-echo "📝 Creating CMakeLists.txt..."
+echo " Creating CMakeLists.txt..."
 cat > "$TEMP_DIR/CMakeLists.txt" << 'EOF'
 cmake_minimum_required(VERSION 3.8)
 project(turtlebot_camera)
@@ -172,22 +172,22 @@ ament_package()
 EOF
 
 echo ""
-echo -e "${GREEN}✅ Package prepared successfully!${NC}"
+echo -e "${GREEN} Package prepared successfully!${NC}"
 echo ""
-echo "📦 Package location: $TEMP_DIR"
+echo " Package location: $TEMP_DIR"
 echo ""
-echo "📋 Package contents:"
+echo " Package contents:"
 ls -lh "$TEMP_DIR"
 echo ""
-echo "📂 Source files:"
+echo " Source files:"
 ls -lh "$TEMP_DIR/src/Camera/"
 echo ""
-echo "📂 Header files:"
+echo " Header files:"
 ls -lh "$TEMP_DIR/include/Camera/"
 echo ""
 
 # Create transfer script
-echo "📝 Creating transfer script..."
+echo " Creating transfer script..."
 cat > "$TEMP_DIR/transfer_to_turtlebot.sh" << 'TRANSFER_EOF'
 #!/bin/bash
 
@@ -201,7 +201,7 @@ fi
 
 TURTLEBOT_IP=$1
 
-echo "📤 Transferring camera package to TurtleBot at $TURTLEBOT_IP..."
+echo " Transferring camera package to TurtleBot at $TURTLEBOT_IP..."
 echo ""
 
 # Transfer the package
@@ -209,7 +209,7 @@ scp -r /tmp/turtlebot_camera ubuntu@$TURTLEBOT_IP:~/camera_ws/src/
 
 if [ $? -eq 0 ]; then
     echo ""
-    echo "✅ Transfer complete!"
+    echo " Transfer complete!"
     echo ""
     echo "Next steps:"
     echo "1. SSH into TurtleBot: ssh ubuntu@$TURTLEBOT_IP"
@@ -218,7 +218,7 @@ if [ $? -eq 0 ]; then
     echo "4. Run detector: ros2 run turtlebot_camera apriltag_detector_node --ros-args -p show_visualization:=false"
 else
     echo ""
-    echo "❌ Transfer failed!"
+    echo " Transfer failed!"
     echo "Check:"
     echo "  • TurtleBot IP is correct"
     echo "  • TurtleBot is powered on and connected"

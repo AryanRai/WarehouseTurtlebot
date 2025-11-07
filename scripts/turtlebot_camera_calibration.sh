@@ -9,15 +9,15 @@ export TURTLEBOT3_MODEL=burger
 export LD_LIBRARY_PATH="/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
 unset SNAP
 
-echo "🎨 TurtleBot Camera Calibration System"
+echo " TurtleBot Camera Calibration System"
 echo "======================================"
 echo ""
-echo "🔧 Prerequisites:"
+echo " Prerequisites:"
 echo "  1. SSH into TurtleBot: ssh -X ubuntu@TURTLEBOT_IP"
 echo "  2. Run: ros2 launch turtlebot3_bringup robot.launch.py"
 echo "  3. Verify camera: ros2 topic hz /camera/image_raw"
 echo ""
-echo "📖 How HSV Calibration Works:"
+echo " How HSV Calibration Works:"
 echo "  • Detects 16h5 AprilTags in camera feed"
 echo "  • Creates sampling regions around each tag (above/below/left/right)"
 echo "  • Analyzes HSV color values in each region"
@@ -25,25 +25,25 @@ echo "  • Classifies colors: Green=Mould, Blue=Water, Red=Blood"
 echo "  • Shows live overlay with colored rectangles and HSV stats"
 echo ""
 echo "Choose mode:"
-echo "  1) 🎥 Interactive Calibration (Live GUI)"
-echo "  2) 📁 File-based Calibration (Save images)" 
-echo "  3) 🔍 Normal Detection Mode"
-echo "  4) 📋 Check System Status"
-echo "  5) 🚪 Exit"
+echo "  1)  Interactive Calibration (Live GUI)"
+echo "  2)  File-based Calibration (Save images)" 
+echo "  3)  Normal Detection Mode"
+echo "  4)  Check System Status"
+echo "  5)  Exit"
 echo ""
 read -p "Enter choice [1-5]: " choice
 
 case $choice in
   1)
     echo ""
-    echo "🎥 Starting Interactive Calibration..."
+    echo " Starting Interactive Calibration..."
     echo "======================================"
     echo ""
     echo "This will attempt to open an OpenCV window showing:"
-    echo "  📹 Live camera feed"
-    echo "  🎯 AprilTag detection overlays"
-    echo "  🟩🟦🟥 Colored sampling rectangles"
-    echo "  📊 Real-time HSV values"
+    echo "   Live camera feed"
+    echo "   AprilTag detection overlays"
+    echo "   Colored sampling rectangles"
+    echo "   Real-time HSV values"
     echo ""
     echo "Controls:"
     echo "  's' = Save calibration to ~/hsv_calibration.yaml"
@@ -63,7 +63,7 @@ case $choice in
     source install/setup.bash
     
     # Fix X11 and Qt display issues for GUI mode
-    echo "🔧 Setting up display environment..."
+    echo " Setting up display environment..."
     
     # Check if we're in a container or remote session
     if [ -n "$SSH_CONNECTION" ]; then
@@ -81,17 +81,17 @@ case $choice in
     echo "   Testing X11 connection..."
     if command -v xdpyinfo >/dev/null 2>&1; then
         if xdpyinfo >/dev/null 2>&1; then
-            echo "   ✅ X11 connection successful"
+            echo "    X11 connection successful"
         else
-            echo "   ❌ X11 connection failed - falling back to file mode"
+            echo "    X11 connection failed - falling back to file mode"
             export DISPLAY=""
         fi
     else
-        echo "   ⚠️  xdpyinfo not available - testing with simple X call"
+        echo "   ️  xdpyinfo not available - testing with simple X call"
         if python3 -c "import os; os.system('python3 -c \"import tkinter; tkinter.Tk().destroy()\"')" 2>/dev/null; then
-            echo "   ✅ Basic GUI test passed"
+            echo "    Basic GUI test passed"
         else
-            echo "   ❌ GUI test failed - using file mode"
+            echo "    GUI test failed - using file mode"
             export DISPLAY=""
         fi
     fi
@@ -101,7 +101,7 @@ case $choice in
     
   2)
     echo ""
-    echo "📁 Starting File-based Calibration..."
+    echo " Starting File-based Calibration..."
     echo "====================================="
     echo ""
     echo "Since GUI has library conflicts, images will be saved to /tmp/"
@@ -126,7 +126,7 @@ case $choice in
     
   3)
     echo ""
-    echo "🔍 Starting Normal Detection Mode..."
+    echo " Starting Normal Detection Mode..."
     echo "==================================="
     echo ""
     
@@ -147,35 +147,35 @@ case $choice in
     
   4)
     echo ""
-    echo "📋 System Status Check..."
+    echo " System Status Check..."
     echo "========================="
     echo ""
     
     cd ~/MTRX3760_Project_2/turtlebot3_ws
     source install/setup.bash
     
-    echo "🔌 ROS2 Topics:"
+    echo " ROS2 Topics:"
     ros2 topic list | grep -E "(camera|apriltag|image)" | sort
     echo ""
     
-    echo "📷 Camera Status:"
-    timeout 3 ros2 topic hz /camera/image_raw 2>/dev/null || echo "❌ No camera data"
+    echo " Camera Status:"
+    timeout 3 ros2 topic hz /camera/image_raw 2>/dev/null || echo " No camera data"
     echo ""
     
-    echo "🏷️ AprilTag Detection:"
-    echo "✅ Built-in AprilTag detection (16h5 family) in colour_detector_node"
+    echo "️ AprilTag Detection:"
+    echo " Built-in AprilTag detection (16h5 family) in colour_detector_node"
     echo ""
     
-    echo "📦 Workspace Build Status:"
+    echo " Workspace Build Status:"
     if [ -f "install/warehouse_robot_system/lib/warehouse_robot_system/colour_detector_node" ]; then
-        echo "✅ colour_detector_node built successfully"
+        echo " colour_detector_node built successfully"
     else
-        echo "❌ colour_detector_node not found - rebuild needed"
+        echo " colour_detector_node not found - rebuild needed"
     fi
     ;;
     
   5)
-    echo "Goodbye! 👋"
+    echo "Goodbye! "
     exit 0
     ;;
     

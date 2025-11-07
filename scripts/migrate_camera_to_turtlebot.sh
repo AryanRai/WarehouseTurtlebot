@@ -59,7 +59,7 @@ if [ -f "$SCRIPT_DIR/prepare_turtlebot_camera.sh" ]; then
 elif [ -f "$PROJECT_DIR/scripts/prepare_turtlebot_camera.sh" ]; then
     bash "$PROJECT_DIR/scripts/prepare_turtlebot_camera.sh"
 else
-    echo -e "${RED}❌ prepare_turtlebot_camera.sh not found!${NC}"
+    echo -e "${RED} prepare_turtlebot_camera.sh not found!${NC}"
     echo "Looking in:"
     echo "  $SCRIPT_DIR/prepare_turtlebot_camera.sh"
     echo "  $PROJECT_DIR/scripts/prepare_turtlebot_camera.sh"
@@ -67,11 +67,11 @@ else
 fi
 
 if [ ! -d "/tmp/turtlebot_camera" ]; then
-    echo -e "${RED}❌ Package preparation failed!${NC}"
+    echo -e "${RED} Package preparation failed!${NC}"
     exit 1
 fi
 
-echo -e "${GREEN}✅ Package prepared${NC}"
+echo -e "${GREEN} Package prepared${NC}"
 
 # ============================================================================
 # STEP 2: Check TurtleBot Connection
@@ -87,7 +87,7 @@ echo "Testing SSH connection to $TURTLEBOT_IP..."
 
 # Test connection
 if ! ping -c 1 -W 2 $TURTLEBOT_IP > /dev/null 2>&1; then
-    echo -e "${RED}❌ Cannot ping TurtleBot at $TURTLEBOT_IP${NC}"
+    echo -e "${RED} Cannot ping TurtleBot at $TURTLEBOT_IP${NC}"
     echo ""
     echo "Please check:"
     echo "  • TurtleBot is powered on"
@@ -96,14 +96,14 @@ if ! ping -c 1 -W 2 $TURTLEBOT_IP > /dev/null 2>&1; then
     exit 1
 fi
 
-echo -e "${GREEN}✅ TurtleBot is reachable${NC}"
+echo -e "${GREEN} TurtleBot is reachable${NC}"
 
 # Check for sshpass
 if ! command -v sshpass > /dev/null; then
-    echo -e "${YELLOW}⚠️  sshpass not installed - installing it now...${NC}"
+    echo -e "${YELLOW}️  sshpass not installed - installing it now...${NC}"
     sudo apt install -y sshpass > /dev/null 2>&1
     if ! command -v sshpass > /dev/null; then
-        echo -e "${RED}❌ Failed to install sshpass${NC}"
+        echo -e "${RED} Failed to install sshpass${NC}"
         echo "Please install manually: sudo apt install sshpass"
         exit 1
     fi
@@ -111,7 +111,7 @@ fi
 
 # Test SSH with sshpass
 if ! sshpass -p "$TURTLEBOT_PASSWORD" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 $TURTLEBOT_USER@$TURTLEBOT_IP "echo 'Connected'" > /dev/null 2>&1; then
-    echo -e "${RED}❌ Cannot SSH to TurtleBot${NC}"
+    echo -e "${RED} Cannot SSH to TurtleBot${NC}"
     echo "Please verify:"
     echo "  • TurtleBot IP: $TURTLEBOT_IP"
     echo "  • Password: $TURTLEBOT_PASSWORD"
@@ -121,7 +121,7 @@ fi
 
 USE_SSHPASS=true
 
-echo -e "${GREEN}✅ SSH connection working${NC}"
+echo -e "${GREEN} SSH connection working${NC}"
 
 # ============================================================================
 # STEP 3: Install Dependencies on TurtleBot
@@ -174,11 +174,11 @@ echo "Running installation on TurtleBot (this may take 5-10 minutes)..."
 sshpass -p "$TURTLEBOT_PASSWORD" ssh -o StrictHostKeyChecking=no $TURTLEBOT_USER@$TURTLEBOT_IP "bash /tmp/install_deps.sh"
 
 if [ $? -ne 0 ]; then
-    echo -e "${RED}❌ Dependency installation failed!${NC}"
+    echo -e "${RED} Dependency installation failed!${NC}"
     exit 1
 fi
 
-echo -e "${GREEN}✅ Dependencies installed${NC}"
+echo -e "${GREEN} Dependencies installed${NC}"
 
 # ============================================================================
 # STEP 4: Create Workspace on TurtleBot
@@ -193,7 +193,7 @@ echo ""
 echo "Creating ~/camera_ws/src on TurtleBot..."
 sshpass -p "$TURTLEBOT_PASSWORD" ssh -o StrictHostKeyChecking=no $TURTLEBOT_USER@$TURTLEBOT_IP "mkdir -p ~/camera_ws/src"
 
-echo -e "${GREEN}✅ Workspace created${NC}"
+echo -e "${GREEN} Workspace created${NC}"
 
 # ============================================================================
 # STEP 5: Transfer Camera Package
@@ -209,11 +209,11 @@ echo "Transferring package to TurtleBot..."
 sshpass -p "$TURTLEBOT_PASSWORD" scp -r -o StrictHostKeyChecking=no /tmp/turtlebot_camera $TURTLEBOT_USER@$TURTLEBOT_IP:~/camera_ws/src/
 
 if [ $? -ne 0 ]; then
-    echo -e "${RED}❌ Package transfer failed!${NC}"
+    echo -e "${RED} Package transfer failed!${NC}"
     exit 1
 fi
 
-echo -e "${GREEN}✅ Package transferred${NC}"
+echo -e "${GREEN} Package transferred${NC}"
 
 # ============================================================================
 # STEP 6: Build Package on TurtleBot
@@ -245,7 +245,7 @@ sshpass -p "$TURTLEBOT_PASSWORD" scp -o StrictHostKeyChecking=no /tmp/build_came
 sshpass -p "$TURTLEBOT_PASSWORD" ssh -o StrictHostKeyChecking=no $TURTLEBOT_USER@$TURTLEBOT_IP "bash /tmp/build_camera.sh"
 
 if [ $? -ne 0 ]; then
-    echo -e "${RED}❌ Build failed!${NC}"
+    echo -e "${RED} Build failed!${NC}"
     echo ""
     echo "To debug, SSH into TurtleBot and check:"
     echo "  ssh $TURTLEBOT_USER@$TURTLEBOT_IP"
@@ -254,7 +254,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo -e "${GREEN}✅ Package built successfully${NC}"
+echo -e "${GREEN} Package built successfully${NC}"
 
 # ============================================================================
 # STEP 7: Transfer Startup Script
@@ -267,7 +267,7 @@ echo -e "${BLUE}═════════════════════�
 echo ""
 
 if [ ! -f "$PROJECT_DIR/turtlebot_start_camera.sh" ]; then
-    echo -e "${RED}❌ turtlebot_start_camera.sh not found!${NC}"
+    echo -e "${RED} turtlebot_start_camera.sh not found!${NC}"
     echo "Looking in: $PROJECT_DIR/turtlebot_start_camera.sh"
     exit 1
 fi
@@ -278,7 +278,7 @@ sshpass -p "$TURTLEBOT_PASSWORD" scp -o StrictHostKeyChecking=no "$PROJECT_DIR/t
 # Make it executable
 sshpass -p "$TURTLEBOT_PASSWORD" ssh -o StrictHostKeyChecking=no $TURTLEBOT_USER@$TURTLEBOT_IP "chmod +x ~/turtlebot_start_camera.sh"
 
-echo -e "${GREEN}✅ Startup script transferred${NC}"
+echo -e "${GREEN} Startup script transferred${NC}"
 
 # ============================================================================
 # STEP 8: Verify Installation
@@ -300,20 +300,20 @@ source install/setup.bash
 
 echo "Checking executables..."
 if [ -f "install/turtlebot_camera/lib/turtlebot_camera/apriltag_detector_node" ]; then
-    echo "✅ apriltag_detector_node found"
+    echo " apriltag_detector_node found"
 else
-    echo "❌ apriltag_detector_node NOT found"
+    echo " apriltag_detector_node NOT found"
     exit 1
 fi
 
 if [ -f "install/turtlebot_camera/lib/turtlebot_camera/colour_detector_node" ]; then
-    echo "✅ colour_detector_node found"
+    echo " colour_detector_node found"
 else
-    echo "❌ colour_detector_node NOT found"
+    echo " colour_detector_node NOT found"
     exit 1
 fi
 
-echo "✅ All executables present"
+echo " All executables present"
 EOF
 
 chmod +x /tmp/verify_install.sh
@@ -322,11 +322,11 @@ sshpass -p "$TURTLEBOT_PASSWORD" scp -o StrictHostKeyChecking=no /tmp/verify_ins
 sshpass -p "$TURTLEBOT_PASSWORD" ssh -o StrictHostKeyChecking=no $TURTLEBOT_USER@$TURTLEBOT_IP "bash /tmp/verify_install.sh"
 
 if [ $? -ne 0 ]; then
-    echo -e "${RED}❌ Verification failed!${NC}"
+    echo -e "${RED} Verification failed!${NC}"
     exit 1
 fi
 
-echo -e "${GREEN}✅ Installation verified${NC}"
+echo -e "${GREEN} Installation verified${NC}"
 
 # ============================================================================
 # SUCCESS!
@@ -334,16 +334,16 @@ echo -e "${GREEN}✅ Installation verified${NC}"
 
 echo ""
 echo -e "${GREEN}╔════════════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║   ✅ Camera Migration Complete!                        ║${NC}"
+echo -e "${GREEN}║    Camera Migration Complete!                        ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════╝${NC}"
 echo ""
-echo "📦 What was installed:"
+echo " What was installed:"
 echo "   • Camera package built on TurtleBot"
 echo "   • AprilTag detector ready"
 echo "   • Color detector ready"
 echo "   • Startup script installed"
 echo ""
-echo "🚀 Next Steps:"
+echo " Next Steps:"
 echo ""
 echo "1️⃣  Start TurtleBot hardware (Terminal 1):"
 echo "   ssh $TURTLEBOT_USER@$TURTLEBOT_IP"
@@ -364,14 +364,14 @@ echo ""
 echo "5️⃣  Verify topics on laptop:"
 echo "   ros2 topic echo /apriltag_detections --once"
 echo ""
-echo "📊 Expected Results:"
+echo " Expected Results:"
 echo "   • Network: 30 Mbps → 2 Mbps (15x reduction)"
 echo "   • TF2 latency: 200ms → 20ms (10x improvement)"
 echo "   • TF2 failures: Frequent → None"
 echo "   • No more crashes!"
 echo ""
-echo -e "${YELLOW}💡 Quick Test:${NC}"
+echo -e "${YELLOW} Quick Test:${NC}"
 echo "   python3 scripts/turtlebot_bringup.py start robot"
 echo "   ssh $TURTLEBOT_USER@$TURTLEBOT_IP '~/turtlebot_start_camera.sh'"
 echo ""
-echo -e "${GREEN}Migration successful! 🎉${NC}"
+echo -e "${GREEN}Migration successful! ${NC}"

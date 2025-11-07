@@ -24,21 +24,21 @@ WORKSPACE_DIR="$HOME/Desktop/Github/MTRX3760_Project_2/turtlebot3_ws"
 MAP_DIR="$WORKSPACE_DIR/src/turtlebot3_simulations/warehouse_robot_system/maps"
 
 echo -e "${CYAN}============================================================================${NC}"
-echo -e "${CYAN}          🏭 DYNAMIC WAREHOUSE MANAGER - MTRX3760 Project 2${NC}"
+echo -e "${CYAN}           DYNAMIC WAREHOUSE MANAGER - MTRX3760 Project 2${NC}"
 echo -e "${CYAN}============================================================================${NC}"
 echo ""
 
 # Function to check if TurtleBot3 simulation is running
 check_simulation() {
     if ! pgrep -f "gzserver" > /dev/null; then
-        echo -e "${RED}❌ TurtleBot3 simulation not detected!${NC}"
+        echo -e "${RED} TurtleBot3 simulation not detected!${NC}"
         echo -e "${YELLOW}Please run TurtleBot3 Gazebo simulation first:${NC}"
         echo "   export TURTLEBOT3_MODEL=waffle"
         echo "   ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py"
         echo ""
         read -p "Press Enter to continue anyway or Ctrl+C to exit..."
     else
-        echo -e "${GREEN}✅ TurtleBot3 simulation detected${NC}"
+        echo -e "${GREEN} TurtleBot3 simulation detected${NC}"
     fi
 }
 
@@ -46,7 +46,7 @@ check_simulation() {
 start_warehouse_manager() {
     local mode=$1
     
-    echo -e "${BLUE}🚀 Starting Dynamic Warehouse Manager...${NC}"
+    echo -e "${BLUE} Starting Dynamic Warehouse Manager...${NC}"
     
     # Source the workspace
     cd "$WORKSPACE_DIR"
@@ -63,10 +63,10 @@ start_warehouse_manager() {
     
     # Check if node is running
     if kill -0 $WAREHOUSE_MANAGER_PID 2>/dev/null; then
-        echo -e "${GREEN}✅ Warehouse Manager running (PID: $WAREHOUSE_MANAGER_PID)${NC}"
+        echo -e "${GREEN} Warehouse Manager running (PID: $WAREHOUSE_MANAGER_PID)${NC}"
         return 0
     else
-        echo -e "${RED}❌ Failed to start Warehouse Manager${NC}"
+        echo -e "${RED} Failed to start Warehouse Manager${NC}"
         return 1
     fi
 }
@@ -74,47 +74,47 @@ start_warehouse_manager() {
 # Function to switch robot mode
 switch_mode() {
     local mode=$1
-    echo -e "${PURPLE}🔄 Switching to $mode mode...${NC}"
+    echo -e "${PURPLE} Switching to $mode mode...${NC}"
     
     ros2 param set /dynamic_warehouse_manager robot_mode "$mode"
     
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ Mode switched to $mode${NC}"
+        echo -e "${GREEN} Mode switched to $mode${NC}"
     else
-        echo -e "${RED}❌ Failed to switch mode${NC}"
+        echo -e "${RED} Failed to switch mode${NC}"
     fi
 }
 
 # Function to start operations
 start_operations() {
-    echo -e "${GREEN}▶️ Starting robot operations...${NC}"
+    echo -e "${GREEN}️ Starting robot operations...${NC}"
     
     ros2 service call /warehouse/start_operations std_srvs/srv/Trigger
     
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ Operations started${NC}"
+        echo -e "${GREEN} Operations started${NC}"
     else
-        echo -e "${RED}❌ Failed to start operations${NC}"
+        echo -e "${RED} Failed to start operations${NC}"
     fi
 }
 
 # Function to stop operations
 stop_operations() {
-    echo -e "${YELLOW}⏹️ Stopping robot operations...${NC}"
+    echo -e "${YELLOW}️ Stopping robot operations...${NC}"
     
     ros2 service call /warehouse/stop_operations std_srvs/srv/Trigger
     
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ Operations stopped${NC}"
+        echo -e "${GREEN} Operations stopped${NC}"
     else
-        echo -e "${RED}❌ Failed to stop operations${NC}"
+        echo -e "${RED} Failed to stop operations${NC}"
     fi
 }
 
 # Interactive menu
 show_menu() {
     echo ""
-    echo -e "${CYAN}📋 DYNAMIC WAREHOUSE CONTROL MENU${NC}"
+    echo -e "${CYAN} DYNAMIC WAREHOUSE CONTROL MENU${NC}"
     echo -e "${CYAN}=================================${NC}"
     echo -e "Current Mode: ${GREEN}$(ros2 param get /dynamic_warehouse_manager robot_mode 2>/dev/null | cut -d' ' -f2 || echo "unknown")${NC}"
     echo ""
@@ -136,7 +136,7 @@ show_menu() {
 # Function to handle cleanup on exit
 cleanup() {
     echo ""
-    echo -e "${YELLOW}🧹 Cleaning up...${NC}"
+    echo -e "${YELLOW} Cleaning up...${NC}"
     
     if [ ! -z "$WAREHOUSE_MANAGER_PID" ]; then
         echo -e "Stopping Warehouse Manager (PID: $WAREHOUSE_MANAGER_PID)..."
@@ -144,7 +144,7 @@ cleanup() {
         wait $WAREHOUSE_MANAGER_PID 2>/dev/null || true
     fi
     
-    echo -e "${GREEN}✅ Cleanup complete${NC}"
+    echo -e "${GREEN} Cleanup complete${NC}"
     exit 0
 }
 
@@ -157,20 +157,20 @@ main() {
     check_simulation
     
     # Build the workspace
-    echo -e "${BLUE}🔧 Building workspace...${NC}"
+    echo -e "${BLUE} Building workspace...${NC}"
     cd "$WORKSPACE_DIR"
     colcon build --packages-select warehouse_robot_system
     
     if [ $? -ne 0 ]; then
-        echo -e "${RED}❌ Build failed!${NC}"
+        echo -e "${RED} Build failed!${NC}"
         exit 1
     fi
     
-    echo -e "${GREEN}✅ Build successful${NC}"
+    echo -e "${GREEN} Build successful${NC}"
     
     # Start warehouse manager with default mode
     if ! start_warehouse_manager "none"; then
-        echo -e "${RED}❌ Failed to start warehouse manager${NC}"
+        echo -e "${RED} Failed to start warehouse manager${NC}"
         exit 1
     fi
     

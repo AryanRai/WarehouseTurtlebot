@@ -34,7 +34,7 @@ def check_paramiko():
         import paramiko
         return True
     except ImportError:
-        print_color("❌ paramiko library not installed!", RED)
+        print_color(" paramiko library not installed!", RED)
         print("\nInstall it with:")
         print("  pip install paramiko")
         print("  or")
@@ -62,7 +62,7 @@ def ssh_command(command: str, get_output: bool = False) -> Optional[str]:
             return None
             
     except Exception as e:
-        print_color(f"❌ SSH Error: {e}", RED)
+        print_color(f" SSH Error: {e}", RED)
         return None
 
 
@@ -71,10 +71,10 @@ def test_connection() -> bool:
     print("1️⃣ Testing SSH connection...")
     result = ssh_command("echo 'Connected'", get_output=True)
     if result == "Connected":
-        print_color("✅ Connected to TurtleBot", GREEN)
+        print_color(" Connected to TurtleBot", GREEN)
         return True
     else:
-        print_color(f"❌ Cannot connect to TurtleBot at {TURTLEBOT_IP}", RED)
+        print_color(f" Cannot connect to TurtleBot at {TURTLEBOT_IP}", RED)
         print("   Please check:")
         print("   - TurtleBot is powered on")
         print("   - Network connection is working")
@@ -102,10 +102,10 @@ def find_turtlebot3_workspace() -> Optional[str]:
             get_output=True
         )
         if result and "turtlebot3_bringup" in result:
-            print_color(f"✅ Found turtlebot3_bringup in {ws}", GREEN)
+            print_color(f" Found turtlebot3_bringup in {ws}", GREEN)
             return ws
     
-    print_color("⚠️  Could not find turtlebot3_bringup workspace", YELLOW)
+    print_color("️  Could not find turtlebot3_bringup workspace", YELLOW)
     print("   Will try system ROS only")
     return None
 
@@ -132,9 +132,9 @@ def sync_time():
     tb_time_after = ssh_command("date '+%Y-%m-%d %H:%M:%S'", get_output=True)
     if tb_time_after:
         print(f"   TurtleBot time (after): {tb_time_after}")
-        print_color("   ✅ Time synchronized", GREEN)
+        print_color("    Time synchronized", GREEN)
     else:
-        print_color("   ⚠️  Could not verify time sync", YELLOW)
+        print_color("   ️  Could not verify time sync", YELLOW)
 
 
 def start_bringup(mode: str = "both"):
@@ -143,7 +143,7 @@ def start_bringup(mode: str = "both"):
     Args:
         mode: "robot", "camera", or "both"
     """
-    print_color("\n🤖 Starting TurtleBot3 Bringup", BLUE)
+    print_color("\n Starting TurtleBot3 Bringup", BLUE)
     print("=" * 50)
     print(f"   IP: {TURTLEBOT_IP}")
     print(f"   User: {TURTLEBOT_USER}")
@@ -165,7 +165,7 @@ def start_bringup(mode: str = "both"):
         source_cmd = f"source /opt/ros/jazzy/setup.bash && source {workspace}/install/setup.bash"
     else:
         source_cmd = "source /opt/ros/jazzy/setup.bash"
-        print_color("\n⚠️  Proceeding without workspace - this may fail", YELLOW)
+        print_color("\n️  Proceeding without workspace - this may fail", YELLOW)
     
     print("\n4️⃣ Stopping any existing bringup processes...")
     if mode in ["robot", "both"]:
@@ -205,36 +205,36 @@ def start_bringup(mode: str = "both"):
         robot_count = ssh_command("pgrep -f 'robot.launch.py' | wc -l", get_output=True)
         print()
         if robot_count and int(robot_count) > 0:
-            print_color("✅ Hardware bringup is running", GREEN)
+            print_color(" Hardware bringup is running", GREEN)
         else:
-            print_color("⚠️  Hardware bringup may not have started", YELLOW)
+            print_color("️  Hardware bringup may not have started", YELLOW)
             print("   Check logs: ssh ubuntu@10.42.0.1 'tail -f /tmp/robot_bringup.log'")
     
     if mode in ["camera", "both"]:
         camera_count = ssh_command("pgrep -f 'camera.launch.py' | wc -l", get_output=True)
         print()
         if camera_count and int(camera_count) > 0:
-            print_color("✅ Camera bringup is running", GREEN)
+            print_color(" Camera bringup is running", GREEN)
         else:
-            print_color("⚠️  Camera bringup may not have started", YELLOW)
+            print_color("️  Camera bringup may not have started", YELLOW)
             print("   Check logs: ssh ubuntu@10.42.0.1 'tail -f /tmp/camera_bringup.log'")
     
-    print("\n📊 Expected topics on TurtleBot:")
+    print("\n Expected topics on TurtleBot:")
     if mode in ["robot", "both"]:
         print("   Hardware: /battery_state, /cmd_vel, /imu, /joint_states, /magnetic_field,")
         print("             /odom, /robot_description, /scan, /sensor_state, /tf, /tf_static")
     if mode in ["camera", "both"]:
         print("   Camera: /image_raw, /image_raw/compressed")
     
-    print("\n💡 To check logs on TurtleBot:")
+    print("\n To check logs on TurtleBot:")
     print(f"   ssh {TURTLEBOT_USER}@{TURTLEBOT_IP}")
     if mode in ["robot", "both"]:
         print("   tail -f /tmp/robot_bringup.log")
     if mode in ["camera", "both"]:
         print("   tail -f /tmp/camera_bringup.log")
     
-    print_color("\n✅ Bringup started! Processes are running on TurtleBot.", GREEN)
-    print_color("\n⚠️  IMPORTANT: Domain ID Configuration", YELLOW)
+    print_color("\n Bringup started! Processes are running on TurtleBot.", GREEN)
+    print_color("\n️  IMPORTANT: Domain ID Configuration", YELLOW)
     print(f"   The TurtleBot is now using ROS_DOMAIN_ID={ROS_DOMAIN_ID}")
     print("   Make sure your PC also uses domain 29:")
     print("   $ source scripts/ros_link_turtlebot.sh")
@@ -248,7 +248,7 @@ def stop_bringup(mode: str = "both"):
     Args:
         mode: "robot", "camera", or "both"
     """
-    print_color("\n🛑 Stopping TurtleBot3 Bringup", BLUE)
+    print_color("\n Stopping TurtleBot3 Bringup", BLUE)
     print("=" * 50)
     print(f"   Mode: {mode}")
     print()
@@ -273,24 +273,24 @@ def stop_bringup(mode: str = "both"):
         # Check for any robot-related processes
         robot_check = ssh_command("ps aux | grep -E 'turtlebot3_ros|hlds_laser|robot_state_publisher' | grep -v grep | wc -l", get_output=True)
         if robot_check and int(robot_check) > 0:
-            print_color("   ⚠️  Some robot processes may still be running", YELLOW)
+            print_color("   ️  Some robot processes may still be running", YELLOW)
         else:
-            print_color("   ✅ Hardware bringup stopped", GREEN)
+            print_color("    Hardware bringup stopped", GREEN)
     
     if mode in ["camera", "both"]:
         # Check for any camera-related processes
         camera_check = ssh_command("ps aux | grep -E 'camera_container|v4l2_camera' | grep -v grep | wc -l", get_output=True)
         if camera_check and int(camera_check) > 0:
-            print_color("   ⚠️  Some camera processes may still be running", YELLOW)
+            print_color("   ️  Some camera processes may still be running", YELLOW)
         else:
-            print_color("   ✅ Camera bringup stopped", GREEN)
+            print_color("    Camera bringup stopped", GREEN)
     
     return True
 
 
 def check_status():
     """Check bringup status"""
-    print_color("\n📊 TurtleBot3 Bringup Status", BLUE)
+    print_color("\n TurtleBot3 Bringup Status", BLUE)
     print("=" * 50)
     print()
     
@@ -306,21 +306,21 @@ def check_status():
     
     print("\nHardware Bringup:")
     if robot_check and int(robot_check) > 0:
-        print_color("   ✅ Running", GREEN)
+        print_color("    Running", GREEN)
         if topics_check and int(topics_check) >= 3:
-            print_color("   ✅ Publishing topics (/scan, /odom, /imu)", GREEN)
+            print_color("    Publishing topics (/scan, /odom, /imu)", GREEN)
         else:
-            print_color("   ⚠️  Some topics may not be publishing", YELLOW)
+            print_color("   ️  Some topics may not be publishing", YELLOW)
     else:
-        print_color("   ❌ Not running", RED)
+        print_color("    Not running", RED)
     
     print("\nCamera Bringup:")
     if camera_check and int(camera_check) > 0:
-        print_color("   ✅ Running", GREEN)
+        print_color("    Running", GREEN)
     else:
-        print_color("   ❌ Not running", RED)
+        print_color("    Not running", RED)
     
-    print("\n💡 To view logs:")
+    print("\n To view logs:")
     print(f"   ssh {TURTLEBOT_USER}@{TURTLEBOT_IP}")
     print("   tail -f /tmp/robot_bringup.log")
     print("   tail -f /tmp/camera_bringup.log")
@@ -330,7 +330,7 @@ def check_status():
 
 def show_usage():
     """Show usage information"""
-    print_color("\n🤖 TurtleBot3 Hardware Bringup Manager", BLUE)
+    print_color("\n TurtleBot3 Hardware Bringup Manager", BLUE)
     print("=" * 50)
     print("\nUsage: python3 scripts/turtlebot_bringup.py [command] [mode]")
     print("\nCommands:")
@@ -364,7 +364,7 @@ def main():
     
     # Validate mode
     if mode not in ["robot", "camera", "both"]:
-        print_color(f"❌ Invalid mode: {mode}", RED)
+        print_color(f" Invalid mode: {mode}", RED)
         print("   Valid modes: robot, camera, both")
         sys.exit(1)
     

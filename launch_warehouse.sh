@@ -21,7 +21,7 @@ if [ -f "$WORKSPACE_DIR/install/setup.bash" ]; then
     echo "✓ Sourcing workspace: $WORKSPACE_DIR"
     source "$WORKSPACE_DIR/install/setup.bash"
 else
-    echo "⚠ Warning: Workspace not built. Sourcing ROS 2 Humble..."
+    echo " Warning: Workspace not built. Sourcing ROS 2 Humble..."
     source /opt/ros/humble/setup.bash
 fi
 
@@ -37,7 +37,7 @@ echo ""
 # Check if world file exists
 WORLD_FILE="$WORKSPACE_DIR/src/turtlebot3_simulations/turtlebot3_gazebo/worlds/warehouse_shelves.world"
 if [ ! -f "$WORLD_FILE" ]; then
-    echo "❌ ERROR: World file not found at:"
+    echo " ERROR: World file not found at:"
     echo "   $WORLD_FILE"
     exit 1
 fi

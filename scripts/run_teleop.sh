@@ -5,7 +5,7 @@
 export ROS_DOMAIN_ID=29
 export TURTLEBOT3_MODEL=burger
 
-echo "🎮 Starting TurtleBot3 Keyboard Teleop"
+echo " Starting TurtleBot3 Keyboard Teleop"
 echo "======================================"
 echo "   ROS_DOMAIN_ID: $ROS_DOMAIN_ID"
 echo "   TURTLEBOT3_MODEL: $TURTLEBOT3_MODEL"

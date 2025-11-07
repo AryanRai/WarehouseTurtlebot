@@ -9,7 +9,7 @@
 
 # Deactivate conda if active to prevent library conflicts
 if [ ! -z "$CONDA_PREFIX" ]; then
-    echo "🔧 Deactivating conda environment..."
+    echo " Deactivating conda environment..."
     echo "   Detected conda environment: $CONDA_DEFAULT_ENV"
     echo "   Deactivating for clean ROS environment..."
     echo ""
@@ -32,7 +32,7 @@ if [ ! -z "$CONDA_PREFIX" ]; then
         export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr ':' '\n' | grep -v conda | tr '\n' ':' | sed 's/:$//')
     fi
     
-    echo "   ✅ Conda deactivated"
+    echo "    Conda deactivated"
     echo ""
 fi
 
@@ -91,10 +91,10 @@ export TURTLEBOT3_MODEL=burger
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 
 if [ "$PRELOAD_MAP" = true ]; then
-    echo "🗺️  Starting Warehouse System with Pre-loaded Map"
+    echo "️  Starting Warehouse System with Pre-loaded Map"
     echo "=================================================="
 else
-    echo "🤖 Starting Autonomous SLAM System with SLAM Toolbox"
+    echo " Starting Autonomous SLAM System with SLAM Toolbox"
     echo "====================================================="
 fi
 echo "   ROS_DOMAIN_ID: $ROS_DOMAIN_ID"
@@ -123,7 +123,7 @@ if [ "$PRELOAD_MAP" = true ]; then
     # Check if there are saved maps
     if [ -d "$MAPS_DIR" ] && [ "$(ls -A $MAPS_DIR 2>/dev/null)" ]; then
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "📁 MAP SELECTION"
+        echo " MAP SELECTION"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
         echo "   Available maps:"
@@ -179,28 +179,28 @@ fi
 
 # Check if workspace is built
 if [ ! -d "install" ]; then
-    echo "❌ Workspace not built! Please run './scripts/build_project.sh' first."
+    echo " Workspace not built! Please run './scripts/build_project.sh' first."
     exit 1
 fi
 
 source install/setup.bash
 
 # Run comprehensive cleanup to prevent TF errors
-echo "🧹 Checking for stale processes..."
+echo " Checking for stale processes..."
 STALE_PROCESSES=$(pgrep -f "slam_toolbox\|autonomous_slam_node\|delivery_robot_node\|inspection_robot_node" | tr '\n' ' ')
 if [ ! -z "$STALE_PROCESSES" ]; then
     echo "   Found stale processes: $STALE_PROCESSES"
     echo "   Running cleanup script..."
     "$SCRIPT_DIR/cleanup_slam_processes.sh"
 else
-    echo "   ✅ No stale processes found"
+    echo "    No stale processes found"
     echo ""
 fi
 
 # Check for and kill any existing rosbridge instances
 EXISTING_ROSBRIDGE=$(pgrep -f "rosbridge_websocket" | tr '\n' ' ')
 if [ ! -z "$EXISTING_ROSBRIDGE" ]; then
-    echo "🔍 Found existing rosbridge instance(s): $EXISTING_ROSBRIDGE"
+    echo " Found existing rosbridge instance(s): $EXISTING_ROSBRIDGE"
     echo "   Cleaning up old rosbridge processes..."
     
     for pid in $EXISTING_ROSBRIDGE; do
@@ -220,14 +220,14 @@ if [ ! -z "$EXISTING_ROSBRIDGE" ]; then
         fi
     done
     
-    echo "   ✅ Old rosbridge instances cleaned up"
+    echo "    Old rosbridge instances cleaned up"
     echo ""
 fi
 
 # Check if Gazebo is running
 USE_PHYSICAL_ROBOT=false
 if ! pgrep -f "gz sim" > /dev/null; then
-    echo "⚠️  Gazebo is not running!"
+    echo "️  Gazebo is not running!"
     echo ""
     echo "Would you like to run on physical TurtleBot3 instead? (y/n)"
     read -r response
@@ -235,26 +235,26 @@ if ! pgrep -f "gz sim" > /dev/null; then
     if [[ "$response" =~ ^[Yy]$ ]]; then
         USE_PHYSICAL_ROBOT=true
         echo ""
-        echo "🤖 Switching to Physical TurtleBot3 Mode"
+        echo " Switching to Physical TurtleBot3 Mode"
         echo "========================================"
         echo ""
         echo "Prerequisites:"
         echo "1. TurtleBot3 must be powered on and connected"
         echo "2. Hardware bringup must be running on TurtleBot"
         echo ""
-        echo "💡 To start hardware bringup, run:"
+        echo " To start hardware bringup, run:"
         echo "   ./scripts/turtlebot_bringup.sh start"
         echo ""
         echo "Press Enter to continue or Ctrl+C to cancel..."
         read -r
     else
         echo ""
-        echo "❌ Please start Gazebo first with:"
+        echo " Please start Gazebo first with:"
         echo "   ./launch_mgen.sh"
         exit 1
     fi
 else
-    echo "✅ Gazebo is running - using simulation mode"
+    echo " Gazebo is running - using simulation mode"
     echo ""
 fi
 
@@ -269,7 +269,7 @@ offer_mode_selection() {
     
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "🎉 EXPLORATION PHASE COMPLETE!"
+    echo " EXPLORATION PHASE COMPLETE!"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     echo "   ✓ Warehouse fully mapped"
@@ -277,52 +277,52 @@ offer_mode_selection() {
     echo "   ✓ Map saved and ready"
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "🤖 SELECT ROBOT MODE"
+    echo " SELECT ROBOT MODE"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     echo "   Choose which robot mode to activate:"
     echo ""
-    echo "   [1] 🗺️  EXPLORATION MODE"
+    echo "   [1] ️  EXPLORATION MODE"
     echo "       • Autonomous frontier exploration"
     echo "       • Create new map from scratch"
     echo "       • SLAM mapping mode"
     echo "       • Replaces existing map"
     echo ""
-    echo "   [2] 📍 DEFINE DELIVERY ZONES"
+    echo "   [2]  DEFINE DELIVERY ZONES"
     echo "       • Click points in RViz to mark zones"
     echo "       • Visualize zones on map"
     echo "       • Save zones for delivery mode"
     echo "       • Edit existing zones"
     echo ""
-    echo "   [3] 📦 DELIVERY MODE"
+    echo "   [3]  DELIVERY MODE"
     echo "       • Multi-point delivery operations"
     echo "       • Uses saved delivery zones"
     echo "       • Route optimization (TSP)"
     echo "       • Delivery logging to CSV"
     echo ""
-    echo "   [4] 💾 SAVE CURRENT MAP"
+    echo "   [4]  SAVE CURRENT MAP"
     echo "       • Save map with custom name"
     echo "       • Includes zones and robot pose"
     echo "       • Can be loaded later"
     echo ""
-    echo "   [5] 🔍 INSPECTION EXPLORATION MODE"
+    echo "   [5]  INSPECTION EXPLORATION MODE"
     echo "       • Autonomous exploration with AprilTag detection"
     echo "       • Discovers and marks damage sites automatically"
     echo "       • Saves damage site locations to file"
     echo "       • Similar to frontier exploration but with camera"
     echo ""
-    echo "   [6] 📋 INSPECTION MODE"
+    echo "   [6]  INSPECTION MODE"
     echo "       • Navigate to pre-defined damage sites"
     echo "       • Read AprilTag IDs with camera"
     echo "       • Log inspection results"
     echo "       • Route optimization (TSP)"
     echo ""
-    echo "   [7] 💾 SAVE CURRENT MAP"
+    echo "   [7]  SAVE CURRENT MAP"
     echo "       • Save map with custom name"
     echo "       • Includes zones and robot pose"
     echo "       • Can be loaded later"
     echo ""
-    echo "   [8] ❌ EXIT"
+    echo "   [8]  EXIT"
     echo "       • Shutdown system"
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -330,16 +330,16 @@ offer_mode_selection() {
     echo "   Enter your choice [1/2/3/4/5/6/7/8]"
     echo "   (You have 60 seconds to respond)"
     echo ""
-    echo -n "   👉 Your choice: "
+    echo -n "    Your choice: "
     read -r -t 60 response || response="8"
     echo ""
     
     if [[ "$response" == "1" ]]; then
         echo ""
-        echo "🗺️  Exploration Mode - Creating New Map"
+        echo "️  Exploration Mode - Creating New Map"
         echo "========================================"
         echo ""
-        echo "⚠️  WARNING: This will replace your existing map!"
+        echo "️  WARNING: This will replace your existing map!"
         echo ""
         echo -n "Are you sure you want to start exploration? (yes/no): "
         read -r confirm
@@ -352,7 +352,7 @@ offer_mode_selection() {
         fi
         
         echo ""
-        echo "🔄 Switching to exploration mode..."
+        echo " Switching to exploration mode..."
         echo ""
         
         # Check if SLAM Toolbox is already in mapping mode
@@ -365,7 +365,7 @@ offer_mode_selection() {
         
         # Only restart SLAM if we need to switch from localization to mapping
         if [ "$SLAM_IN_MAPPING_MODE" = false ]; then
-            echo "   ⚠️  Need to switch SLAM Toolbox from localization to mapping mode"
+            echo "   ️  Need to switch SLAM Toolbox from localization to mapping mode"
             echo "   This may cause TF transform issues (white robot)"
             echo ""
             echo "   RECOMMENDED: Restart the entire system for clean TF tree"
@@ -406,7 +406,7 @@ offer_mode_selection() {
             sleep 5
             
             if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
-                echo "   ❌ Failed to start SLAM Toolbox in mapping mode"
+                echo "    Failed to start SLAM Toolbox in mapping mode"
                 offer_mode_selection
                 return
             fi
@@ -421,13 +421,13 @@ offer_mode_selection() {
         sleep 2
         
         if ! ps -p $SLAM_PID > /dev/null 2>&1; then
-            echo "   ❌ Failed to start exploration controller"
+            echo "    Failed to start exploration controller"
             offer_mode_selection
             return
         fi
         
         echo ""
-        echo "✅ Exploration mode active!"
+        echo " Exploration mode active!"
         echo "   Robot will now explore and create a new map"
         echo "   Press Ctrl+C to stop"
         echo ""
@@ -438,13 +438,13 @@ offer_mode_selection() {
         done
         
         echo ""
-        echo "✅ Exploration complete!"
+        echo " Exploration complete!"
         sleep 2
         offer_mode_selection
         
     elif [[ "$response" == "2" ]]; then
         echo ""
-        echo "📍 Zone Definition Mode"
+        echo " Zone Definition Mode"
         echo "======================="
         echo ""
         echo "   Starting zone marker visualization..."
@@ -455,46 +455,46 @@ offer_mode_selection() {
         ZONE_MARKER_PID=$!
         sleep 2
         
-        echo "✅ Zone Definition Mode Active!"
+        echo " Zone Definition Mode Active!"
         echo ""
-        echo "📋 Instructions:"
+        echo " Instructions:"
         echo "   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
-        echo "   1️⃣  Open RViz (should already be open)"
-        echo "   2️⃣  Add MarkerArray display if not visible:"
+        echo "   1  Open RViz (should already be open)"
+        echo "   2  Add MarkerArray display if not visible:"
         echo "       • Click 'Add' button in RViz"
         echo "       • Select 'MarkerArray'"
         echo "       • Set Topic to: /delivery_zones/markers"
-        echo "   3️⃣  Use 'Publish Point' tool (top toolbar)"
-        echo "   4️⃣  Click on the map to add delivery zones"
-        echo "   5️⃣  Each click creates a new zone (Zone_1, Zone_2, etc.)"
-        echo "   6️⃣  Zones appear as colored cylinders on the map"
+        echo "   3  Use 'Publish Point' tool (top toolbar)"
+        echo "   4  Click on the map to add delivery zones"
+        echo "   5  Each click creates a new zone (Zone_1, Zone_2, etc.)"
+        echo "   6  Zones appear as colored cylinders on the map"
         echo ""
-        echo "💡 Tips:"
+        echo " Tips:"
         echo "   • Click on accessible (white) areas only"
         echo "   • Avoid obstacles (black areas)"
         echo "   • Zones are automatically saved"
         echo "   • You can run this mode again to add more zones"
         echo ""
-        echo "📁 Zones saved to: $(pwd)/delivery_zones.yaml"
+        echo " Zones saved to: $(pwd)/delivery_zones.yaml"
         echo ""
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo "Commands:"
         echo "  • Press ENTER to finish and return to menu"
         echo "  • Type 'clear' to delete all zones and start over"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo -n "👉 "
+        echo -n " "
         read -r user_input
         
         # Check if user wants to clear zones
         if [[ "$user_input" == "clear" ]]; then
             echo ""
-            echo "🗑️  Clearing all zones..."
+            echo "️  Clearing all zones..."
             
             # Call service to clear zones
             ros2 service call /clear_zones std_srvs/srv/Trigger
             
-            echo "✅ All zones cleared! You can now add new zones."
+            echo " All zones cleared! You can now add new zones."
             echo ""
             echo "Press ENTER when done to return to menu..."
             read -r
@@ -503,33 +503,33 @@ offer_mode_selection() {
         # Cleanup zone marker node
         if [ ! -z "$ZONE_MARKER_PID" ] && ps -p $ZONE_MARKER_PID > /dev/null 2>&1; then
             echo ""
-            echo "💾 Saving zones and stopping marker node..."
+            echo " Saving zones and stopping marker node..."
             kill -TERM $ZONE_MARKER_PID 2>/dev/null
             sleep 1
         fi
         
         echo ""
-        echo "✅ Zones saved! Returning to mode selection..."
+        echo " Zones saved! Returning to mode selection..."
         sleep 1
         offer_mode_selection
         
     elif [[ "$response" == "3" ]]; then
         echo ""
-        echo "🔄 Switching to Delivery Mode..."
+        echo " Switching to Delivery Mode..."
         echo "================================"
         echo ""
         
         # Prompt for route optimization mode
-        echo "📊 SELECT ROUTE OPTIMIZATION MODE"
+        echo " SELECT ROUTE OPTIMIZATION MODE"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
-        echo "   [1] 📋 ORDERED MODE (Sequential)"
+        echo "   [1]  ORDERED MODE (Sequential)"
         echo "       • Visits zones in defined order"
         echo "       • Zone_1 → Zone_2 → Zone_3 → ... → Home"
         echo "       • Fast startup, predictable route"
         echo "       • Good for pre-planned sequences"
         echo ""
-        echo "   [2] 🎯 OPTIMIZED MODE (TSP)"
+        echo "   [2]  OPTIMIZED MODE (TSP)"
         echo "       • Finds shortest total path"
         echo "       • Uses A* distance matrix"
         echo "       • Simulated Annealing optimization"
@@ -538,18 +538,18 @@ offer_mode_selection() {
         echo ""
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
-        echo -n "   👉 Your choice [1/2]: "
+        echo -n "    Your choice [1/2]: "
         read -r opt_mode
         echo ""
         
         # Set environment variable based on choice
         if [[ "$opt_mode" == "2" ]]; then
             export DELIVERY_OPTIMIZATION="tsp"
-            echo "   ✅ Selected: OPTIMIZED MODE (TSP)"
+            echo "    Selected: OPTIMIZED MODE (TSP)"
             echo "   Using A* + Simulated Annealing for route optimization"
         else
             export DELIVERY_OPTIMIZATION="ordered"
-            echo "   ✅ Selected: ORDERED MODE (Sequential)"
+            echo "    Selected: ORDERED MODE (Sequential)"
             echo "   Zones will be visited in defined order"
         fi
         echo ""
@@ -567,7 +567,7 @@ offer_mode_selection() {
             echo "   ✓ Skipping SLAM restart to preserve TF tree"
             echo ""
         elif [ ! -f "${MAP_FILE_BASE}.yaml" ]; then
-            echo "   ⚠️  No saved map found, continuing with current SLAM state"
+            echo "   ️  No saved map found, continuing with current SLAM state"
             echo "   SLAM Toolbox will continue in mapping mode"
         else
             # Stop SLAM Toolbox (mapping mode) and restart in localization mode
@@ -638,12 +638,12 @@ EOF
             sleep 5
             
             if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
-                echo "   ❌ Failed to start SLAM in localization mode"
+                echo "    Failed to start SLAM in localization mode"
                 echo "   Check logs: tail -f /tmp/slam_toolbox.log"
                 return 1
             fi
             
-            echo "   ✅ SLAM Toolbox running in localization mode"
+            echo "    SLAM Toolbox running in localization mode"
             
             # Set initial pose if pose file exists
             if [ -f "$POSE_FILE" ]; then
@@ -675,7 +675,7 @@ EOF
                   }
                 }" > /dev/null 2>&1 &
                 
-                echo "   ✅ Initial pose set"
+                echo "    Initial pose set"
             fi
         fi
         
@@ -690,7 +690,7 @@ EOF
                 # Topic exists, now check if it's publishing
                 if timeout 2s ros2 topic echo /map --once > /dev/null 2>&1; then
                     MAP_READY=true
-                    echo "   ✅ Map is being published"
+                    echo "    Map is being published"
                     break
                 fi
             fi
@@ -702,7 +702,7 @@ EOF
         done
         
         if [ "$MAP_READY" = false ]; then
-            echo "   ⚠️  WARNING: Map not ready after ${MAX_WAIT}s"
+            echo "   ️  WARNING: Map not ready after ${MAX_WAIT}s"
             echo "   The delivery robot may not work correctly without a map!"
             echo "   Check SLAM Toolbox logs: tail -f /tmp/slam_toolbox.log"
             sleep 2
@@ -715,17 +715,17 @@ EOF
         sleep 3
         
         if ! ps -p $DELIVERY_PID > /dev/null 2>&1; then
-            echo "   ❌ Failed to start delivery robot"
+            echo "    Failed to start delivery robot"
             return 1
         fi
         
-        echo "   ✅ Delivery Robot node started"
+        echo "    Delivery Robot node started"
         echo ""
-        echo "✅ =============================================="
+        echo " =============================================="
         echo "   DELIVERY MODE ACTIVE!"
         echo "   =============================================="
         echo ""
-        echo "📋 Delivery Robot Workflow:"
+        echo " Delivery Robot Workflow:"
         echo "   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
         echo "   STEP 1: Define Delivery Zones"
@@ -742,11 +742,11 @@ EOF
         echo "   STEP 4: Monitor Progress"
         echo "   $ ./scripts/delivery_commands.sh status"
         echo ""
-        echo "📁 Output Files:"
+        echo " Output Files:"
         echo "   • delivery_zones.yaml - Saved zones"
         echo "   • delivery_log.csv - Delivery records"
         echo ""
-        echo "💡 Quick Commands:"
+        echo " Quick Commands:"
         echo "   ./scripts/delivery_commands.sh save    # Save zones"
         echo "   ./scripts/delivery_commands.sh start   # Begin deliveries"
         echo "   ./scripts/delivery_commands.sh status  # Watch progress"
@@ -764,7 +764,7 @@ EOF
             # Check for delivery completion marker
             if [ -f "/tmp/delivery_complete.marker" ]; then
                 echo ""
-                echo "✅ Delivery system completed all tasks!"
+                echo " Delivery system completed all tasks!"
                 rm -f "/tmp/delivery_complete.marker"
                 DELIVERY_COMPLETE=true
                 break
@@ -772,7 +772,7 @@ EOF
             
             if ! ps -p $DELIVERY_PID > /dev/null 2>&1; then
                 echo ""
-                echo "ℹ️  Delivery Robot process exited"
+                echo "️  Delivery Robot process exited"
                 # Check if it was a clean completion
                 if [ -f "/tmp/delivery_complete.marker" ]; then
                     DELIVERY_COMPLETE=true
@@ -782,13 +782,13 @@ EOF
             fi
             
             if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
-                echo "❌ SLAM Toolbox process died!"
+                echo " SLAM Toolbox process died!"
                 break
             fi
             
             if [ "$USE_PHYSICAL_ROBOT" = false ] && [ ! -z "$RSP_PID" ]; then
                 if ! ps -p $RSP_PID > /dev/null 2>&1; then
-                    echo "❌ robot_state_publisher process died!"
+                    echo " robot_state_publisher process died!"
                     break
                 fi
             fi
@@ -814,14 +814,14 @@ EOF
         
     elif [[ "$response" == "4" ]]; then
         echo ""
-        echo "💾 Save Current Map"
+        echo " Save Current Map"
         echo "==================="
         echo ""
         echo -n "   Enter map name: "
         read -r map_name
         
         if [ -z "$map_name" ]; then
-            echo "   ❌ Map name cannot be empty"
+            echo "    Map name cannot be empty"
             sleep 2
             offer_mode_selection
             return
@@ -839,7 +839,7 @@ EOF
         
     elif [[ "$response" == "5" ]]; then
         echo ""
-        echo "🔍 Inspection Exploration Mode - Discovering Damage Sites"
+        echo " Inspection Exploration Mode - Discovering Damage Sites"
         echo "=========================================================="
         echo ""
         echo "This mode will:"
@@ -848,12 +848,12 @@ EOF
         echo "  • Automatically mark damage site locations"
         echo "  • Save discovered sites to damage_sites.yaml"
         echo ""
-        echo "⚠️  REQUIREMENTS:"
+        echo "️  REQUIREMENTS:"
         echo "  • Existing map (run exploration mode first!)"
         echo "  • Camera working (/camera/image_raw)"
         echo "  • SLAM Toolbox in localization mode"
         echo ""
-        echo "📋 How it works:"
+        echo " How it works:"
         echo "  1. Robot patrols all accessible areas systematically"
         echo "  2. AprilTag & Color detectors run continuously"
         echo "  3. When damage detected, location is auto-saved"
@@ -863,29 +863,29 @@ EOF
         echo "  [1] Start Inspection Exploration (systematic patrol)"
         echo "  [2] Return to menu"
         echo ""
-        echo -n "👉 Your choice: "
+        echo -n " Your choice: "
         read -r explore_choice
         
         if [[ "$explore_choice" == "1" ]]; then
             echo ""
-            echo "🔍 Starting Inspection Exploration with AprilTag Detection..."
+            echo " Starting Inspection Exploration with AprilTag Detection..."
             echo "============================================================"
             echo ""
             
             # Check if we have a valid map
             if ! ros2 topic info /map > /dev/null 2>&1; then
-                echo "❌ No map available! Please run exploration mode first."
+                echo " No map available! Please run exploration mode first."
                 echo "   The inspection exploration needs an existing map to patrol."
                 sleep 3
                 offer_mode_selection
                 return
             fi
             
-            echo "✅ Map detected - ready for inspection exploration"
+            echo " Map detected - ready for inspection exploration"
             echo ""
             
             # Check camera availability and stability
-            echo "📹 Checking camera feed..."
+            echo " Checking camera feed..."
             CAMERA_CHECK_TIMEOUT=10
             CAMERA_READY=false
             
@@ -895,7 +895,7 @@ EOF
                     # Try to get one message to verify it's actually publishing
                     if timeout 3s ros2 topic echo /camera/image_raw --once > /dev/null 2>&1; then
                         CAMERA_READY=true
-                        echo "   ✅ Camera feed detected and stable"
+                        echo "    Camera feed detected and stable"
                         break
                     fi
                 fi
@@ -905,7 +905,7 @@ EOF
             
             if [ "$CAMERA_READY" = false ]; then
                 echo ""
-                echo "   ❌ Camera feed not available or unstable!"
+                echo "    Camera feed not available or unstable!"
                 echo "   Camera topic /camera/image_raw is not publishing"
                 echo ""
                 echo "   Please check:"
@@ -922,28 +922,28 @@ EOF
                     offer_mode_selection
                     return
                 fi
-                echo "   ⚠️  Proceeding without stable camera feed"
+                echo "   ️  Proceeding without stable camera feed"
             fi
             
             # Determine visualization mode
             SHOW_CAMERA_UI=true
             if [ "$DISABLE_CAMERA_UI" = true ]; then
                 SHOW_CAMERA_UI=false
-                echo "   📷 Camera UI disabled (-nocamui flag)"
+                echo "    Camera UI disabled (-nocamui flag)"
             fi
             
             # ═══════════════════════════════════════════════════════════════
             # CAMERA DETECTION NOW RUNS ON TURTLEBOT (NOT LAPTOP)
             # Start camera on TurtleBot with: ~/turtlebot_start_camera.sh
             # ═══════════════════════════════════════════════════════════
-            echo "   📹 Camera detection running on TurtleBot"
+            echo "    Camera detection running on TurtleBot"
             echo "   (AprilTag & Color detectors on TurtleBot)"
             
             # Check if AprilTag detections are being published from TurtleBot
             if timeout 3s ros2 topic info /apriltag_detections > /dev/null 2>&1; then
-                echo "   ✅ AprilTag detections available from TurtleBot"
+                echo "    AprilTag detections available from TurtleBot"
             else
-                echo "   ⚠️  AprilTag detections not available"
+                echo "   ️  AprilTag detections not available"
                 echo "   Make sure camera is running on TurtleBot:"
                 echo "   ssh ubuntu@10.42.0.1 '~/turtlebot_start_camera.sh'"
             fi
@@ -971,7 +971,7 @@ EOF
             
             # Wait for TF transforms to stabilize (reduced since camera is on TurtleBot now)
             echo ""
-            echo "🔄 Waiting for TF transforms to stabilize..."
+            echo " Waiting for TF transforms to stabilize..."
             echo ""
             
             TF_STABLE=false
@@ -990,7 +990,7 @@ EOF
                     if [ $TF_CHECK_COUNT -ge 2 ]; then
                         # Got 2 consecutive successful checks
                         TF_STABLE=true
-                        echo "   ✅ TF transforms stable (map → base_footprint)"
+                        echo "    TF transforms stable (map → base_footprint)"
                         break
                     fi
                     echo "   Checking TF stability... ($TF_CHECK_COUNT/2)"
@@ -1006,7 +1006,7 @@ EOF
             done
             
             if [ "$TF_STABLE" = false ]; then
-                echo "   ℹ️  TF transforms still initializing (this is normal with camera on TurtleBot)"
+                echo "   ️  TF transforms still initializing (this is normal with camera on TurtleBot)"
             fi
             
             # Brief wait for robot to appear in RViz
@@ -1021,7 +1021,7 @@ EOF
             sleep 3
             
             if ! ps -p $INSPECTION_PID > /dev/null 2>&1; then
-                echo "   ❌ Failed to start inspection robot"
+                echo "    Failed to start inspection robot"
                 echo "   Check log: /tmp/inspection_exploration.log"
                 offer_mode_selection
                 return
@@ -1029,7 +1029,7 @@ EOF
             
             # Final check: Is robot visible in RViz?
             echo ""
-            echo "   🤖 Robot Status Check"
+            echo "    Robot Status Check"
             echo "   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             echo ""
             echo "   Please check RViz:"
@@ -1042,7 +1042,7 @@ EOF
             echo ""
             
             if [[ "$robot_visible" != "yes" ]]; then
-                echo "   ⚠️  Robot not visible in RViz"
+                echo "   ️  Robot not visible in RViz"
                 echo ""
                 echo "   This usually means TF transforms are broken."
                 echo "   The robot will not be able to navigate properly."
@@ -1064,29 +1064,29 @@ EOF
                     return
                 fi
                 
-                echo "   ⚠️  Continuing with white robot (may not work correctly)"
+                echo "   ️  Continuing with white robot (may not work correctly)"
             else
-                echo "   ✅ Robot confirmed visible and ready!"
+                echo "    Robot confirmed visible and ready!"
             fi
             
             echo ""
-            echo "✅ ================================================"
+            echo " ================================================"
             echo "   INSPECTION EXPLORATION ACTIVE!"
             echo "   ================================================"
             echo ""
-            echo "🤖 Robot Behavior:"
+            echo " Robot Behavior:"
             echo "   • Systematically patrols all accessible areas"
             echo "   • Uses grid-based coverage pattern"
             echo "   • Detects AprilTags and colors automatically"
             echo "   • Marks damage sites when tags detected"
             echo "   • Returns home when patrol complete"
             echo ""
-            echo "📊 Monitor Progress:"
+            echo " Monitor Progress:"
             echo "   • AprilTag detections: ros2 topic echo /apriltag_detections"
             echo "   • Color detections: ros2 topic echo /warehouse/damage_reports"
             echo "   • Robot status: ros2 topic echo /inspection/status"
             echo ""
-            echo "📁 Output Files:"
+            echo " Output Files:"
             echo "   • damage_sites.yaml - Discovered damage locations"
             echo "   • inspection_exploration_log.csv - Detection log"
             echo ""
@@ -1105,7 +1105,7 @@ EOF
                 # Check for completion marker
                 if [ -f "/tmp/inspection_exploration_complete.marker" ]; then
                     echo ""
-                    echo "✅ Inspection exploration completed!"
+                    echo " Inspection exploration completed!"
                     rm -f "/tmp/inspection_exploration_complete.marker"
                     EXPLORATION_COMPLETE=true
                     break
@@ -1113,7 +1113,7 @@ EOF
                 
                 if ! ps -p $INSPECTION_PID > /dev/null 2>&1; then
                     echo ""
-                    echo "ℹ️  Inspection Robot process exited"
+                    echo "️  Inspection Robot process exited"
                     if [ -f "/tmp/inspection_exploration_complete.marker" ]; then
                         EXPLORATION_COMPLETE=true
                         rm -f "/tmp/inspection_exploration_complete.marker"
@@ -1151,9 +1151,9 @@ EOF
             
             echo ""
             if [ "$EXPLORATION_COMPLETE" = true ]; then
-                echo "✅ Inspection exploration completed successfully!"
+                echo " Inspection exploration completed successfully!"
                 echo ""
-                echo "📋 Results:"
+                echo " Results:"
                 if [ -f "damage_sites.yaml" ]; then
                     SITE_COUNT=$(grep -c "^  - name:" "damage_sites.yaml" 2>/dev/null || echo "0")
                     echo "   • Discovered $SITE_COUNT damage sites"
@@ -1167,12 +1167,12 @@ EOF
                 fi
                 
                 echo ""
-                echo "💡 Next Steps:"
+                echo " Next Steps:"
                 echo "   1. Review discovered sites: ./scripts/inspection_commands.sh sites"
                 echo "   2. Run inspection mode to verify sites: Select option [6]"
                 echo "   3. Save map with sites: Select option [7]"
             else
-                echo "⚠️  Inspection exploration stopped early"
+                echo "️  Inspection exploration stopped early"
                 echo "   Check log: /tmp/inspection_exploration.log"
             fi
             
@@ -1188,20 +1188,20 @@ EOF
         
     elif [[ "$response" == "6" ]]; then
         echo ""
-        echo "🔄 Switching to Inspection Mode..."
+        echo " Switching to Inspection Mode..."
         echo "=================================="
         echo ""
         
         # Prompt for route optimization mode
-        echo "📊 SELECT ROUTE OPTIMIZATION MODE"
+        echo " SELECT ROUTE OPTIMIZATION MODE"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
-        echo "   [1] 📋 ORDERED MODE (Sequential)"
+        echo "   [1]  ORDERED MODE (Sequential)"
         echo "       • Visits sites in defined order"
         echo "       • Damage_1 → Damage_2 → Damage_3 → ... → Home"
         echo "       • Fast startup, predictable route"
         echo ""
-        echo "   [2] 🎯 OPTIMIZED MODE (TSP)"
+        echo "   [2]  OPTIMIZED MODE (TSP)"
         echo "       • Finds shortest total path"
         echo "       • Uses A* distance matrix"
         echo "       • Simulated Annealing optimization"
@@ -1209,18 +1209,18 @@ EOF
         echo ""
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
-        echo -n "   👉 Your choice [1/2]: "
+        echo -n "    Your choice [1/2]: "
         read -r opt_mode
         echo ""
         
         # Set environment variable based on choice
         if [[ "$opt_mode" == "2" ]]; then
             export INSPECTION_OPTIMIZATION="tsp"
-            echo "   ✅ Selected: OPTIMIZED MODE (TSP)"
+            echo "    Selected: OPTIMIZED MODE (TSP)"
             echo "   Using A* + Simulated Annealing for route optimization"
         else
             export INSPECTION_OPTIMIZATION="ordered"
-            echo "   ✅ Selected: ORDERED MODE (Sequential)"
+            echo "    Selected: ORDERED MODE (Sequential)"
             echo "   Sites will be visited in defined order"
         fi
         echo ""
@@ -1238,7 +1238,7 @@ EOF
             echo "   ✓ Skipping SLAM restart to preserve TF tree"
             echo ""
         elif [ ! -f "${MAP_FILE_BASE}.yaml" ]; then
-            echo "   ⚠️  No saved map found, continuing with current SLAM state"
+            echo "   ️  No saved map found, continuing with current SLAM state"
             echo "   SLAM Toolbox will continue in mapping mode"
         else
             # Stop SLAM Toolbox (mapping mode) and restart in localization mode
@@ -1290,12 +1290,12 @@ EOF
             sleep 5
             
             if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
-                echo "   ❌ Failed to start SLAM in localization mode"
+                echo "    Failed to start SLAM in localization mode"
                 echo "   Check logs: tail -f /tmp/slam_toolbox.log"
                 return 1
             fi
             
-            echo "   ✅ SLAM Toolbox running in localization mode"
+            echo "    SLAM Toolbox running in localization mode"
         fi
         
         # Wait for SLAM to be ready
@@ -1308,7 +1308,7 @@ EOF
             if ros2 topic info /map > /dev/null 2>&1; then
                 if timeout 2s ros2 topic echo /map --once > /dev/null 2>&1; then
                     MAP_READY=true
-                    echo "   ✅ Map is being published"
+                    echo "    Map is being published"
                     break
                 fi
             fi
@@ -1320,7 +1320,7 @@ EOF
         done
         
         if [ "$MAP_READY" = false ]; then
-            echo "   ⚠️  WARNING: Map not ready after ${MAX_WAIT}s"
+            echo "   ️  WARNING: Map not ready after ${MAX_WAIT}s"
             echo "   The inspection robot may not work correctly without a map!"
             sleep 2
         fi
@@ -1336,7 +1336,7 @@ EOF
                 # Try to get one message to verify it's actually publishing
                 if timeout 3s ros2 topic echo /camera/image_raw --once > /dev/null 2>&1; then
                     CAMERA_READY=true
-                    echo "   ✅ Camera feed detected"
+                    echo "    Camera feed detected"
                     break
                 fi
             fi
@@ -1347,7 +1347,7 @@ EOF
         done
         
         if [ "$CAMERA_READY" = false ]; then
-            echo "   ⚠️  Camera feed not available"
+            echo "   ️  Camera feed not available"
             echo "   Inspection will continue but AprilTag detection may not work"
         fi
         
@@ -1355,20 +1355,20 @@ EOF
         SHOW_CAMERA_UI=true
         if [ "$DISABLE_CAMERA_UI" = true ]; then
             SHOW_CAMERA_UI=false
-            echo "   📷 Camera UI disabled (-nocamui flag)"
+            echo "    Camera UI disabled (-nocamui flag)"
         fi
         
         # ═══════════════════════════════════════════════════════════════
         # CAMERA DETECTION NOW RUNS ON TURTLEBOT (NOT LAPTOP)
         # Start camera on TurtleBot with: ~/turtlebot_start_camera.sh
         # ═══════════════════════════════════════════════════════════
-        echo "   📹 Camera detection running on TurtleBot"
+        echo "    Camera detection running on TurtleBot"
         
         # Check if AprilTag detections are available
         if timeout 3s ros2 topic info /apriltag_detections > /dev/null 2>&1; then
-            echo "   ✅ AprilTag detections available from TurtleBot"
+            echo "    AprilTag detections available from TurtleBot"
         else
-            echo "   ⚠️  AprilTag detections not available"
+            echo "   ️  AprilTag detections not available"
             echo "   Make sure camera is running on TurtleBot:"
             echo "   ssh ubuntu@10.42.0.1 '~/turtlebot_start_camera.sh'"
         fi
@@ -1380,7 +1380,7 @@ EOF
         
         # Wait for TF transforms to stabilize (reduced since camera is on TurtleBot now)
         echo ""
-        echo "   🔄 Waiting for TF transforms to stabilize..."
+        echo "    Waiting for TF transforms to stabilize..."
         
         TF_STABLE=false
         TF_CHECK_COUNT=0
@@ -1395,7 +1395,7 @@ EOF
                 TF_CHECK_COUNT=$((TF_CHECK_COUNT + 1))
                 if [ $TF_CHECK_COUNT -ge 2 ]; then
                     TF_STABLE=true
-                    echo "   ✅ TF transforms stable"
+                    echo "    TF transforms stable"
                     break
                 fi
                 echo "   Checking TF stability... ($TF_CHECK_COUNT/2)"
@@ -1409,7 +1409,7 @@ EOF
         done
         
         if [ "$TF_STABLE" = false ]; then
-            echo "   ⚠️  TF transforms not stable - robot may appear white in RViz"
+            echo "   ️  TF transforms not stable - robot may appear white in RViz"
         fi
         
         sleep 0.5  # Reduced from 2s - faster startup with camera on TurtleBot
@@ -1421,30 +1421,30 @@ EOF
         sleep 3
         
         if ! ps -p $INSPECTION_PID > /dev/null 2>&1; then
-            echo "   ❌ Failed to start inspection robot"
+            echo "    Failed to start inspection robot"
             return 1
         fi
         
-        echo "   ✅ Inspection Robot node started"
+        echo "    Inspection Robot node started"
         
         # Check robot visibility
         echo ""
-        echo "   🤖 Please verify robot is visible in RViz (not white)"
+        echo "    Please verify robot is visible in RViz (not white)"
         echo -n "   Robot visible and ready? (yes/no): "
         read -r -t 15 robot_ok || robot_ok="yes"
         
         if [[ "$robot_ok" != "yes" ]]; then
-            echo "   ⚠️  Robot visibility issue - consider restarting system"
+            echo "   ️  Robot visibility issue - consider restarting system"
         else
-            echo "   ✅ Robot confirmed ready"
+            echo "    Robot confirmed ready"
         fi
         
         echo ""
-        echo "✅ =============================================="
+        echo " =============================================="
         echo "   INSPECTION MODE ACTIVE!"
         echo "   =============================================="
         echo ""
-        echo "📋 Inspection Robot Workflow:"
+        echo " Inspection Robot Workflow:"
         echo "   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
         echo "   STEP 1: Define Damage Sites"
@@ -1461,17 +1461,17 @@ EOF
         echo "   STEP 4: Monitor Progress"
         echo "   $ ./scripts/inspection_commands.sh status"
         echo ""
-        echo "📁 Output Files:"
+        echo " Output Files:"
         echo "   • damage_sites.yaml - Saved damage sites"
         echo "   • inspection_log.csv - Inspection records"
         echo ""
-        echo "💡 Quick Commands:"
+        echo " Quick Commands:"
         echo "   ./scripts/inspection_commands.sh save    # Save sites"
         echo "   ./scripts/inspection_commands.sh start   # Begin inspections"
         echo "   ./scripts/inspection_commands.sh status  # Watch progress"
         echo "   ./scripts/inspection_commands.sh log     # View history"
         echo ""
-        echo "🎥 Camera & AprilTag Detection:"
+        echo " Camera & AprilTag Detection:"
         echo "   • Robot reads AprilTag IDs at each site"
         echo "   • Detection timeout: 5 seconds per site"
         echo "   • Results logged to inspection_log.csv"
@@ -1488,7 +1488,7 @@ EOF
             # Check for inspection completion marker
             if [ -f "/tmp/inspection_complete.marker" ]; then
                 echo ""
-                echo "✅ Inspection system completed all tasks!"
+                echo " Inspection system completed all tasks!"
                 rm -f "/tmp/inspection_complete.marker"
                 INSPECTION_COMPLETE=true
                 break
@@ -1496,7 +1496,7 @@ EOF
             
             if ! ps -p $INSPECTION_PID > /dev/null 2>&1; then
                 echo ""
-                echo "ℹ️  Inspection Robot process exited"
+                echo "️  Inspection Robot process exited"
                 if [ -f "/tmp/inspection_complete.marker" ]; then
                     INSPECTION_COMPLETE=true
                     rm -f "/tmp/inspection_complete.marker"
@@ -1505,13 +1505,13 @@ EOF
             fi
             
             if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
-                echo "❌ SLAM Toolbox process died!"
+                echo " SLAM Toolbox process died!"
                 break
             fi
             
             if [ "$USE_PHYSICAL_ROBOT" = false ] && [ ! -z "$RSP_PID" ]; then
                 if ! ps -p $RSP_PID > /dev/null 2>&1; then
-                    echo "❌ robot_state_publisher process died!"
+                    echo " robot_state_publisher process died!"
                     break
                 fi
             fi
@@ -1543,14 +1543,14 @@ EOF
         
     elif [[ "$response" == "7" ]]; then
         echo ""
-        echo "💾 Save Current Map"
+        echo " Save Current Map"
         echo "==================="
         echo ""
         echo -n "   Enter map name: "
         read -r map_name
         
         if [ -z "$map_name" ]; then
-            echo "   ❌ Map name cannot be empty"
+            echo "    Map name cannot be empty"
             sleep 2
             offer_mode_selection
             return
@@ -1575,7 +1575,7 @@ EOF
 # Cleanup function for delivery mode
 cleanup_delivery_mode() {
     echo ""
-    echo "🛑 Shutting down Delivery System..."
+    echo " Shutting down Delivery System..."
     
     if [ ! -z "$DELIVERY_PID" ] && ps -p $DELIVERY_PID > /dev/null 2>&1; then
         echo "   Stopping Delivery Robot..."
@@ -1583,14 +1583,14 @@ cleanup_delivery_mode() {
         sleep 0.5
     fi
     
-    echo "✅ Delivery system stopped."
+    echo " Delivery system stopped."
     exit 0
 }
 
 # Cleanup function for inspection mode
 cleanup_inspection_mode() {
     echo ""
-    echo "🛑 Shutting down Inspection System..."
+    echo " Shutting down Inspection System..."
     
     if [ ! -z "$INSPECTION_PID" ] && ps -p $INSPECTION_PID > /dev/null 2>&1; then
         echo "   Stopping Inspection Robot..."
@@ -1604,14 +1604,14 @@ cleanup_inspection_mode() {
         sleep 0.5
     fi
     
-    echo "✅ Inspection system stopped."
+    echo " Inspection system stopped."
     exit 0
 }
 
 # Cleanup function for inspection exploration mode
 cleanup_inspection_exploration() {
     echo ""
-    echo "🛑 Shutting down Inspection Exploration System..."
+    echo " Shutting down Inspection Exploration System..."
     
     if [ ! -z "$INSPECTION_PID" ] && ps -p $INSPECTION_PID > /dev/null 2>&1; then
         echo "   Stopping Inspection Robot..."
@@ -1637,7 +1637,7 @@ cleanup_inspection_exploration() {
         sleep 0.5
     fi
     
-    echo "✅ Inspection exploration system stopped."
+    echo " Inspection exploration system stopped."
     exit 0
 }
 
@@ -1653,7 +1653,7 @@ cleanup() {
     fi
     
     echo ""
-    echo "🛑 Shutting down Autonomous SLAM System..."
+    echo " Shutting down Autonomous SLAM System..."
     
     # Gracefully shutdown background processes
     if [ ! -z "$RSP_PID" ] && ps -p $RSP_PID > /dev/null 2>&1; then
@@ -1748,7 +1748,7 @@ cleanup() {
         fi
     done
     
-    echo "✅ Autonomous SLAM system stopped."
+    echo " Autonomous SLAM system stopped."
     
     # If exploration was complete, offer mode selection
     if [ "$OFFER_MODE_SELECTION" = true ]; then
@@ -1761,12 +1761,12 @@ cleanup() {
 # Set up signal handlers
 trap cleanup SIGINT SIGTERM
 
-echo "🚀 Starting Autonomous SLAM Components..."
+echo " Starting Autonomous SLAM Components..."
 echo ""
 
 # Different startup for physical robot vs simulation
 if [ "$USE_PHYSICAL_ROBOT" = true ]; then
-    echo "🤖 Physical TurtleBot3 Mode"
+    echo " Physical TurtleBot3 Mode"
     echo "==========================="
     echo ""
     echo "Skipping robot spawn (using physical robot)"
@@ -1778,7 +1778,7 @@ if [ "$USE_PHYSICAL_ROBOT" = true ]; then
     RSP_PID=""
     SPAWN_PID=""
 else
-    echo "🎮 Simulation Mode"
+    echo " Simulation Mode"
     echo "=================="
     echo ""
     
@@ -1793,11 +1793,11 @@ else
     sleep 4
 
     # Kill the wall-following drive node (we don't need it for autonomous SLAM)
-    echo "🔧 Stopping wall-following node..."
+    echo " Stopping wall-following node..."
     pkill -f turtlebot3_drive_node
     sleep 1
 
-    echo "✅ Robot spawned without wall following - ready for autonomous SLAM control"
+    echo " Robot spawned without wall following - ready for autonomous SLAM control"
     
     # Set use_sim_time to true for simulation
     USE_SIM_TIME="True"
@@ -1813,7 +1813,7 @@ if [ "$PRELOAD_MAP" = true ]; then
     fi
     
     if [ ! -f "${MAP_FILE_BASE}.yaml" ]; then
-        echo "❌ No map file found!"
+        echo " No map file found!"
         echo "   Looking for: warehouse_map_final.yaml or warehouse_map_complete.yaml"
         echo "   in: $(pwd)"
         echo "   Please run exploration first without -preload flag"
@@ -1891,12 +1891,12 @@ else
     SLAM_TOOLBOX_PID=$!
 fi
 
-echo "⏳ Waiting for SLAM Toolbox to initialize..."
+echo " Waiting for SLAM Toolbox to initialize..."
 sleep 5
 
 # Check if SLAM Toolbox started successfully
 if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
-    echo "❌ SLAM Toolbox failed to start!"
+    echo " SLAM Toolbox failed to start!"
     echo "   Check logs: tail -f /tmp/slam_toolbox.log"
     cleanup
     exit 1
@@ -1912,7 +1912,7 @@ while [ $TF_WAIT_COUNT -lt $TF_MAX_WAIT ]; do
     # Check if map frame exists in TF tree
     if ros2 run tf2_ros tf2_echo map odom 2>&1 | grep -q "At time" 2>/dev/null; then
         MAP_FRAME_READY=true
-        echo "   ✅ SLAM Toolbox TF frames ready (map → odom)"
+        echo "    SLAM Toolbox TF frames ready (map → odom)"
         break
     fi
     sleep 1
@@ -1923,7 +1923,7 @@ while [ $TF_WAIT_COUNT -lt $TF_MAX_WAIT ]; do
 done
 
 if [ "$MAP_FRAME_READY" = false ]; then
-    echo "   ⚠️  WARNING: Map frame not ready after ${TF_MAX_WAIT}s"
+    echo "   ️  WARNING: Map frame not ready after ${TF_MAX_WAIT}s"
     echo "   SLAM Toolbox may not be working correctly!"
     echo "   Check logs: tail -f /tmp/slam_toolbox.log"
     echo ""
@@ -1944,7 +1944,7 @@ if ros2 pkg list 2>/dev/null | grep -q "rosbridge_server" 2>/dev/null; then
     sleep 3
     
     if ps -p $ROSBRIDGE_PID > /dev/null 2>&1; then
-        echo "   ✅ rosbridge started (PID: $ROSBRIDGE_PID)"
+        echo "    rosbridge started (PID: $ROSBRIDGE_PID)"
         
         # Start web server if -web flag was provided
         if [ "$START_WEB_DASHBOARD" = true ]; then
@@ -1953,11 +1953,11 @@ if ros2 pkg list 2>/dev/null | grep -q "rosbridge_server" 2>/dev/null; then
             
             # Check if node_modules exists
             if [ ! -d "$WEB_DIR/node_modules" ]; then
-                echo "   📦 Installing web dependencies (first time only)..."
+                echo "    Installing web dependencies (first time only)..."
                 cd "$WEB_DIR"
                 npm install --silent > /tmp/npm_install.log 2>&1
                 if [ $? -ne 0 ]; then
-                    echo "   ⚠️  Failed to install web dependencies"
+                    echo "   ️  Failed to install web dependencies"
                     echo "   Check logs: tail -f /tmp/npm_install.log"
                     WEB_SERVER_PID=""
                     cd - > /dev/null
@@ -1971,10 +1971,10 @@ if ros2 pkg list 2>/dev/null | grep -q "rosbridge_server" 2>/dev/null; then
                     sleep 3
                     
                     if ps -p $WEB_SERVER_PID > /dev/null 2>&1; then
-                        echo "   ✅ Web server started (PID: $WEB_SERVER_PID)"
-                        echo "   🌐 Open browser: http://localhost:3000"
+                        echo "    Web server started (PID: $WEB_SERVER_PID)"
+                        echo "    Open browser: http://localhost:3000"
                     else
-                        echo "   ⚠️  Web server failed to start"
+                        echo "   ️  Web server failed to start"
                         WEB_SERVER_PID=""
                     fi
                 fi
@@ -1987,26 +1987,26 @@ if ros2 pkg list 2>/dev/null | grep -q "rosbridge_server" 2>/dev/null; then
                 sleep 3
                 
                 if ps -p $WEB_SERVER_PID > /dev/null 2>&1; then
-                    echo "   ✅ Web server started (PID: $WEB_SERVER_PID)"
-                    echo "   🌐 Open browser: http://localhost:3000"
+                    echo "    Web server started (PID: $WEB_SERVER_PID)"
+                    echo "    Open browser: http://localhost:3000"
                 else
-                    echo "   ⚠️  Web server failed to start"
+                    echo "   ️  Web server failed to start"
                     WEB_SERVER_PID=""
                 fi
             fi
         else
-            echo "   🌐 Web dashboard available at: http://localhost:3000"
-            echo "   💡 To auto-start web server, use: $0 -web"
+            echo "    Web dashboard available at: http://localhost:3000"
+            echo "    To auto-start web server, use: $0 -web"
             WEB_SERVER_PID=""
         fi
     else
-        echo "   ⚠️  rosbridge failed to start (check /tmp/rosbridge.log)"
+        echo "   ️  rosbridge failed to start (check /tmp/rosbridge.log)"
         echo "   Web dashboard won't work without rosbridge"
         ROSBRIDGE_PID=""
         WEB_SERVER_PID=""
     fi
 else
-    echo "   ⚠️  rosbridge_server not installed"
+    echo "   ️  rosbridge_server not installed"
     echo "   Install with: sudo apt install ros-jazzy-rosbridge-server"
     echo "   (Web dashboard will not be available)"
     ROSBRIDGE_PID=""
@@ -2037,7 +2037,7 @@ elif command -v xterm &> /dev/null; then
     xterm -e "source $(pwd)/install/setup.bash && ros2 run mtrx3760_battery battery_terminal_display --ros-args --params-file '$BATTERY_CONFIG'; bash" &
     BATTERY_DISPLAY_PID=$!
 else
-    echo "   ⚠️  No terminal emulator found, running in background"
+    echo "   ️  No terminal emulator found, running in background"
     ros2 run mtrx3760_battery battery_terminal_display --ros-args --params-file "$BATTERY_CONFIG" > /tmp/battery_display.log 2>&1 &
     BATTERY_DISPLAY_PID=$!
 fi
@@ -2054,7 +2054,7 @@ if [ -f "$RVIZ_CONFIG" ]; then
     echo "   Using RViz config: $RVIZ_CONFIG"
     rviz2 -d "$RVIZ_CONFIG" > /tmp/rviz.log 2>&1 &
 else
-    echo "   ⚠️  RViz config not found, using default"
+    echo "   ️  RViz config not found, using default"
     rviz2 > /tmp/rviz.log 2>&1 &
 fi
 RVIZ_PID=$!
@@ -2062,13 +2062,13 @@ sleep 3
 
 if [ "$PRELOAD_MAP" = false ]; then
     echo "7️⃣ Starting Autonomous SLAM Exploration Controller..."
-    echo "⏳ Waiting for SLAM to be ready..."
+    echo " Waiting for SLAM to be ready..."
     sleep 3
 
     # Check if map topic is available before starting autonomous controller
-    echo "🔍 Checking for /map topic..."
+    echo " Checking for /map topic..."
     timeout 10s bash -c 'until ros2 topic list | grep -q "^/map$"; do sleep 1; done' || {
-        echo "⚠️  Map topic not available yet, but starting controller anyway..."
+        echo "️  Map topic not available yet, but starting controller anyway..."
     }
 
     # Start the new autonomous exploration node using clean launcher to avoid conda conflicts
@@ -2083,41 +2083,41 @@ fi
 
 echo ""
 if [ "$PRELOAD_MAP" = true ]; then
-    echo "✅ Warehouse System Started (Preload Mode)!"
+    echo " Warehouse System Started (Preload Mode)!"
 else
-    echo "✅ Autonomous SLAM System Started!"
+    echo " Autonomous SLAM System Started!"
 fi
 echo ""
-echo "📊 Running Components:"
+echo " Running Components:"
 if [ "$USE_PHYSICAL_ROBOT" = true ]; then
-    echo "   🤖 Physical TurtleBot3 (hardware bringup on robot)"
+    echo "    Physical TurtleBot3 (hardware bringup on robot)"
 else
-    echo "   🔧 robot_state_publisher (PID: $RSP_PID)"
-    echo "   🤖 TurtleBot3 in Gazebo (PID: $SPAWN_PID)"
+    echo "    robot_state_publisher (PID: $RSP_PID)"
+    echo "    TurtleBot3 in Gazebo (PID: $SPAWN_PID)"
 fi
 if [ "$PRELOAD_MAP" = true ]; then
-    echo "   🗺️  SLAM Toolbox - Localization (PID: $SLAM_TOOLBOX_PID)"
+    echo "   ️  SLAM Toolbox - Localization (PID: $SLAM_TOOLBOX_PID)"
 else
-    echo "   🗺️  SLAM Toolbox - Mapping (PID: $SLAM_TOOLBOX_PID)"
+    echo "   ️  SLAM Toolbox - Mapping (PID: $SLAM_TOOLBOX_PID)"
 fi
 if [ ! -z "$ROSBRIDGE_PID" ]; then
-    echo "   🌐 rosbridge WebSocket (PID: $ROSBRIDGE_PID)"
+    echo "    rosbridge WebSocket (PID: $ROSBRIDGE_PID)"
 fi
 if [ ! -z "$WEB_SERVER_PID" ]; then
-    echo "   🌐 Web Server (PID: $WEB_SERVER_PID)"
+    echo "    Web Server (PID: $WEB_SERVER_PID)"
 fi
-echo "   🔋 Battery Monitor (PID: $BATTERY_PID)"
-echo "   📊 Battery Display (PID: $BATTERY_DISPLAY_PID)"
-echo "   🖥️  RViz2 (PID: $RVIZ_PID)"
+echo "    Battery Monitor (PID: $BATTERY_PID)"
+echo "    Battery Display (PID: $BATTERY_DISPLAY_PID)"
+echo "   ️  RViz2 (PID: $RVIZ_PID)"
 if [ "$PRELOAD_MAP" = false ]; then
-    echo "   🧠 Autonomous SLAM Controller (PID: $SLAM_PID)"
+    echo "    Autonomous SLAM Controller (PID: $SLAM_PID)"
 fi
 echo ""
-echo "🎯 Mode: $([ "$USE_PHYSICAL_ROBOT" = true ] && echo "Physical Robot" || echo "Simulation")"
+echo " Mode: $([ "$USE_PHYSICAL_ROBOT" = true ] && echo "Physical Robot" || echo "Simulation")"
 echo "   use_sim_time: $USE_SIM_TIME"
 echo ""
 if [ "$PRELOAD_MAP" = false ]; then
-    echo "🎯 System Behavior:"
+    echo " System Behavior:"
     echo "   • Robot will automatically explore the environment"
     echo "   • Uses Expanding Wavefront Frontier Detection"
     echo "   • Plans optimal paths using A* with cost map"
@@ -2125,7 +2125,7 @@ if [ "$PRELOAD_MAP" = false ]; then
     echo "   • Avoids obstacles dynamically using local costmap"
     echo "   • Saves map automatically when exploration is complete"
 else
-    echo "🎯 System Behavior:"
+    echo " System Behavior:"
     echo "   • Pre-loaded map from previous exploration"
     echo "   • SLAM Toolbox in localization mode"
     echo "   • Robot localized on existing map"
@@ -2133,19 +2133,19 @@ else
     echo "   • Skipping autonomous exploration phase"
 fi
 echo ""
-echo "🖥️  RViz2 Setup:"
+echo "️  RViz2 Setup:"
 echo "   • RViz2 opened with SLAM Toolbox configuration"
 echo "   • Map, LaserScan, and Path displays are pre-configured"
 echo "   • Fixed Frame: 'map' (may show error initially until SLAM starts)"
 echo "   • Wait 10-20 seconds for SLAM Toolbox to initialize"
 echo ""
-echo "📈 Monitoring:"
+echo " Monitoring:"
 echo "   • Watch RViz to see autonomous exploration"
 echo "   • Robot will move to frontiers automatically"
 echo "   • SLAM builds map as robot explores"
 echo "   • Battery status shown in separate terminal window"
 if [ ! -z "$WEB_SERVER_PID" ]; then
-    echo "   • 🌐 Web dashboard: http://localhost:3000 (RUNNING)"
+    echo "   •  Web dashboard: http://localhost:3000 (RUNNING)"
 elif [ ! -z "$ROSBRIDGE_PID" ]; then
     echo "   • Web dashboard: Open browser to http://localhost:3000"
     echo "     (or run: cd turtlebot3_ws/src/mtrx3760_battery/web && npm run dev)"
@@ -2163,17 +2163,17 @@ if [ ! -z "$WEB_SERVER_PID" ]; then
 fi
 echo "   • RViz logs: tail -f /tmp/rviz.log"
 echo ""
-echo "🔄 Exploration Process:"
+echo " Exploration Process:"
 echo "   1. Detect frontiers (unexplored areas)"
 echo "   2. Select best frontier (size + distance)"
 echo "   3. Plan path using A* pathfinding"
 echo "   4. Follow path with Pure Pursuit"
 echo "   5. Repeat until no frontiers remain"
 echo ""
-echo "💡 The robot is now fully autonomous!"
+echo " The robot is now fully autonomous!"
 echo "   No manual control needed - it will explore and map automatically."
 echo ""
-echo "📊 Visualization Topics (add in RViz):"
+echo " Visualization Topics (add in RViz):"
 echo "   • /map - SLAM-generated map"
 echo "   • /scan - Laser scan data"
 echo "   • /exploration/path - Planned exploration path"
@@ -2187,7 +2187,7 @@ EXPLORATION_COMPLETE=false
 if [ "$PRELOAD_MAP" = true ]; then
     # In preload mode, go directly to mode selection
     echo ""
-    echo "🗺️  Map loaded successfully!"
+    echo "️  Map loaded successfully!"
     echo "   Skipping exploration phase..."
     echo ""
     sleep 2
@@ -2198,7 +2198,7 @@ if [ "$PRELOAD_MAP" = true ]; then
 else
     # Normal exploration mode
     echo ""
-    echo "⏳ Monitoring exploration progress..."
+    echo " Monitoring exploration progress..."
     echo "   (Exploration will complete automatically when map is finished)"
     echo ""
 
@@ -2210,7 +2210,7 @@ else
             
             echo ""
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "✅ AUTONOMOUS SLAM CONTROLLER COMPLETED!"
+            echo " AUTONOMOUS SLAM CONTROLLER COMPLETED!"
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             echo ""
             echo "   ✓ Exploration finished"
@@ -2222,18 +2222,18 @@ else
         fi
         
         if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
-            echo "❌ SLAM Toolbox process died!"
+            echo " SLAM Toolbox process died!"
             break
         fi
         
         if ! ps -p $BATTERY_PID > /dev/null 2>&1; then
-            echo "⚠️  Battery Monitor process died (non-critical)"
+            echo "️  Battery Monitor process died (non-critical)"
         fi
         
         # Only check RSP if in simulation mode
         if [ "$USE_PHYSICAL_ROBOT" = false ] && [ ! -z "$RSP_PID" ]; then
             if ! ps -p $RSP_PID > /dev/null 2>&1; then
-                echo "❌ robot_state_publisher process died!"
+                echo " robot_state_publisher process died!"
                 break
             fi
         fi
@@ -2247,7 +2247,7 @@ else
         touch /tmp/slam_exploration_complete.marker
         # Call the mode selection function
         offer_mode_selection
-    fi
+    fiw
 fi
 
 cleanup

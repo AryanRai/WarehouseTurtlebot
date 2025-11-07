@@ -2,7 +2,7 @@
 # Kill All ROS Nodes Script
 # Comprehensive cleanup of all ROS2 processes, Gazebo, and related components
 
-echo "🛑 Killing All ROS Nodes and Related Processes"
+echo " Killing All ROS Nodes and Related Processes"
 echo "=============================================="
 echo ""
 
@@ -13,7 +13,7 @@ kill_processes() {
     
     local pids=$(pgrep -f "$process_name" 2>/dev/null)
     if [ ! -z "$pids" ]; then
-        echo "🔪 Killing $display_name processes..."
+        echo " Killing $display_name processes..."
         echo "   PIDs: $pids"
         pkill -f "$process_name" 2>/dev/null
         sleep 1
@@ -24,9 +24,9 @@ kill_processes() {
             echo "   Force killing remaining $display_name processes..."
             pkill -9 -f "$process_name" 2>/dev/null
         fi
-        echo "   ✅ $display_name processes terminated"
+        echo "    $display_name processes terminated"
     else
-        echo "   ℹ️  No $display_name processes found"
+        echo "   ️  No $display_name processes found"
     fi
 }
 
@@ -37,7 +37,7 @@ kill_by_command() {
     
     local pids=$(pgrep "$command_name" 2>/dev/null)
     if [ ! -z "$pids" ]; then
-        echo "🔪 Killing $display_name..."
+        echo " Killing $display_name..."
         echo "   PIDs: $pids"
         pkill "$command_name" 2>/dev/null
         sleep 1
@@ -48,23 +48,23 @@ kill_by_command() {
             echo "   Force killing remaining $display_name..."
             pkill -9 "$command_name" 2>/dev/null
         fi
-        echo "   ✅ $display_name terminated"
+        echo "    $display_name terminated"
     else
-        echo "   ℹ️  No $display_name processes found"
+        echo "   ️  No $display_name processes found"
     fi
 }
 
-echo "🔍 Scanning for ROS2 and related processes..."
+echo " Scanning for ROS2 and related processes..."
 echo ""
 
 # Kill ROS2 processes
-echo "1️⃣ ROS2 Core Processes"
+echo "1 ROS2 Core Processes"
 kill_processes "ros2" "ROS2 nodes"
 kill_processes "_ros2_daemon" "ROS2 daemon"
 kill_processes "ros2 daemon" "ROS2 daemon"
 
 echo ""
-echo "2️⃣ Specific ROS2 Nodes"
+echo "2 Specific ROS2 Nodes"
 # Kill specific ROS2 nodes
 kill_processes "autonomous_slam_main" "Autonomous SLAM Controller"
 kill_processes "warehouse_robot_main" "Warehouse Robot System"
@@ -75,7 +75,7 @@ kill_processes "cartographer" "Cartographer SLAM"
 kill_processes "turtlebot3_teleop" "TurtleBot3 Teleop"
 
 echo ""
-echo "3️⃣ Gazebo Processes"
+echo "3 Gazebo Processes"
 # Kill Gazebo processes
 kill_processes "gz sim" "Gazebo Sim"
 kill_processes "gzserver" "Gazebo Server"
@@ -84,20 +84,20 @@ kill_processes "gazebo" "Gazebo"
 kill_by_command "gz" "Gazebo GZ"
 
 echo ""
-echo "4️⃣ Visualization Tools"
+echo "4 Visualization Tools"
 # Kill visualization tools
 kill_by_command "rviz2" "RViz2"
 kill_by_command "rqt" "RQT"
 kill_processes "foxglove" "Foxglove Studio"
 
 echo ""
-echo "5️⃣ TurtleBot3 Specific Processes"
+echo "5 TurtleBot3 Specific Processes"
 # Kill TurtleBot3 specific processes
 kill_processes "turtlebot3" "TurtleBot3 processes"
 kill_processes "spawn_turtlebot3" "TurtleBot3 Spawn"
 
 echo ""
-echo "6️⃣ Navigation and SLAM"
+echo "6 Navigation and SLAM"
 # Kill navigation and SLAM processes
 kill_processes "nav2" "Navigation2"
 kill_processes "navigation2" "Navigation2"
@@ -106,7 +106,7 @@ kill_processes "map_server" "Map Server"
 kill_processes "amcl" "AMCL"
 
 echo ""
-echo "7️⃣ Transform and Sensor Processes"
+echo "7 Transform and Sensor Processes"
 # Kill transform and sensor processes
 kill_processes "tf2" "TF2 processes"
 kill_processes "static_transform_publisher" "Static Transform Publisher"
@@ -114,15 +114,15 @@ kill_processes "laser" "Laser processes"
 kill_processes "lidar" "LiDAR processes"
 
 echo ""
-echo "8️⃣ Python ROS Processes"
+echo "8 Python ROS Processes"
 # Kill Python ROS processes (if any)
 kill_processes "python.*ros" "Python ROS processes"
 kill_processes "python3.*ros" "Python3 ROS processes"
 
 echo ""
-echo "9️⃣ Cleanup ROS2 Environment"
+echo "9 Cleanup ROS2 Environment"
 # Clean up ROS2 environment
-echo "🧹 Cleaning ROS2 environment..."
+echo " Cleaning ROS2 environment..."
 
 # Remove ROS2 daemon files if they exist
 if [ -d "/tmp/ros2_daemon_*" ]; then
@@ -139,49 +139,49 @@ fi
 
 # Kill any remaining processes that might be hanging
 echo ""
-echo "🔟 Final Cleanup"
-echo "🔍 Checking for remaining processes..."
+echo " Final Cleanup"
+echo " Checking for remaining processes..."
 
 # Check for any remaining ROS-related processes
 remaining_ros=$(pgrep -f "ros2\|gazebo\|gz\|rviz\|cartographer\|turtlebot3" 2>/dev/null || true)
 if [ ! -z "$remaining_ros" ]; then
-    echo "⚠️  Found remaining ROS-related processes:"
+    echo "️  Found remaining ROS-related processes:"
     ps -p $remaining_ros -o pid,ppid,cmd 2>/dev/null || true
     echo ""
     read -p "Force kill remaining processes? (y/N): " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo "🔪 Force killing remaining processes..."
+        echo " Force killing remaining processes..."
         echo "$remaining_ros" | xargs -r kill -9 2>/dev/null || true
-        echo "   ✅ Force kill complete"
+        echo "    Force kill complete"
     fi
 else
-    echo "   ✅ No remaining ROS processes found"
+    echo "    No remaining ROS processes found"
 fi
 
 echo ""
-echo "🎯 Process Summary"
+echo " Process Summary"
 echo "=================="
 
 # Show summary of what's still running
-echo "📊 Current ROS-related processes:"
+echo " Current ROS-related processes:"
 ros_processes=$(pgrep -f "ros2\|gazebo\|gz\|rviz\|cartographer\|turtlebot3" 2>/dev/null || true)
 if [ -z "$ros_processes" ]; then
-    echo "   ✅ No ROS-related processes running"
+    echo "    No ROS-related processes running"
 else
-    echo "   ⚠️  Still running:"
+    echo "   ️  Still running:"
     ps -p $ros_processes -o pid,cmd --no-headers 2>/dev/null || true
 fi
 
 echo ""
-echo "💡 Additional Cleanup Commands (if needed):"
+echo " Additional Cleanup Commands (if needed):"
 echo "   • Reset ROS2 daemon: ros2 daemon stop && ros2 daemon start"
 echo "   • Clear ROS logs: rm -rf ~/.ros/log/*"
 echo "   • Restart terminal or source workspace again"
 echo ""
-echo "✅ ROS Cleanup Complete!"
+echo " ROS Cleanup Complete!"
 echo ""
-echo "🚀 To restart ROS2 services:"
+echo " To restart ROS2 services:"
 echo "   ./scripts/run_autonomous_slam.sh"
 echo "   or"
 echo "   ./scripts/run_slam_sim.sh"

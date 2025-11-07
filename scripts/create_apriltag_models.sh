@@ -4,7 +4,7 @@
 
 COUNT=${1:-5}  # Default to 5 tags
 
-echo "🏷️  Creating $COUNT AprilTag models for Gazebo..."
+echo "️  Creating $COUNT AprilTag models for Gazebo..."
 echo ""
 
 MODELS_DIR="turtlebot3_ws/src/turtlebot3_simulations/turtlebot3_gazebo/models"
@@ -104,18 +104,18 @@ material AprilTag/Tag${i}
 }
 EOF
     
-    echo "  ✅ Created $MODEL_NAME"
+    echo "   Created $MODEL_NAME"
     echo ""
 done
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "✅ Created $COUNT AprilTag models!"
+echo " Created $COUNT AprilTag models!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "📁 Models location:"
+echo " Models location:"
 echo "   $MODELS_DIR/apriltag_36h11_id*"
 echo ""
-echo "💡 To use in Gazebo world file:"
+echo " To use in Gazebo world file:"
 echo ""
 echo "   <include>"
 echo "     <uri>model://apriltag_36h11_id0</uri>"
@@ -123,7 +123,7 @@ echo "     <name>apriltag_damage_1</name>"
 echo "     <pose>x y z roll pitch yaw</pose>"
 echo "   </include>"
 echo ""
-echo "📝 Example poses for walls (x y z roll pitch yaw):"
+echo " Example poses for walls (x y z roll pitch yaw):"
 echo "   North wall: <pose>0 1.14 0.3 0 1.5708 3.14159</pose>"
 echo "   South wall: <pose>0 -1.14 0.3 0 1.5708 0</pose>"
 echo "   East wall:  <pose>1.14 0 0.3 0 1.5708 -1.5708</pose>"

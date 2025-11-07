@@ -30,7 +30,7 @@ def save_zones(zones):
 def clear_zones():
     """Clear all zones"""
     save_zones([])
-    print("✅ Cleared all delivery zones")
+    print(" Cleared all delivery zones")
     if os.path.exists(output_file):
         os.remove(output_file)
         print(f"   Deleted {output_file}")
@@ -50,7 +50,7 @@ def add_zone(x, y, name=None):
     }
     zones.append(new_zone)
     save_zones(zones)
-    print(f"✅ Added {name} at ({x}, {y})")
+    print(f" Added {name} at ({x}, {y})")
     print(f"   Total zones: {len(zones)}")
 
 def list_zones():
@@ -60,7 +60,7 @@ def list_zones():
         print("No zones defined yet")
         return
     
-    print(f"📍 {len(zones)} Delivery Zones:")
+    print(f" {len(zones)} Delivery Zones:")
     for zone in zones:
         print(f"  • {zone['name']}: ({zone['x']:.2f}, {zone['y']:.2f})")
 
@@ -84,7 +84,7 @@ def save_default_zones():
     ]
     
     save_zones(zones)
-    print(f"✅ Saved {len(zones)} default zones to {output_file}")
+    print(f" Saved {len(zones)} default zones to {output_file}")
     print("\nZones:")
     for zone in zones:
         print(f"  • {zone['name']}: ({zone['x']:.2f}, {zone['y']:.2f})")

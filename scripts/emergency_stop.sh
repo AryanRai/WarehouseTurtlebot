@@ -6,13 +6,13 @@
 export ROS_DOMAIN_ID=29
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 
-echo "🛑 EMERGENCY STOP"
+echo " EMERGENCY STOP"
 echo "=================="
 echo ""
 
 # Check if ROS2 is running
 if ! ros2 topic list &>/dev/null; then
-    echo "⚠️  Warning: ROS2 nodes may not be running"
+    echo "️  Warning: ROS2 nodes may not be running"
 fi
 
 # Step 1: Kill autonomous controller
@@ -34,13 +34,13 @@ timeout 2s ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.0, y:
 sleep 0.5
 
 echo ""
-echo "✅ ROBOT STOPPED"
+echo " ROBOT STOPPED"
 echo ""
-echo "💡 What was done:"
+echo " What was done:"
 echo "   - Killed autonomous SLAM controller"
 echo "   - Sent multiple zero velocity commands"
 echo "   - Held zero velocity for 2 seconds"
 echo ""
-echo "🔍 To verify robot stopped:"
+echo " To verify robot stopped:"
 echo "   ros2 topic echo /cmd_vel --once"
 echo "   ros2 topic echo /odom --once  # Check velocities are zero"

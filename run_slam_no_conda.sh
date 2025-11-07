@@ -2,7 +2,7 @@
 # Wrapper script to run autonomous SLAM without conda interference
 # This ensures all ROS nodes start in a clean environment
 
-echo "🔧 Deactivating conda environment..."
+echo " Deactivating conda environment..."
 echo ""
 
 # Deactivate conda if active
@@ -28,7 +28,7 @@ if [ ! -z "$CONDA_PREFIX" ]; then
         export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr ':' '\n' | grep -v conda | tr '\n' ':' | sed 's/:$//')
     fi
     
-    echo "   ✅ Conda deactivated"
+    echo "    Conda deactivated"
     echo ""
 else
     echo "   No conda environment detected"

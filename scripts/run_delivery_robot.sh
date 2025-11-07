@@ -8,7 +8,7 @@
 
 # Deactivate conda if active to prevent library conflicts
 if [ ! -z "$CONDA_PREFIX" ]; then
-    echo "🔧 Deactivating conda environment..."
+    echo " Deactivating conda environment..."
     echo "   Detected conda environment: $CONDA_DEFAULT_ENV"
     echo "   Deactivating for clean ROS environment..."
     echo ""
@@ -31,7 +31,7 @@ if [ ! -z "$CONDA_PREFIX" ]; then
         export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr ':' '\n' | grep -v conda | tr '\n' ':' | sed 's/:$//')
     fi
     
-    echo "   ✅ Conda deactivated"
+    echo "    Conda deactivated"
     echo ""
 fi
 
@@ -64,7 +64,7 @@ export ROS_DOMAIN_ID=29
 export TURTLEBOT3_MODEL=burger
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 
-echo "📦 Starting Delivery Robot System"
+echo " Starting Delivery Robot System"
 echo "=================================="
 echo "   ROS_DOMAIN_ID: $ROS_DOMAIN_ID"
 echo "   TURTLEBOT3_MODEL: $TURTLEBOT3_MODEL"
@@ -81,7 +81,7 @@ cd "$(dirname "$0")/../turtlebot3_ws"
 
 # Check if workspace is built
 if [ ! -d "install" ]; then
-    echo "❌ Workspace not built! Please run './scripts/build_project.sh' first."
+    echo " Workspace not built! Please run './scripts/build_project.sh' first."
     exit 1
 fi
 
@@ -90,7 +90,7 @@ source install/setup.bash
 # Check for and kill any existing rosbridge instances
 EXISTING_ROSBRIDGE=$(pgrep -f "rosbridge_websocket" | tr '\n' ' ')
 if [ ! -z "$EXISTING_ROSBRIDGE" ]; then
-    echo "🔍 Found existing rosbridge instance(s): $EXISTING_ROSBRIDGE"
+    echo " Found existing rosbridge instance(s): $EXISTING_ROSBRIDGE"
     echo "   Cleaning up old rosbridge processes..."
     
     for pid in $EXISTING_ROSBRIDGE; do
@@ -107,14 +107,14 @@ if [ ! -z "$EXISTING_ROSBRIDGE" ]; then
         fi
     done
     
-    echo "   ✅ Old rosbridge instances cleaned up"
+    echo "    Old rosbridge instances cleaned up"
     echo ""
 fi
 
 # Check if Gazebo is running
 USE_PHYSICAL_ROBOT=false
 if ! pgrep -f "gz sim" > /dev/null; then
-    echo "⚠️  Gazebo is not running!"
+    echo "️  Gazebo is not running!"
     echo ""
     echo "Would you like to run on physical TurtleBot3 instead? (y/n)"
     read -r response
@@ -122,7 +122,7 @@ if ! pgrep -f "gz sim" > /dev/null; then
     if [[ "$response" =~ ^[Yy]$ ]]; then
         USE_PHYSICAL_ROBOT=true
         echo ""
-        echo "🤖 Switching to Physical TurtleBot3 Mode"
+        echo " Switching to Physical TurtleBot3 Mode"
         echo "========================================"
         echo ""
         echo "Prerequisites:"
@@ -133,19 +133,19 @@ if ! pgrep -f "gz sim" > /dev/null; then
         read -r
     else
         echo ""
-        echo "❌ Please start Gazebo first with:"
+        echo " Please start Gazebo first with:"
         echo "   ./launch_mgen.sh"
         exit 1
     fi
 else
-    echo "✅ Gazebo is running - using simulation mode"
+    echo " Gazebo is running - using simulation mode"
     echo ""
 fi
 
 # Function to cleanup processes on exit
 cleanup() {
     echo ""
-    echo "🛑 Shutting down Delivery Robot System..."
+    echo " Shutting down Delivery Robot System..."
     
     if [ ! -z "$RSP_PID" ] && ps -p $RSP_PID > /dev/null 2>&1; then
         echo "   Stopping robot_state_publisher..."
@@ -214,26 +214,26 @@ cleanup() {
         fi
     done
     
-    echo "✅ Delivery Robot system stopped."
+    echo " Delivery Robot system stopped."
     exit 0
 }
 
 # Set up signal handlers
 trap cleanup SIGINT SIGTERM
 
-echo "🚀 Starting Delivery Robot Components..."
+echo " Starting Delivery Robot Components..."
 echo ""
 
 # Different startup for physical robot vs simulation
 if [ "$USE_PHYSICAL_ROBOT" = true ]; then
-    echo "🤖 Physical TurtleBot3 Mode"
+    echo " Physical TurtleBot3 Mode"
     echo "==========================="
     echo ""
     USE_SIM_TIME="False"
     RSP_PID=""
     SPAWN_PID=""
 else
-    echo "🎮 Simulation Mode"
+    echo " Simulation Mode"
     echo "=================="
     echo ""
     
@@ -247,11 +247,11 @@ else
     SPAWN_PID=$!
     sleep 4
 
-    echo "🔧 Stopping wall-following node..."
+    echo " Stopping wall-following node..."
     pkill -f turtlebot3_drive_node
     sleep 1
 
-    echo "✅ Robot spawned - ready for delivery operations"
+    echo " Robot spawned - ready for delivery operations"
     
     USE_SIM_TIME="True"
 fi
@@ -261,11 +261,11 @@ echo "   (Make sure you have a saved map!)"
 ros2 launch slam_toolbox localization_launch.py use_sim_time:=$USE_SIM_TIME > /tmp/slam_toolbox.log 2>&1 &
 SLAM_TOOLBOX_PID=$!
 
-echo "⏳ Waiting for SLAM Toolbox to initialize..."
+echo " Waiting for SLAM Toolbox to initialize..."
 sleep 5
 
 if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
-    echo "❌ SLAM Toolbox failed to start!"
+    echo " SLAM Toolbox failed to start!"
     cleanup
     exit 1
 fi
@@ -277,13 +277,13 @@ if ros2 pkg list 2>/dev/null | grep -q "rosbridge_server" 2>/dev/null; then
     sleep 3
     
     if ps -p $ROSBRIDGE_PID > /dev/null 2>&1; then
-        echo "   ✅ rosbridge started (PID: $ROSBRIDGE_PID)"
+        echo "    rosbridge started (PID: $ROSBRIDGE_PID)"
     else
-        echo "   ⚠️  rosbridge failed to start"
+        echo "   ️  rosbridge failed to start"
         ROSBRIDGE_PID=""
     fi
 else
-    echo "   ⚠️  rosbridge_server not installed"
+    echo "   ️  rosbridge_server not installed"
     ROSBRIDGE_PID=""
 fi
 
@@ -317,7 +317,7 @@ RVIZ_PID=$!
 sleep 3
 
 echo "7️⃣ Starting Delivery Robot Node..."
-echo "⏳ Waiting for SLAM to be ready..."
+echo " Waiting for SLAM to be ready..."
 sleep 3
 
 ros2 run warehouse_robot_system delivery_robot_node &
@@ -325,27 +325,27 @@ DELIVERY_PID=$!
 sleep 3
 
 echo ""
-echo "✅ Delivery Robot System Started!"
+echo " Delivery Robot System Started!"
 echo ""
-echo "📊 Running Components:"
+echo " Running Components:"
 if [ "$USE_PHYSICAL_ROBOT" = true ]; then
-    echo "   🤖 Physical TurtleBot3"
+    echo "    Physical TurtleBot3"
 else
-    echo "   🔧 robot_state_publisher (PID: $RSP_PID)"
-    echo "   🤖 TurtleBot3 in Gazebo (PID: $SPAWN_PID)"
+    echo "    robot_state_publisher (PID: $RSP_PID)"
+    echo "    TurtleBot3 in Gazebo (PID: $SPAWN_PID)"
 fi
-echo "   🗺️  SLAM Toolbox - Localization (PID: $SLAM_TOOLBOX_PID)"
+echo "   ️  SLAM Toolbox - Localization (PID: $SLAM_TOOLBOX_PID)"
 if [ ! -z "$ROSBRIDGE_PID" ]; then
-    echo "   🌐 rosbridge WebSocket (PID: $ROSBRIDGE_PID)"
+    echo "    rosbridge WebSocket (PID: $ROSBRIDGE_PID)"
 fi
-echo "   🔋 Battery Monitor (PID: $BATTERY_PID)"
-echo "   🖥️  RViz2 (PID: $RVIZ_PID)"
-echo "   📦 Delivery Robot (PID: $DELIVERY_PID)"
+echo "    Battery Monitor (PID: $BATTERY_PID)"
+echo "   ️  RViz2 (PID: $RVIZ_PID)"
+echo "    Delivery Robot (PID: $DELIVERY_PID)"
 echo ""
-echo "🎯 Mode: $([ "$USE_PHYSICAL_ROBOT" = true ] && echo "Physical Robot" || echo "Simulation")"
+echo " Mode: $([ "$USE_PHYSICAL_ROBOT" = true ] && echo "Physical Robot" || echo "Simulation")"
 echo "   use_sim_time: $USE_SIM_TIME"
 echo ""
-echo "📋 Delivery Robot Workflow:"
+echo " Delivery Robot Workflow:"
 echo "================================"
 echo ""
 echo "STEP 1: Define Delivery Zones"
@@ -376,17 +376,17 @@ echo "   • Calculate optimal route (TSP)"
 echo "   • Navigate to each zone"
 echo "   • Log deliveries to: delivery_log.csv"
 echo ""
-echo "📈 Monitoring:"
+echo " Monitoring:"
 echo "   • Watch RViz to see robot navigation"
 echo "   • Check delivery status: ros2 topic echo /delivery/status"
 echo "   • View delivery log: cat delivery_log.csv"
 echo "   • SLAM logs: tail -f /tmp/slam_toolbox.log"
 echo ""
-echo "📁 Output Files:"
+echo " Output Files:"
 echo "   • delivery_zones.yaml - Saved delivery zones"
 echo "   • delivery_log.csv - Delivery records with timestamps"
 echo ""
-echo "💡 Quick Commands:"
+echo " Quick Commands:"
 echo "   Save zones:  ros2 service call /save_delivery_zones std_srvs/srv/Trigger"
 echo "   Start:       ros2 service call /start_deliveries std_srvs/srv/Trigger"
 echo "   Status:      ros2 topic echo /delivery/status"
@@ -396,18 +396,18 @@ echo "Press Ctrl+C to stop all components"
 # Wait for user interrupt
 while true; do
     if ! ps -p $DELIVERY_PID > /dev/null 2>&1; then
-        echo "❌ Delivery Robot process died!"
+        echo " Delivery Robot process died!"
         break
     fi
     
     if ! ps -p $SLAM_TOOLBOX_PID > /dev/null 2>&1; then
-        echo "❌ SLAM Toolbox process died!"
+        echo " SLAM Toolbox process died!"
         break
     fi
     
     if [ "$USE_PHYSICAL_ROBOT" = false ] && [ ! -z "$RSP_PID" ]; then
         if ! ps -p $RSP_PID > /dev/null 2>&1; then
-            echo "❌ robot_state_publisher process died!"
+            echo " robot_state_publisher process died!"
             break
         fi
     fi

@@ -11,7 +11,7 @@ cd ~/MTRX3760_Project_2/turtlebot3_ws
 source install/setup.bash
 cd -
 
-echo "🎨 Camera Calibration System"
+echo " Camera Calibration System"
 echo "============================"
 echo ""
 echo "Prerequisites:"
@@ -20,11 +20,11 @@ echo "  • Run bringup: ros2 launch turtlebot3_bringup robot.launch.py"
 echo "  • Camera topics should be available: /camera/image_raw"
 echo ""
 echo "Choose an option:"
-echo "  1) 🎥 Calibrate HSV colours (LIVE camera window)"
-echo "  2) 🔍 Test detection (normal mode)"
-echo "  3) 📋 Check camera topics"
-echo "  4) 📁 View saved calibration"
-echo "  5) 🚪 Exit"
+echo "  1)  Calibrate HSV colours (LIVE camera window)"
+echo "  2)  Test detection (normal mode)"
+echo "  3)  Check camera topics"
+echo "  4)  View saved calibration"
+echo "  5)  Exit"
 echo ""
 read -p "Enter choice [1-5]: " choice
 

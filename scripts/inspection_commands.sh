@@ -9,7 +9,7 @@ cd "$SCRIPT_DIR/../turtlebot3_ws"
 if [ -f "install/setup.bash" ]; then
     source install/setup.bash
 else
-    echo "❌ Workspace not built! Run './scripts/build_warehouse_system.sh' first."
+    echo " Workspace not built! Run './scripts/build_warehouse_system.sh' first."
     exit 1
 fi
 
@@ -42,23 +42,23 @@ COMMAND=$1
 
 case $COMMAND in
     save)
-        echo "💾 Saving damage sites..."
+        echo " Saving damage sites..."
         ros2 service call /save_damage_sites std_srvs/srv/Trigger
         ;;
     
     start)
-        echo "🚀 Starting inspections..."
+        echo " Starting inspections..."
         ros2 service call /start_inspections std_srvs/srv/Trigger
         ;;
     
     status)
-        echo "📊 Inspection Status:"
+        echo " Inspection Status:"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         ros2 topic echo /inspection/status --once
         ;;
     
     log)
-        echo "📋 Inspection Log:"
+        echo " Inspection Log:"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         if [ -f "inspection_log.csv" ]; then
             cat inspection_log.csv | column -t -s ','
@@ -68,7 +68,7 @@ case $COMMAND in
         ;;
     
     sites)
-        echo "📍 Damage Sites:"
+        echo " Damage Sites:"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         if [ -f "damage_sites.yaml" ]; then
             cat damage_sites.yaml
@@ -79,21 +79,21 @@ case $COMMAND in
         ;;
     
     clear)
-        echo "🗑️  Clearing all damage sites..."
-        echo "⚠️  This will delete all saved sites!"
+        echo "️  Clearing all damage sites..."
+        echo "️  This will delete all saved sites!"
         echo -n "Are you sure? (yes/no): "
         read -r confirm
         
         if [ "$confirm" = "yes" ]; then
             rm -f damage_sites.yaml
-            echo "✅ All damage sites cleared."
+            echo " All damage sites cleared."
         else
-            echo "❌ Operation cancelled."
+            echo " Operation cancelled."
         fi
         ;;
     
     *)
-        echo "❌ Unknown command: $COMMAND"
+        echo " Unknown command: $COMMAND"
         echo ""
         usage
         exit 1

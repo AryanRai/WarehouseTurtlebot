@@ -2,7 +2,7 @@
 # Cleanup script for SLAM Toolbox and related processes
 # Use this if you're experiencing TF errors or stale processes
 
-echo "🧹 Cleaning up SLAM and ROS processes..."
+echo " Cleaning up SLAM and ROS processes..."
 echo ""
 
 # Kill SLAM Toolbox
@@ -99,8 +99,8 @@ fi
 sleep 2
 
 echo ""
-echo "✅ Cleanup complete!"
+echo " Cleanup complete!"
 echo ""
-echo "💡 TF transforms should now be clear"
+echo " TF transforms should now be clear"
 echo "   You can now start the system fresh"
 echo ""

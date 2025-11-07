@@ -10,7 +10,7 @@ mkdir -p "$MAPS_DIR"
 
 # Function to list available maps
 list_maps() {
-    echo "📁 Available Maps:"
+    echo " Available Maps:"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     
     if [ ! -d "$MAPS_DIR" ] || [ -z "$(ls -A $MAPS_DIR 2>/dev/null)" ]; then
@@ -44,7 +44,7 @@ list_maps() {
             fi
             
             if [ -f "$map_dir/info.txt" ]; then
-                echo "       ℹ️  $(cat $map_dir/info.txt)"
+                echo "       ️  $(cat $map_dir/info.txt)"
             fi
         fi
     done
@@ -63,7 +63,7 @@ save_map() {
     local description="$2"
     
     if [ -z "$map_name" ]; then
-        echo "❌ Error: Map name required"
+        echo " Error: Map name required"
         echo "Usage: $0 save <map_name> [description]"
         return 1
     fi
@@ -73,7 +73,7 @@ save_map() {
     
     local save_dir="$MAPS_DIR/$map_name"
     
-    echo "💾 Saving current map as: $map_name"
+    echo " Saving current map as: $map_name"
     echo ""
     
     # Create directory
@@ -86,7 +86,7 @@ save_map() {
     elif [ -f "$WORKSPACE_DIR/warehouse_map_complete.yaml" ]; then
         source_map="warehouse_map_complete"
     else
-        echo "❌ No map file found to save!"
+        echo " No map file found to save!"
         return 1
     fi
     
@@ -121,7 +121,7 @@ save_map() {
     date "+Created: %Y-%m-%d %H:%M:%S" >> "$save_dir/info.txt"
     
     echo ""
-    echo "✅ Map saved successfully to: $save_dir"
+    echo " Map saved successfully to: $save_dir"
     echo ""
 }
 
@@ -130,7 +130,7 @@ load_map() {
     local map_name="$1"
     
     if [ -z "$map_name" ]; then
-        echo "❌ Error: Map name required"
+        echo " Error: Map name required"
         echo "Usage: $0 load <map_name>"
         return 1
     fi
@@ -138,18 +138,18 @@ load_map() {
     local load_dir="$MAPS_DIR/$map_name"
     
     if [ ! -d "$load_dir" ]; then
-        echo "❌ Map not found: $map_name"
+        echo " Map not found: $map_name"
         echo ""
         list_maps
         return 1
     fi
     
-    echo "📂 Loading map: $map_name"
+    echo " Loading map: $map_name"
     echo ""
     
     # Check if map files exist
     if [ ! -f "$load_dir/${map_name}.yaml" ] || [ ! -f "$load_dir/${map_name}.pgm" ]; then
-        echo "❌ Map files incomplete!"
+        echo " Map files incomplete!"
         return 1
     fi
     
@@ -175,11 +175,11 @@ load_map() {
     else
         # Clear existing zones if map has none
         rm -f "$WORKSPACE_DIR/delivery_zones.yaml"
-        echo "   ℹ️  No zones for this map"
+        echo "   ️  No zones for this map"
     fi
     
     echo ""
-    echo "✅ Map loaded successfully!"
+    echo " Map loaded successfully!"
     echo "   You can now run: ./scripts/run_autonomous_slam.sh -preload"
     echo ""
 }
@@ -189,7 +189,7 @@ delete_map() {
     local map_name="$1"
     
     if [ -z "$map_name" ]; then
-        echo "❌ Error: Map name required"
+        echo " Error: Map name required"
         echo "Usage: $0 delete <map_name>"
         return 1
     fi
@@ -197,13 +197,13 @@ delete_map() {
     local delete_dir="$MAPS_DIR/$map_name"
     
     if [ ! -d "$delete_dir" ]; then
-        echo "❌ Map not found: $map_name"
+        echo " Map not found: $map_name"
         return 1
     fi
     
-    echo "🗑️  Delete map: $map_name"
+    echo "️  Delete map: $map_name"
     echo ""
-    echo "⚠️  WARNING: This action cannot be undone!"
+    echo "️  WARNING: This action cannot be undone!"
     echo ""
     echo -n "Type 'yes' to confirm deletion: "
     read -r confirm
@@ -211,10 +211,10 @@ delete_map() {
     if [ "$confirm" = "yes" ]; then
         rm -rf "$delete_dir"
         echo ""
-        echo "✅ Map deleted: $map_name"
+        echo " Map deleted: $map_name"
     else
         echo ""
-        echo "❌ Deletion cancelled"
+        echo " Deletion cancelled"
     fi
     echo ""
 }

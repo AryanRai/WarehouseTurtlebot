@@ -77,7 +77,7 @@ def generate_apriltag_image(tag_id=0, tag_family='tag36h11', size=512, output_pa
     """
     
     if tag_id not in TAG36H11_PATTERNS:
-        print(f"⚠️  Tag ID {tag_id} not in predefined patterns, using ID 0")
+        print(f"️  Tag ID {tag_id} not in predefined patterns, using ID 0")
         tag_id = 0
     
     pattern = TAG36H11_PATTERNS[tag_id]
@@ -111,7 +111,7 @@ def generate_apriltag_image(tag_id=0, tag_family='tag36h11', size=512, output_pa
     
     # Save the image
     img.save(output_path)
-    print(f"✅ Generated AprilTag ID {tag_id} ({tag_family}) at {output_path}")
+    print(f" Generated AprilTag ID {tag_id} ({tag_family}) at {output_path}")
     print(f"   Size: {size}x{size} pixels")
     print(f"   Pattern: 8x8 grid with {border_ratio*100:.0f}% white border")
     
@@ -137,8 +137,8 @@ if __name__ == '__main__':
         output_path = os.path.join(output_dir, 'apriltag_0.png')
         generate_apriltag_image(0, output_path=output_path)
         
-        print("\n💡 To generate more tags:")
+        print("\n To generate more tags:")
         print("   python3 scripts/generate_apriltag.py <tag_id> <output_path>")
         print("\nExample:")
         print("   python3 scripts/generate_apriltag.py 1 tag_1.png")
-        print("\n📝 Supported tag IDs: 0-4 (tag36h11 family)")
+        print("\n Supported tag IDs: 0-4 (tag36h11 family)")

@@ -29,7 +29,7 @@ case $choice in
         WALL_THICKNESS=0.1
         WALL_DENSITY=1.0
         COMPLEXITY=1.0
-        echo "🔨 Generating Small 5x5 Maze..."
+        echo " Generating Small 5x5 Maze..."
         ;;
     2)
         SIZE=8
@@ -39,7 +39,7 @@ case $choice in
         WALL_THICKNESS=0.1
         WALL_DENSITY=1.0
         COMPLEXITY=1.0
-        echo "🔨 Generating Medium 8x8 Maze..."
+        echo " Generating Medium 8x8 Maze..."
         ;;
     3)
         SIZE=10
@@ -49,7 +49,7 @@ case $choice in
         WALL_THICKNESS=0.1
         WALL_DENSITY=1.0
         COMPLEXITY=1.0
-        echo "🔨 Generating Large 10x10 Maze..."
+        echo " Generating Large 10x10 Maze..."
         ;;
     4)
         SIZE=12
@@ -59,7 +59,7 @@ case $choice in
         WALL_THICKNESS=0.1
         WALL_DENSITY=1.0
         COMPLEXITY=1.0
-        echo "🔨 Generating Extra Large 12x12 Maze..."
+        echo " Generating Extra Large 12x12 Maze..."
         ;;
     5)
         SIZE=5
@@ -69,7 +69,7 @@ case $choice in
         WALL_THICKNESS=0.1
         WALL_DENSITY=1.0
         COMPLEXITY=1.0
-        echo "🔨 Generating Simple Training 5x5 Maze (easy straight corridors)..."
+        echo " Generating Simple Training 5x5 Maze (easy straight corridors)..."
         ;;
     6)
         read -p "Enter maze size (5-20): " SIZE
@@ -82,7 +82,7 @@ case $choice in
         WALL_THICKNESS=0.1
         WALL_DENSITY=1.0
         COMPLEXITY=1.0
-        echo "🔨 Generating Custom ${SIZE}x${SIZE} Maze..."
+        echo " Generating Custom ${SIZE}x${SIZE} Maze..."
         ;;
     7)
         read -p "Enter maze size (5-20): " SIZE
@@ -97,7 +97,7 @@ case $choice in
         COMPLEXITY=1.0
         FLOATING="--floating"
         FINISH_LINE=""
-        echo "🔨 Generating Floating ${SIZE}x${SIZE} Maze (disconnected rooms)..."
+        echo " Generating Floating ${SIZE}x${SIZE} Maze (disconnected rooms)..."
         ;;
     8)
         read -p "Enter maze size (5-20): " SIZE
@@ -112,7 +112,7 @@ case $choice in
         COMPLEXITY=1.0
         FLOATING=""
         FINISH_LINE="--finish-line"
-        echo "🔨 Generating ${SIZE}x${SIZE} Maze with finish line..."
+        echo " Generating ${SIZE}x${SIZE} Maze with finish line..."
         ;;
     9)
         echo ""
@@ -145,15 +145,15 @@ case $choice in
         else
             FINISH_LINE=""
         fi
-        echo "🔨 Generating Custom ${SIZE}x${SIZE} Maze with advanced settings..."
+        echo " Generating Custom ${SIZE}x${SIZE} Maze with advanced settings..."
         ;;
     10)
         # Warehouse with shelves - use pre-built world file
-        echo "📦 Loading Warehouse with Shelves environment..."
+        echo " Loading Warehouse with Shelves environment..."
         WAREHOUSE_MODE=true
         ;;
     *)
-        echo "❌ Invalid choice. Exiting..."
+        echo " Invalid choice. Exiting..."
         exit 1
         ;;
 esac
@@ -174,7 +174,7 @@ if [ "$WAREHOUSE_MODE" = "true" ]; then
     WORLD_FILE="turtlebot3_ws/src/turtlebot3_simulations/turtlebot3_gazebo/worlds/warehouse_shelves.world"
     
     if [ ! -f "$WORLD_FILE" ]; then
-        echo "❌ ERROR: Warehouse world file not found at:"
+        echo " ERROR: Warehouse world file not found at:"
         echo "   $WORLD_FILE"
         exit 1
     fi
@@ -188,30 +188,30 @@ if [ "$WAREHOUSE_MODE" = "true" ]; then
     export GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:$(pwd)/install/turtlebot3_gazebo/share/turtlebot3_gazebo/models
     export GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:$(pwd)/src/turtlebot3_simulations/turtlebot3_gazebo/models
     
-    echo "📁 Gazebo model paths configured:"
+    echo " Gazebo model paths configured:"
     echo "   - $(pwd)/install/turtlebot3_gazebo/share/turtlebot3_gazebo/models"
     echo "   - $(pwd)/src/turtlebot3_simulations/turtlebot3_gazebo/models"
     echo ""
     
     cd ..
     
-    echo "🚀 Launching Gazebo with warehouse environment..."
+    echo " Launching Gazebo with warehouse environment..."
     echo ""
     
     # Launch Gazebo with warehouse world
     gz sim -r -v2 "$WORLD_FILE" &
     GZ_PID=$!
     
-    echo "⏳ Waiting for Gazebo to initialize..."
+    echo " Waiting for Gazebo to initialize..."
     sleep 6
     
     # Check if Gazebo is still running
     if ! ps -p $GZ_PID > /dev/null; then
-        echo "❌ Gazebo failed to start!"
+        echo " Gazebo failed to start!"
         exit 1
     fi
     
-    echo "🤖 Spawning TurtleBot3 at origin..."
+    echo " Spawning TurtleBot3 at origin..."
     cd turtlebot3_ws
     ros2 launch turtlebot3_gazebo spawn_turtlebot3.launch.py x_pose:=0.0 y_pose:=0.0 &
     SPAWN_PID=$!
@@ -223,7 +223,7 @@ if [ "$WAREHOUSE_MODE" = "true" ]; then
     
     echo ""
     echo "=========================================="
-    echo "✅ Warehouse environment ready!"
+    echo " Warehouse environment ready!"
     echo "=========================================="
     echo ""
     echo "TurtleBot3 spawned at origin (0, 0)"
@@ -260,7 +260,7 @@ CMD="$CMD $FINISH_LINE"
 $CMD
 
 if [ $? -ne 0 ]; then
-    echo "❌ Failed to generate maze!"
+    echo " Failed to generate maze!"
     exit 1
 fi
 
@@ -278,26 +278,26 @@ export GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:$(pwd)/src/turtlebot3_simulati
 cd ..
 
 echo ""
-echo "🚀 Launching Gazebo with generated maze..."
+echo " Launching Gazebo with generated maze..."
 echo ""
 
 # Launch Gazebo with the maze
 gz sim -r -v2 "$WORLD_FILE" &
 GZ_PID=$!
 
-echo "⏳ Waiting for Gazebo to initialize..."
+echo " Waiting for Gazebo to initialize..."
 sleep 6
 
 # Check if Gazebo is still running
 if ! ps -p $GZ_PID > /dev/null; then
-    echo "❌ Gazebo failed to start!"
+    echo " Gazebo failed to start!"
     exit 1
 fi
 
 # Spawn TurtleBot3 using launch file
 cd turtlebot3_ws
 
-echo "🤖 Spawning TurtleBot3 at start position..."
+echo " Spawning TurtleBot3 at start position..."
 ros2 launch turtlebot3_gazebo spawn_turtlebot3.launch.py x_pose:=1.0 y_pose:=-1.0 &
 SPAWN_PID=$!
 
@@ -311,9 +311,9 @@ if ps -p $SPAWN_PID > /dev/null 2>&1; then
 fi
 
 echo ""
-echo "✅ Maze launched successfully!"
+echo " Maze launched successfully!"
 echo ""
-echo "📊 Maze Info:"
+echo " Maze Info:"
 echo "   Size: ${SIZE}x${SIZE}"
 echo "   Seed: ${SEED}"
 echo "   Corridor width: ${CELL_SIZE}m"
@@ -322,19 +322,19 @@ echo "   Wall thickness: ${WALL_THICKNESS}m"
 echo "   Wall density: ${WALL_DENSITY}"
 echo "   Complexity: ${COMPLEXITY}"
 if [ -n "$FLOATING" ]; then
-    echo "   ⚠️  Type: FLOATING (disconnected rooms)"
+    echo "   ️  Type: FLOATING (disconnected rooms)"
 fi
 if [ -n "$FINISH_LINE" ]; then
-    echo "   🏁 Finish line: YES (exit opening added)"
+    echo "    Finish line: YES (exit opening added)"
 fi
 echo "   File: ../${WORLD_FILE}"
 echo ""
-echo "🎮 Next Steps:"
+echo " Next Steps:"
 echo "   1. Open a new terminal"
 echo "   2. Run: ./run_drive.sh"
 echo "   3. Watch your robot navigate!"
 echo ""
-echo "💡 Tip: Use the same seed to get the same maze again"
+echo " Tip: Use the same seed to get the same maze again"
 echo ""
 echo "Press Ctrl+C to stop (will keep Gazebo and robot running)"
 echo "Or run ./kill_all.sh to stop everything"

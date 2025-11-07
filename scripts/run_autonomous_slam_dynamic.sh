@@ -34,7 +34,7 @@ NAVIGATION_PID=""
 CURRENT_MODE="none"
 
 echo -e "${CYAN}============================================================================${NC}"
-echo -e "${CYAN}          🎭 POLYMORPHIC WAREHOUSE MANAGER - MTRX3760 Project 2${NC}"
+echo -e "${CYAN}           POLYMORPHIC WAREHOUSE MANAGER - MTRX3760 Project 2${NC}"
 echo -e "${CYAN}            Dynamic Robot Control with Runtime Mode Switching${NC}"
 echo -e "${CYAN}============================================================================${NC}"
 echo ""
@@ -42,7 +42,7 @@ echo ""
 # Function to check if TurtleBot3 simulation is running
 check_simulation() {
     if ! pgrep -f "gzserver" > /dev/null; then
-        echo -e "${RED}❌ TurtleBot3 simulation not detected!${NC}"
+        echo -e "${RED} TurtleBot3 simulation not detected!${NC}"
         echo -e "${YELLOW}Please run TurtleBot3 Gazebo simulation first:${NC}"
         echo "   export TURTLEBOT3_MODEL=waffle"
         echo "   ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py"
@@ -52,13 +52,13 @@ check_simulation() {
             exit 1
         fi
     else
-        echo -e "${GREEN}✅ TurtleBot3 simulation detected${NC}"
+        echo -e "${GREEN} TurtleBot3 simulation detected${NC}"
     fi
 }
 
 # Function to start SLAM
 start_slam() {
-    echo -e "${BLUE}🗺️ Starting SLAM...${NC}"
+    echo -e "${BLUE}️ Starting SLAM...${NC}"
     
     cd "$WORKSPACE_DIR"
     source install/setup.bash
@@ -69,9 +69,9 @@ start_slam() {
     sleep 3
     
     if kill -0 $SLAM_PID 2>/dev/null; then
-        echo -e "${GREEN}✅ SLAM running (PID: $SLAM_PID)${NC}"
+        echo -e "${GREEN} SLAM running (PID: $SLAM_PID)${NC}"
     else
-        echo -e "${RED}❌ Failed to start SLAM${NC}"
+        echo -e "${RED} Failed to start SLAM${NC}"
         exit 1
     fi
 }
@@ -81,11 +81,11 @@ start_navigation() {
     local map_file=$1
     
     if [ ! -f "$map_file" ]; then
-        echo -e "${RED}❌ Map file not found: $map_file${NC}"
+        echo -e "${RED} Map file not found: $map_file${NC}"
         return 1
     fi
     
-    echo -e "${BLUE}🧭 Starting Navigation with map: $(basename "$map_file")${NC}"
+    echo -e "${BLUE} Starting Navigation with map: $(basename "$map_file")${NC}"
     
     cd "$WORKSPACE_DIR" 
     source install/setup.bash
@@ -98,10 +98,10 @@ start_navigation() {
     sleep 3
     
     if kill -0 $NAVIGATION_PID 2>/dev/null; then
-        echo -e "${GREEN}✅ Navigation running (PID: $NAVIGATION_PID)${NC}"
+        echo -e "${GREEN} Navigation running (PID: $NAVIGATION_PID)${NC}"
         return 0
     else
-        echo -e "${RED}❌ Failed to start Navigation${NC}"
+        echo -e "${RED} Failed to start Navigation${NC}"
         return 1
     fi
 }
@@ -110,7 +110,7 @@ start_navigation() {
 start_warehouse_manager() {
     local initial_mode=${1:-"none"}
     
-    echo -e "${PURPLE}🎭 Starting Polymorphic Warehouse Manager...${NC}"
+    echo -e "${PURPLE} Starting Polymorphic Warehouse Manager...${NC}"
     echo -e "${PURPLE}   Mode: $initial_mode${NC}"
     
     cd "$WORKSPACE_DIR"
@@ -127,11 +127,11 @@ start_warehouse_manager() {
     
     # Check if node is running
     if kill -0 $WAREHOUSE_MANAGER_PID 2>/dev/null; then
-        echo -e "${GREEN}✅ Polymorphic Warehouse Manager running (PID: $WAREHOUSE_MANAGER_PID)${NC}"
+        echo -e "${GREEN} Polymorphic Warehouse Manager running (PID: $WAREHOUSE_MANAGER_PID)${NC}"
         CURRENT_MODE="$initial_mode"
         return 0
     else
-        echo -e "${RED}❌ Failed to start Polymorphic Warehouse Manager${NC}"
+        echo -e "${RED} Failed to start Polymorphic Warehouse Manager${NC}"
         return 1
     fi
 }
@@ -139,19 +139,19 @@ start_warehouse_manager() {
 # Function to switch robot mode using polymorphism
 switch_mode() {
     local mode=$1
-    echo -e "${PURPLE}🎭 Polymorphic mode switch: $CURRENT_MODE → $mode${NC}"
+    echo -e "${PURPLE} Polymorphic mode switch: $CURRENT_MODE → $mode${NC}"
     
     ros2 param set /$MANAGER_NODE_NAME robot_mode "$mode" 2>/dev/null
     
     if [ $? -eq 0 ]; then
         CURRENT_MODE="$mode"
-        echo -e "${GREEN}✅ Polymorphic switch complete${NC}"
+        echo -e "${GREEN} Polymorphic switch complete${NC}"
         
         # Give some time for the switch to complete
         sleep 2
         
         # Show polymorphic architecture info
-        echo -e "${CYAN}🎭 POLYMORPHIC ARCHITECTURE ACTIVE:${NC}"
+        echo -e "${CYAN} POLYMORPHIC ARCHITECTURE ACTIVE:${NC}"
         echo -e "   Base pointer: ${YELLOW}WarehouseRobot*${NC}"
         case $mode in
             "inspection")
@@ -167,42 +167,42 @@ switch_mode() {
                 ;;
         esac
     else
-        echo -e "${RED}❌ Failed to switch mode${NC}"
+        echo -e "${RED} Failed to switch mode${NC}"
     fi
 }
 
 # Function to start operations polymorphically
 start_operations() {
-    echo -e "${GREEN}▶️ Starting polymorphic operations...${NC}"
+    echo -e "${GREEN}️ Starting polymorphic operations...${NC}"
     
     local result=$(ros2 service call /warehouse/start_operations std_srvs/srv/Trigger 2>/dev/null)
     
     if echo "$result" | grep -q "success: true"; then
-        echo -e "${GREEN}✅ Polymorphic operations started${NC}"
-        echo -e "${CYAN}🎭 Virtual function call: mActiveRobot->startOperations()${NC}"
+        echo -e "${GREEN} Polymorphic operations started${NC}"
+        echo -e "${CYAN} Virtual function call: mActiveRobot->startOperations()${NC}"
     else
-        echo -e "${RED}❌ Failed to start operations${NC}"
+        echo -e "${RED} Failed to start operations${NC}"
         echo "Response: $result"
     fi
 }
 
 # Function to stop operations polymorphically  
 stop_operations() {
-    echo -e "${YELLOW}⏹️ Stopping polymorphic operations...${NC}"
+    echo -e "${YELLOW}️ Stopping polymorphic operations...${NC}"
     
     local result=$(ros2 service call /warehouse/stop_operations std_srvs/srv/Trigger 2>/dev/null)
     
     if echo "$result" | grep -q "success: true"; then
-        echo -e "${GREEN}✅ Polymorphic operations stopped${NC}"
-        echo -e "${CYAN}🎭 Virtual function call: mActiveRobot->stopOperations()${NC}"
+        echo -e "${GREEN} Polymorphic operations stopped${NC}"
+        echo -e "${CYAN} Virtual function call: mActiveRobot->stopOperations()${NC}"
     else
-        echo -e "${RED}❌ Failed to stop operations${NC}"
+        echo -e "${RED} Failed to stop operations${NC}"
     fi
 }
 
 # Function to get status polymorphically
 get_status() {
-    echo -e "${BLUE}📊 Getting polymorphic status...${NC}"
+    echo -e "${BLUE} Getting polymorphic status...${NC}"
     
     local result=$(ros2 service call /warehouse/get_status std_srvs/srv/Trigger 2>/dev/null)
     
@@ -210,7 +210,7 @@ get_status() {
         local message=$(echo "$result" | grep "message:" | cut -d"'" -f2)
         echo -e "${GREEN}Status: $message${NC}"
     else
-        echo -e "${RED}❌ Failed to get status${NC}"
+        echo -e "${RED} Failed to get status${NC}"
     fi
 }
 
@@ -224,25 +224,25 @@ save_map() {
     fi
     
     if [ -z "$map_name" ]; then
-        echo -e "${RED}❌ Map name cannot be empty${NC}"
+        echo -e "${RED} Map name cannot be empty${NC}"
         return 1
     fi
     
-    echo -e "${BLUE}💾 Saving map: $map_name${NC}"
+    echo -e "${BLUE} Saving map: $map_name${NC}"
     
     cd "$MAP_DIR"
     ros2 run nav2_map_server map_saver_cli -f "$map_name"
     
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ Map saved: $MAP_DIR/${map_name}.yaml${NC}"
+        echo -e "${GREEN} Map saved: $MAP_DIR/${map_name}.yaml${NC}"
     else
-        echo -e "${RED}❌ Failed to save map${NC}"
+        echo -e "${RED} Failed to save map${NC}"
     fi
 }
 
 # Function to list available maps
 list_maps() {
-    echo -e "${BLUE}📋 Available maps:${NC}"
+    echo -e "${BLUE} Available maps:${NC}"
     
     if [ -d "$MAP_DIR" ]; then
         local maps=$(find "$MAP_DIR" -name "*.yaml" -exec basename {} .yaml \;)
@@ -271,7 +271,7 @@ select_map() {
         if [ $index -ge 0 ] && [ $index -lt ${#map_list[@]} ]; then
             map_choice="${map_list[$index]}"
         else
-            echo -e "${RED}❌ Invalid map number${NC}"
+            echo -e "${RED} Invalid map number${NC}"
             return 1
         fi
     fi
@@ -279,7 +279,7 @@ select_map() {
     local map_file="$MAP_DIR/${map_choice}.yaml"
     
     if [ -f "$map_file" ]; then
-        echo -e "${BLUE}🗺️ Loading map: $map_choice${NC}"
+        echo -e "${BLUE}️ Loading map: $map_choice${NC}"
         
         # Stop current navigation if running
         if [ ! -z "$NAVIGATION_PID" ] && kill -0 $NAVIGATION_PID 2>/dev/null; then
@@ -291,7 +291,7 @@ select_map() {
         # Start navigation with selected map
         start_navigation "$map_file"
     else
-        echo -e "${RED}❌ Map file not found: $map_file${NC}"
+        echo -e "${RED} Map file not found: $map_file${NC}"
         return 1
     fi
 }
@@ -300,7 +300,7 @@ select_map() {
 show_menu() {
     echo ""
     echo -e "${CYAN}╔════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║                  🎭 POLYMORPHIC WAREHOUSE CONTROL                  ║${NC}"
+    echo -e "${CYAN}║                   POLYMORPHIC WAREHOUSE CONTROL                  ║${NC}"
     echo -e "${CYAN}╠════════════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${CYAN}║${NC} Current Mode: ${GREEN}$CURRENT_MODE${NC} | SLAM: $([ ! -z "$SLAM_PID" ] && echo "${GREEN}ON${NC}" || echo "${RED}OFF${NC}") | Nav: $([ ! -z "$NAVIGATION_PID" ] && echo "${GREEN}ON${NC}" || echo "${RED}OFF${NC}")${CYAN} ║${NC}"
     echo -e "${CYAN}╚════════════════════════════════════════════════════════════════════╝${NC}"
@@ -332,7 +332,7 @@ show_menu() {
 # Function to handle cleanup on exit
 cleanup() {
     echo ""
-    echo -e "${YELLOW}🧹 Cleaning up polymorphic warehouse system...${NC}"
+    echo -e "${YELLOW} Cleaning up polymorphic warehouse system...${NC}"
     
     # Stop warehouse manager
     if [ ! -z "$WAREHOUSE_MANAGER_PID" ]; then
@@ -355,7 +355,7 @@ cleanup() {
         wait $NAVIGATION_PID 2>/dev/null || true
     fi
     
-    echo -e "${GREEN}✅ Cleanup complete${NC}"
+    echo -e "${GREEN} Cleanup complete${NC}"
     exit 0
 }
 
@@ -368,7 +368,7 @@ main() {
     check_simulation
     
     # Build the workspace
-    echo -e "${BLUE}🔧 Building polymorphic warehouse system...${NC}"
+    echo -e "${BLUE} Building polymorphic warehouse system...${NC}"
     cd "$WORKSPACE_DIR"
     
     # Try to build (might not work without ROS2 installed)
@@ -376,18 +376,18 @@ main() {
         colcon build --packages-select warehouse_robot_system
         
         if [ $? -ne 0 ]; then
-            echo -e "${RED}❌ Build failed!${NC}"
+            echo -e "${RED} Build failed!${NC}"
             exit 1
         fi
         
-        echo -e "${GREEN}✅ Build successful${NC}"
+        echo -e "${GREEN} Build successful${NC}"
     else
-        echo -e "${YELLOW}⚠️ colcon not found, skipping build${NC}"
+        echo -e "${YELLOW}️ colcon not found, skipping build${NC}"
     fi
     
     # Start polymorphic warehouse manager
     if ! start_warehouse_manager "none"; then
-        echo -e "${RED}❌ Failed to start polymorphic warehouse manager${NC}"
+        echo -e "${RED} Failed to start polymorphic warehouse manager${NC}"
         exit 1
     fi
     
@@ -446,7 +446,7 @@ main() {
                 if [ ! -z "$SLAM_PID" ] && kill -0 $SLAM_PID 2>/dev/null; then
                     save_map
                 else
-                    echo -e "${RED}❌ SLAM not running - cannot save map${NC}"
+                    echo -e "${RED} SLAM not running - cannot save map${NC}"
                 fi
                 ;;
             l|L)

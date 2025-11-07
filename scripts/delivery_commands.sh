@@ -10,19 +10,19 @@ source install/setup.bash
 
 case "$1" in
     save|save-zones)
-        echo "💾 Saving delivery zones..."
+        echo " Saving delivery zones..."
         ros2 service call /save_delivery_zones std_srvs/srv/Trigger
         ;;
     start|start-deliveries)
-        echo "🚀 Starting deliveries..."
+        echo " Starting deliveries..."
         ros2 service call /start_deliveries std_srvs/srv/Trigger
         ;;
     status)
-        echo "📊 Monitoring delivery status (Ctrl+C to stop)..."
+        echo " Monitoring delivery status (Ctrl+C to stop)..."
         ros2 topic echo /delivery/status
         ;;
     log)
-        echo "📋 Delivery Log:"
+        echo " Delivery Log:"
         echo "================"
         if [ -f "delivery_log.csv" ]; then
             cat delivery_log.csv
@@ -31,7 +31,7 @@ case "$1" in
         fi
         ;;
     zones)
-        echo "📍 Delivery Zones:"
+        echo " Delivery Zones:"
         echo "=================="
         if [ -f "delivery_zones.yaml" ]; then
             cat delivery_zones.yaml
