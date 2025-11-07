@@ -193,59 +193,10 @@ ament_target_dependencies(motion_controller_lib
 target_link_libraries(motion_controller_lib
   path_planner_lib
 )
-
-# AutonomousExplorationRobot Library - UPDATED PATH
-add_library(autonomous_exploration_lib
-  src/Robot/AutonomousExplorationRobot.cpp
-)
-ament_target_dependencies(autonomous_exploration_lib
-  rclcpp
-  nav_msgs
-  geometry_msgs
-  std_msgs
-  sensor_msgs
-  tf2_ros
-  tf2_geometry_msgs
-  apriltag_msgs
-)
-target_link_libraries(autonomous_exploration_lib
-  slam_controller_lib
-  exploration_planner_lib
-  motion_controller_lib
-  path_planner_lib
-  yaml-cpp
-)
-
-# Link nlohmann_json if available
-if(nlohmann_json_FOUND)
-  target_link_libraries(autonomous_exploration_lib nlohmann_json::nlohmann_json)
-elseif(NLOHMANN_JSON_LIBRARIES)
-  target_link_libraries(autonomous_exploration_lib ${NLOHMANN_JSON_LIBRARIES})
-endif()
-
 # ============================================================================
 # ROBOT EXECUTABLES
 # ============================================================================
 
-# Autonomous SLAM Exploration Executable - UPDATED PATH
-add_executable(autonomous_slam_node
-  src/Robot/autonomous_slam_node.cpp
-)
-ament_target_dependencies(autonomous_slam_node
-  rclcpp
-  rclcpp_action
-  geometry_msgs
-  nav_msgs
-  std_msgs
-  std_srvs
-  sensor_msgs
-  tf2
-  tf2_ros
-  apriltag_msgs
-)
-target_link_libraries(autonomous_slam_node
-  autonomous_exploration_lib
-)
 
 # ============================================================================
 # ROBOT BASE CLASS AND MANAGER LIBRARIES
@@ -525,7 +476,6 @@ endif()
 
 # Install executables
 set(INSTALL_TARGETS
-  autonomous_slam_node
   delivery_robot_node
   inspection_robot_node
   warehouse_manager_node
@@ -554,7 +504,6 @@ install(TARGETS
   slam_controller_lib
   exploration_planner_lib
   motion_controller_lib
-  autonomous_exploration_lib
   warehouse_robot_base_lib
   delivery_robot_lib
   inspection_robot_lib
