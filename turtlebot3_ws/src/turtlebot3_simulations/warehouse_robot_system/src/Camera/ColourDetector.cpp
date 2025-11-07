@@ -305,7 +305,7 @@ void CColourDetector::TagDetectionCallback(
 
                 // Extract and classify color in this region
                 cv::Mat regionImage = display_image(region);
-                eDamageType detectedColor = ClassifyColour(regionImage);
+                CColourDetector::eDamageType detectedColor = ClassifyColour(regionImage);
 
                 // Choose box color and label based on what was actually
                 // detected
@@ -402,7 +402,7 @@ void CColourDetector::TagDetectionCallback(
             std::abs(detection.corners[0].x - detection.corners[2].x));
 
         // Analyse colour around this tag
-        eDamageType damageType = AnalyseColourAroundTag(
+        CColourDetector::eDamageType damageType = AnalyseColourAroundTag(
             mLatestImage, tagCenterX, tagCenterY, tagSize);
 
         // Create and publish damage report if damage detected
@@ -430,7 +430,7 @@ void CColourDetector::TagDetectionCallback(
     }
 }
 
-eDamageType CColourDetector::AnalyseColourAroundTag(const cv::Mat &aImage,
+CColourDetector::eDamageType CColourDetector::AnalyseColourAroundTag(const cv::Mat &aImage,
                                                     int aTagCenterX,
                                                     int aTagCenterY,
                                                     int aTagSize)
@@ -457,7 +457,7 @@ eDamageType CColourDetector::AnalyseColourAroundTag(const cv::Mat &aImage,
         cv::Mat regionImage = aImage(region);
 
         // Classify colour in this region
-        eDamageType regionDamage = ClassifyColour(regionImage);
+        CColourDetector::eDamageType regionDamage = ClassifyColour(regionImage);
 
         // Accumulate votes
         if (regionDamage == DAMAGE_MOULD)
@@ -476,7 +476,7 @@ eDamageType CColourDetector::AnalyseColourAroundTag(const cv::Mat &aImage,
 
     // Determine overall damage type by majority vote
     int maxVotes = 0;
-    eDamageType finalDamage = DAMAGE_NONE;
+    CColourDetector::eDamageType finalDamage = DAMAGE_NONE;
 
     if (mouldVotes > maxVotes)
     {
@@ -571,7 +571,7 @@ std::vector<cv::Rect> CColourDetector::ExtractSamplingRegions(int aTagCenterX,
     return regions;
 }
 
-eDamageType CColourDetector::ClassifyColour(const cv::Mat &aRegion)
+CColourDetector::eDamageType CColourDetector::ClassifyColour(const cv::Mat &aRegion)
 {
     // Convert region to HSV
     cv::Mat hsvRegion = ConvertToHSV(aRegion);
@@ -587,7 +587,7 @@ eDamageType CColourDetector::ClassifyColour(const cv::Mat &aRegion)
 
     // Determine which colour is most prominent
     int maxPixels = 0;
-    eDamageType detectedType = DAMAGE_NONE;
+    CColourDetector::eDamageType detectedType = DAMAGE_NONE;
 
     if (greenPixels > maxPixels && greenPixels >= kMinPixelCount)
     {
@@ -817,7 +817,7 @@ void CColourDetector::DrawSamplingRegions(cv::Mat &aImage, int aTagCenterX,
         }
 
         cv::Mat sub = aImage(roi);
-        eDamageType cls = ClassifyColour(sub);
+        CColourDetector::eDamageType cls = ClassifyColour(sub);
 
         // Choose border colour (BGR) by detected class
         cv::Scalar border;
@@ -1197,7 +1197,7 @@ void CColourDetector::SaveCalibrationToYAML(const std::string &aFilePath)
     }
 }
 
-std::string CColourDetector::DamageTypeToString(eDamageType aDamageType) const
+std::string CColourDetector::DamageTypeToString(CColourDetector::eDamageType aDamageType) const
 {
     switch (aDamageType)
     {

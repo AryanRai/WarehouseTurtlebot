@@ -17,34 +17,6 @@
 #include <vector>
 
 /**
- * @enum eDamageType
- * @brief Enumeration of damage types identified by colour analysis.
- */
-enum eDamageType
-{
-    DAMAGE_NONE = 0,    ///< No damage detected
-    DAMAGE_MOULD = 1,   ///< Green colour - mould damage
-    DAMAGE_WATER = 2,   ///< Blue colour - water damage
-    DAMAGE_BLOOD = 3,   ///< Red colour - blood damage
-    DAMAGE_UNKNOWN = -1 ///< Unrecognised colour
-};
-
-/**
- * @struct SDamageReport
- * @brief Complete damage report including location, type, and identification
- * data.
- */
-struct SDamageReport
-{
-    int mTagId; ///< AprilTag ID marking damage location
-    geometry_msgs::msg::Pose mLocalPose; ///< Pose relative to robot when detected
-    geometry_msgs::msg::Pose mGlobalPose; ///< Global world frame pose (updated by robot)
-    eDamageType mDamageType; ///< Classification of damage type
-    rclcpp::Time mTimestamp; ///< Time of detection
-    double mConfidence;      ///< Detection confidence [0.0 to 1.0]
-};
-
-/**
  * @class CColourDetector
  * @brief Analyses colour around AprilTags to classify damage type.
  * @details Subscribes to both camera images and AprilTag detections, performs
@@ -54,6 +26,33 @@ struct SDamageReport
 class CColourDetector : public CImageProcessorNode
 {
     public:
+       /**
+        * @enum eDamageType
+        * @brief Enumeration of damage types identified by colour analysis.
+        */
+        enum eDamageType
+        {
+            DAMAGE_NONE = 0,    ///< No damage detected
+            DAMAGE_MOULD = 1,   ///< Green colour - mould damage
+            DAMAGE_WATER = 2,   ///< Blue colour - water damage
+            DAMAGE_BLOOD = 3,   ///< Red colour - blood damage
+            DAMAGE_UNKNOWN = -1 ///< Unrecognised colour
+        };
+
+        /**
+        * @struct SDamageReport
+        * @brief Complete damage report including location, type, and identification
+        * data.
+        */
+        struct SDamageReport
+        {
+            int mTagId; ///< AprilTag ID marking damage location
+            geometry_msgs::msg::Pose mLocalPose; ///< Pose relative to robot when detected
+            geometry_msgs::msg::Pose mGlobalPose; ///< Global world frame pose (updated by robot)
+            eDamageType mDamageType; ///< Classification of damage type
+            rclcpp::Time mTimestamp; ///< Time of detection
+            double mConfidence;      ///< Detection confidence [0.0 to 1.0]
+        };
         /**
          * @brief Constructor - Initialises colour detector, sets up subscribers
          * and publishers.
@@ -64,6 +63,8 @@ class CColourDetector : public CImageProcessorNode
          * @brief Destructor - Cleans up resources.
          */
         ~CColourDetector();
+
+
 
     protected:
         /**
