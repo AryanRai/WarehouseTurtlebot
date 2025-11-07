@@ -57,7 +57,7 @@ InspectionRobot::InspectionRobot(rclcpp::Node::SharedPtr node)
 
     // Subscribe to laser scan for obstacle avoidance (Tier 1 Safety)
     laser_sub_ = node_->create_subscription<sensor_msgs::msg::LaserScan>(
-        "/scan", 10,
+        "/lidar/scan", 10,
         std::bind(&InspectionRobot::onLaserScan, this, std::placeholders::_1));
 
     // Create marker publisher for RViz visualization

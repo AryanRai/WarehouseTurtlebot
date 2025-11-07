@@ -44,7 +44,7 @@ AutonomousExplorationRobot::AutonomousExplorationRobot(
 
     // Create subscribers for obstacle detection
     scan_sub_ = node_->create_subscription<sensor_msgs::msg::LaserScan>(
-        "/scan", 10, [this](sensor_msgs::msg::LaserScan::SharedPtr msg)
+        "/lidar/scan", 10, [this](sensor_msgs::msg::LaserScan::SharedPtr msg)
         { current_scan_ = msg; });
 
     // Initialize home position (0, 0)

@@ -71,6 +71,7 @@ include_directories(
   include/Camera
   include/Robot
   include/SLAM
+  include/Sensors
   include/Visualization
   ${OpenCV_INCLUDE_DIRS}
   ${YAML_CPP_INCLUDE_DIRS}
@@ -87,6 +88,19 @@ endif()
 rosidl_generate_interfaces(${PROJECT_NAME}
   "action/ReturnHome.action"
   DEPENDENCIES geometry_msgs std_msgs
+)
+
+# ============================================================================
+# SENSOR LIBRARIES
+# ============================================================================
+
+# LidarController Library
+add_library(lidar_controller_lib
+  src/Sensors/LidarController.cpp
+)
+ament_target_dependencies(lidar_controller_lib
+  rclcpp
+  sensor_msgs
 )
 
 # ============================================================================
@@ -422,6 +436,19 @@ if(BUILD_APRILTAG_DETECTOR)
 endif()
 
 # ============================================================================
+# SENSOR NODES
+# ============================================================================
+
+# LiDAR Controller Node
+add_executable(lidar_controller_node
+  src/Sensors/LidarController.cpp
+)
+ament_target_dependencies(lidar_controller_node
+  rclcpp
+  sensor_msgs
+)
+
+# ============================================================================
 # UTILITY NODES
 # ============================================================================
 
@@ -507,6 +534,7 @@ set(INSTALL_TARGETS
   delivery_robot_node
   inspection_robot_node
   warehouse_manager_node
+  lidar_controller_node
   twist_stamped_bridge
   zone_marker_node
   camera_node
@@ -525,6 +553,7 @@ install(TARGETS
 
 # Install all libraries
 install(TARGETS
+  lidar_controller_lib
   path_planner_lib
   FrontierSearch
   slam_controller_lib
@@ -556,6 +585,7 @@ install(DIRECTORY
   include/Camera
   include/Robot
   include/SLAM
+  include/Sensors
   DESTINATION include/
 )
 
