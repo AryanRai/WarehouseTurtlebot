@@ -32,7 +32,7 @@ SlamController::SlamController()
         std::bind(&SlamController::mapCallback, this, std::placeholders::_1));
 
     odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-        "/odom", 10,
+        "/sensors/odom", 10,
         std::bind(&SlamController::odomCallback, this, std::placeholders::_1));
 
     // Publishers

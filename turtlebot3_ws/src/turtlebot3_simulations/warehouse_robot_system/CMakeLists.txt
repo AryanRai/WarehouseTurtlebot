@@ -89,18 +89,26 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "action/ReturnHome.action"
   DEPENDENCIES geometry_msgs std_msgs
 )
-
 # ============================================================================
-# SENSOR LIBRARIES
+# SENSOR NODES
 # ============================================================================
 
-# LidarController Library
-add_library(lidar_controller_lib
+# LiDAR Controller Node
+add_executable(lidar_controller_node
   src/Sensors/LidarController.cpp
 )
-ament_target_dependencies(lidar_controller_lib
+ament_target_dependencies(lidar_controller_node
   rclcpp
   sensor_msgs
+)
+
+# Odometry Controller Node
+add_executable(odom_controller_node
+  src/Sensors/OdomController.cpp
+)
+ament_target_dependencies(odom_controller_node
+  rclcpp
+  nav_msgs
 )
 
 # ============================================================================
@@ -436,19 +444,6 @@ if(BUILD_APRILTAG_DETECTOR)
 endif()
 
 # ============================================================================
-# SENSOR NODES
-# ============================================================================
-
-# LiDAR Controller Node
-add_executable(lidar_controller_node
-  src/Sensors/LidarController.cpp
-)
-ament_target_dependencies(lidar_controller_node
-  rclcpp
-  sensor_msgs
-)
-
-# ============================================================================
 # UTILITY NODES
 # ============================================================================
 
@@ -535,6 +530,7 @@ set(INSTALL_TARGETS
   inspection_robot_node
   warehouse_manager_node
   lidar_controller_node
+  odom_controller_node
   twist_stamped_bridge
   zone_marker_node
   camera_node
@@ -553,7 +549,6 @@ install(TARGETS
 
 # Install all libraries
 install(TARGETS
-  lidar_controller_lib
   path_planner_lib
   FrontierSearch
   slam_controller_lib
