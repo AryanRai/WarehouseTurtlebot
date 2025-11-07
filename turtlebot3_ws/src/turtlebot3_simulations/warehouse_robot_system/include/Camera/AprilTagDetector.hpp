@@ -25,25 +25,25 @@ extern "C"
 }
 
 /**
- * @class CAprilTagDetector
+ * @class AprilTagDetector
  * @brief Independent AprilTag detection using native apriltag library.
  * @details Detects 16h5 family tags, extracts pose/orientation, shows GUI
  * visualization, and publishes detection data for downstream nodes (like color
  * detection). Manages apriltag detector lifecycle and native library resources.
  */
-class CAprilTagDetector : public CImageProcessorNode
+class AprilTagDetector : public ImageProcessorNode
 {
     public:
         /**
          * @brief Constructor - Initializes native AprilTag detector for 16h5
          * family.
          */
-        CAprilTagDetector();
+        AprilTagDetector();
 
         /**
          * @brief Destructor - Cleans up apriltag detector and family resources.
          */
-        ~CAprilTagDetector();
+        ~AprilTagDetector();
 
     protected:
         /**

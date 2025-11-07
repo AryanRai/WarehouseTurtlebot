@@ -7,13 +7,13 @@
 
 #include "Camera/ImageProcessor_Node.hpp"
 
-CImageProcessorNode::CImageProcessorNode(const std::string &aNodeName)
+ImageProcessorNode::ImageProcessorNode(const std::string &aNodeName)
     : rclcpp::Node(aNodeName)
 {
     // Create subscription to unified camera topic
     mpImageSubscriber = this->create_subscription<sensor_msgs::msg::Image>(
         kCameraTopicName, kQueueSize,
-        std::bind(&CImageProcessorNode::ImageCallback, this,
+        std::bind(&ImageProcessorNode::ImageCallback, this,
                   std::placeholders::_1));
 
     RCLCPP_INFO(this->get_logger(), "Image processor node '%s' initialised",
@@ -22,12 +22,12 @@ CImageProcessorNode::CImageProcessorNode(const std::string &aNodeName)
                 kCameraTopicName.c_str());
 }
 
-CImageProcessorNode::~CImageProcessorNode()
+ImageProcessorNode::~ImageProcessorNode()
 {
     RCLCPP_INFO(this->get_logger(), "Image processor node shutting down");
 }
 
-void CImageProcessorNode::ImageCallback(
+void ImageProcessorNode::ImageCallback(
     const sensor_msgs::msg::Image::SharedPtr aMsg)
 {
     // Validate incoming message pointer
@@ -65,7 +65,7 @@ void CImageProcessorNode::ImageCallback(
     ProcessImage(cvPointer->image, timestamp);
 }
 
-bool CImageProcessorNode::ValidateImage(const cv::Mat &aImage) const
+bool ImageProcessorNode::ValidateImage(const cv::Mat &aImage) const
 {
     // Check if image is empty
     if (aImage.empty())
@@ -86,7 +86,7 @@ bool CImageProcessorNode::ValidateImage(const cv::Mat &aImage) const
     return true;
 }
 
-rclcpp::Logger CImageProcessorNode::GetLogger() const
+rclcpp::Logger ImageProcessorNode::GetLogger() const
 {
     return this->get_logger();
 }

@@ -13,8 +13,8 @@
 #include <opencv2/imgproc.hpp>
 #include <set>
 
-CAprilTagDetector::CAprilTagDetector()
-    : CImageProcessorNode("apriltag_detector_node"),
+AprilTagDetector::AprilTagDetector()
+    : ImageProcessorNode("apriltag_detector_node"),
       mpAprilTagDetector(nullptr), mpTag16h5Family(nullptr),
       mVisualizationWindowName("AprilTag 16h5 Detection")
 {
@@ -48,7 +48,7 @@ CAprilTagDetector::CAprilTagDetector()
                 mEnableTemporalFiltering ? "ON" : "OFF");
 }
 
-CAprilTagDetector::~CAprilTagDetector()
+AprilTagDetector::~AprilTagDetector()
 {
     RCLCPP_INFO(GetLogger(), "AprilTag detector shutting down");
 
@@ -69,7 +69,7 @@ CAprilTagDetector::~CAprilTagDetector()
     }
 }
 
-bool CAprilTagDetector::InitializeDetector()
+bool AprilTagDetector::InitializeDetector()
 {
     try
     {
@@ -113,7 +113,7 @@ bool CAprilTagDetector::InitializeDetector()
     }
 }
 
-void CAprilTagDetector::ProcessImage(const cv::Mat &aImage,
+void AprilTagDetector::ProcessImage(const cv::Mat &aImage,
                                      const rclcpp::Time &aTimestamp)
 {
     if (aImage.empty())
@@ -349,7 +349,7 @@ void CAprilTagDetector::ProcessImage(const cv::Mat &aImage,
     apriltag_detections_destroy(detections);
 }
 
-zarray_t *CAprilTagDetector::DetectTagsNative(const cv::Mat &aGrayImage)
+zarray_t *AprilTagDetector::DetectTagsNative(const cv::Mat &aGrayImage)
 {
     if (!mpAprilTagDetector || aGrayImage.empty())
     {
@@ -372,7 +372,7 @@ zarray_t *CAprilTagDetector::DetectTagsNative(const cv::Mat &aGrayImage)
     return detections;
 }
 
-image_u8_t *CAprilTagDetector::ConvertToImageU8(const cv::Mat &aGrayImage)
+image_u8_t *AprilTagDetector::ConvertToImageU8(const cv::Mat &aGrayImage)
 {
     // Converts OpenCV grayscale image to apriltag image_u8 format.
     // aGrayImage: OpenCV grayscale image
@@ -398,7 +398,7 @@ image_u8_t *CAprilTagDetector::ConvertToImageU8(const cv::Mat &aGrayImage)
 }
 
 apriltag_msgs::msg::AprilTagDetection
-CAprilTagDetector::ConvertDetectionToROS(apriltag_detection_t *aDetection,
+AprilTagDetector::ConvertDetectionToROS(apriltag_detection_t *aDetection,
                                          const rclcpp::Time & /*aTimestamp*/)
 {
     apriltag_msgs::msg::AprilTagDetection detection;
@@ -433,7 +433,7 @@ CAprilTagDetector::ConvertDetectionToROS(apriltag_detection_t *aDetection,
 }
 
 std::vector<double>
-CAprilTagDetector::CalculateOrientation(apriltag_detection_t *aDetection)
+AprilTagDetector::CalculateOrientation(apriltag_detection_t *aDetection)
 {
     std::vector<double> orientation(3, 0.0); // roll, pitch, yaw
 
@@ -459,7 +459,7 @@ CAprilTagDetector::CalculateOrientation(apriltag_detection_t *aDetection)
     return orientation;
 }
 
-void CAprilTagDetector::PrintDetectionInfo(
+void AprilTagDetector::PrintDetectionInfo(
     const apriltag_msgs::msg::AprilTagDetection &aDetection,
     const std::vector<double> &aOrientation)
 {
@@ -487,7 +487,7 @@ void CAprilTagDetector::PrintDetectionInfo(
                          aDetection.decision_margin, aDetection.hamming);
 }
 
-void CAprilTagDetector::DrawDetectionBox(
+void AprilTagDetector::DrawDetectionBox(
     cv::Mat &aImage, const apriltag_msgs::msg::AprilTagDetection &aDetection)
 {
     if (aImage.empty())
@@ -532,7 +532,7 @@ void CAprilTagDetector::DrawDetectionBox(
                 cv::Scalar(255, 255, 255), 2);
 }
 
-void CAprilTagDetector::ShowVisualizationWindow(const cv::Mat &aImage)
+void AprilTagDetector::ShowVisualizationWindow(const cv::Mat &aImage)
 {
     try
     {
@@ -560,7 +560,7 @@ void CAprilTagDetector::ShowVisualizationWindow(const cv::Mat &aImage)
     }
 }
 
-void CAprilTagDetector::PublishDetections(
+void AprilTagDetector::PublishDetections(
     const std::vector<apriltag_msgs::msg::AprilTagDetection> &aDetections,
     const rclcpp::Time &aTimestamp)
 {
@@ -584,7 +584,7 @@ int main(int argc, char **argv)
     rclcpp::init(argc, argv);
 
     // Create AprilTag detector node
-    auto node = std::make_shared<CAprilTagDetector>();
+    auto node = std::make_shared<AprilTagDetector>();
 
     // Log startup
     RCLCPP_INFO(node->get_logger(),

@@ -17,13 +17,13 @@
 #include <vector>
 
 /**
- * @class CColourDetector
+ * @class ColourDetector
  * @brief Analyses colour around AprilTags to classify damage type.
  * @details Subscribes to both camera images and AprilTag detections, performs
  * HSV-based colour analysis, and publishes damage reports for warehouse
  * inspection system.
  */
-class CColourDetector : public CImageProcessorNode
+class ColourDetector : public ImageProcessorNode
 {
     public:
        /**
@@ -57,12 +57,12 @@ class CColourDetector : public CImageProcessorNode
          * @brief Constructor - Initialises colour detector, sets up subscribers
          * and publishers.
          */
-        CColourDetector();
+        ColourDetector();
 
         /**
          * @brief Destructor - Cleans up resources.
          */
-        ~CColourDetector();
+        ~ColourDetector();
 
 
 
@@ -94,7 +94,7 @@ class CColourDetector : public CImageProcessorNode
          * @param aTagSize approximate size of tag [pixels]
          * @return detected damage type
          */
-        eDamageType AnalyseColourAroundTag(const cv::Mat &aImage,
+        ColourDetector::eDamageType AnalyseColourAroundTag(const cv::Mat &aImage,
                                            int aTagCenterX, int aTagCenterY,
                                            int aTagSize);
 
@@ -117,7 +117,7 @@ class CColourDetector : public CImageProcessorNode
          * @param aRegion image region to analyse
          * @return detected damage type based on colour
          */
-        eDamageType ClassifyColour(const cv::Mat &aRegion);
+        ColourDetector::eDamageType ClassifyColour(const cv::Mat &aRegion);
 
         /**
          * @brief Converts BGR image region to HSV colour space.
@@ -148,7 +148,7 @@ class CColourDetector : public CImageProcessorNode
          * @param aDamageType damage type to convert
          * @return string representation
          */
-        std::string DamageTypeToString(eDamageType aDamageType) const;
+        std::string DamageTypeToString(ColourDetector::eDamageType aDamageType) const;
 
         /**
          * @brief Calibration UI: Display annotated image with sampling regions

@@ -8,7 +8,7 @@
 
 #include "Camera/Camera_Node.hpp"
 
-CCameraNode::CCameraNode() : rclcpp::Node("camera_node")
+CameraNode::CameraNode() : rclcpp::Node("camera_node")
 {
     // Create publisher for unified camera output
     mpUnifiedPublisher = this->create_publisher<sensor_msgs::msg::Image>(
@@ -25,12 +25,12 @@ CCameraNode::CCameraNode() : rclcpp::Node("camera_node")
     CreateSubscriptions();
 }
 
-CCameraNode::~CCameraNode()
+CameraNode::~CameraNode()
 {
     RCLCPP_INFO(this->get_logger(), "Camera node shutting down");
 }
 
-void CCameraNode::LoadCameraTopics()
+void CameraNode::LoadCameraTopics()
 {
     // Attempt to load camera topics from ROS parameter
     // If parameter not set, use default camera topic
@@ -67,14 +67,14 @@ void CCameraNode::LoadCameraTopics()
     }
 }
 
-void CCameraNode::CreateSubscriptions()
+void CameraNode::CreateSubscriptions()
 {
     // Create a subscriber for each camera topic
     for (const auto &topic : mCameraTopics)
     {
         auto subscription = this->create_subscription<sensor_msgs::msg::Image>(
             topic, kQueueSize,
-            std::bind(&CCameraNode::ImageCallback, this,
+            std::bind(&CameraNode::ImageCallback, this,
                       std::placeholders::_1));
 
         mCameraSubscribers.push_back(subscription);
@@ -82,7 +82,7 @@ void CCameraNode::CreateSubscriptions()
     }
 }
 
-void CCameraNode::ImageCallback(const sensor_msgs::msg::Image::SharedPtr aMsg)
+void CameraNode::ImageCallback(const sensor_msgs::msg::Image::SharedPtr aMsg)
 {
     // Validate incoming message
     if (aMsg == nullptr)
@@ -104,7 +104,7 @@ void CCameraNode::ImageCallback(const sensor_msgs::msg::Image::SharedPtr aMsg)
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
-    auto cCameraNode = std::make_shared<CCameraNode>();
+    auto cCameraNode = std::make_shared<CameraNode>();
     rclcpp::spin(cCameraNode);
     rclcpp::shutdown();
     return 0;

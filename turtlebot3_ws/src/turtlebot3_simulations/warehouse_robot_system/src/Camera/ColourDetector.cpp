@@ -14,8 +14,8 @@
 #include <opencv2/imgproc.hpp>
 #include <sstream>
 
-CColourDetector::CColourDetector()
-    : CImageProcessorNode("colour_detector_node"), mHasImage(false),
+ColourDetector::ColourDetector()
+    : ImageProcessorNode("colour_detector_node"), mHasImage(false),
       mCalibrationMode(false),
       mCalibrationWindowName(
           "HSV Calibration - Press 's'=save, 'c'=capture, 'q'=quit")
@@ -24,7 +24,7 @@ CColourDetector::CColourDetector()
     mpTagSubscriber =
         this->create_subscription<apriltag_msgs::msg::AprilTagDetectionArray>(
             kTagInputTopic, kQueueSize,
-            std::bind(&CColourDetector::TagDetectionCallback, this,
+            std::bind(&ColourDetector::TagDetectionCallback, this,
                       std::placeholders::_1));
 
     // Create publisher for damage reports
@@ -94,12 +94,12 @@ CColourDetector::CColourDetector()
     RCLCPP_INFO(GetLogger(), "Publishing to: %s", kDamageOutputTopic.c_str());
 }
 
-CColourDetector::~CColourDetector()
+ColourDetector::~ColourDetector()
 {
     RCLCPP_INFO(GetLogger(), "Colour detector shutting down");
 }
 
-void CColourDetector::ProcessImage(const cv::Mat &aImage,
+void ColourDetector::ProcessImage(const cv::Mat &aImage,
                                    const rclcpp::Time &aTimestamp)
 {
     // Store latest image for processing when tag detections arrive
@@ -184,7 +184,7 @@ void CColourDetector::ProcessImage(const cv::Mat &aImage,
     }
 }
 
-void CColourDetector::TagDetectionCallback(
+void ColourDetector::TagDetectionCallback(
     const apriltag_msgs::msg::AprilTagDetectionArray::SharedPtr aMsg)
 {
     // Validate message
@@ -305,7 +305,7 @@ void CColourDetector::TagDetectionCallback(
 
                 // Extract and classify color in this region
                 cv::Mat regionImage = display_image(region);
-                CColourDetector::eDamageType detectedColor = ClassifyColour(regionImage);
+                ColourDetector::eDamageType detectedColor = ClassifyColour(regionImage);
 
                 // Choose box color and label based on what was actually
                 // detected
@@ -402,7 +402,7 @@ void CColourDetector::TagDetectionCallback(
             std::abs(detection.corners[0].x - detection.corners[2].x));
 
         // Analyse colour around this tag
-        CColourDetector::eDamageType damageType = AnalyseColourAroundTag(
+        ColourDetector::eDamageType damageType = AnalyseColourAroundTag(
             mLatestImage, tagCenterX, tagCenterY, tagSize);
 
         // Create and publish damage report if damage detected
@@ -430,7 +430,7 @@ void CColourDetector::TagDetectionCallback(
     }
 }
 
-CColourDetector::eDamageType CColourDetector::AnalyseColourAroundTag(const cv::Mat &aImage,
+ColourDetector::eDamageType ColourDetector::AnalyseColourAroundTag(const cv::Mat &aImage,
                                                     int aTagCenterX,
                                                     int aTagCenterY,
                                                     int aTagSize)
@@ -457,7 +457,7 @@ CColourDetector::eDamageType CColourDetector::AnalyseColourAroundTag(const cv::M
         cv::Mat regionImage = aImage(region);
 
         // Classify colour in this region
-        CColourDetector::eDamageType regionDamage = ClassifyColour(regionImage);
+        ColourDetector::eDamageType regionDamage = ClassifyColour(regionImage);
 
         // Accumulate votes
         if (regionDamage == DAMAGE_MOULD)
@@ -476,7 +476,7 @@ CColourDetector::eDamageType CColourDetector::AnalyseColourAroundTag(const cv::M
 
     // Determine overall damage type by majority vote
     int maxVotes = 0;
-    CColourDetector::eDamageType finalDamage = DAMAGE_NONE;
+    ColourDetector::eDamageType finalDamage = DAMAGE_NONE;
 
     if (mouldVotes > maxVotes)
     {
@@ -503,7 +503,7 @@ CColourDetector::eDamageType CColourDetector::AnalyseColourAroundTag(const cv::M
     return finalDamage;
 }
 
-std::vector<cv::Rect> CColourDetector::ExtractSamplingRegions(int aTagCenterX,
+std::vector<cv::Rect> ColourDetector::ExtractSamplingRegions(int aTagCenterX,
                                                               int aTagCenterY,
                                                               int aTagSize,
                                                               int aImageWidth,
@@ -571,7 +571,7 @@ std::vector<cv::Rect> CColourDetector::ExtractSamplingRegions(int aTagCenterX,
     return regions;
 }
 
-CColourDetector::eDamageType CColourDetector::ClassifyColour(const cv::Mat &aRegion)
+ColourDetector::eDamageType ColourDetector::ClassifyColour(const cv::Mat &aRegion)
 {
     // Convert region to HSV
     cv::Mat hsvRegion = ConvertToHSV(aRegion);
@@ -587,7 +587,7 @@ CColourDetector::eDamageType CColourDetector::ClassifyColour(const cv::Mat &aReg
 
     // Determine which colour is most prominent
     int maxPixels = 0;
-    CColourDetector::eDamageType detectedType = DAMAGE_NONE;
+    ColourDetector::eDamageType detectedType = DAMAGE_NONE;
 
     if (greenPixels > maxPixels && greenPixels >= kMinPixelCount)
     {
@@ -608,14 +608,14 @@ CColourDetector::eDamageType CColourDetector::ClassifyColour(const cv::Mat &aReg
     return detectedType;
 }
 
-cv::Mat CColourDetector::ConvertToHSV(const cv::Mat &aBGRImage) const
+cv::Mat ColourDetector::ConvertToHSV(const cv::Mat &aBGRImage) const
 {
     cv::Mat hsvImage;
     cv::cvtColor(aBGRImage, hsvImage, cv::COLOR_BGR2HSV);
     return hsvImage;
 }
 
-int CColourDetector::CountColouredPixels(const cv::Mat &aHSVImage,
+int ColourDetector::CountColouredPixels(const cv::Mat &aHSVImage,
                                          const cv::Scalar &aLowerBound,
                                          const cv::Scalar &aUpperBound) const
 {
@@ -624,7 +624,7 @@ int CColourDetector::CountColouredPixels(const cv::Mat &aHSVImage,
     return cv::countNonZero(mask);
 }
 
-void CColourDetector::PublishDamageReport(const SDamageReport &aReport)
+void ColourDetector::PublishDamageReport(const SDamageReport &aReport)
 {
     // Create JSON-formatted damage report
     std::ostringstream jsonStream;
@@ -654,7 +654,7 @@ void CColourDetector::PublishDamageReport(const SDamageReport &aReport)
                  msgReport.data.c_str());
 }
 
-void CColourDetector::DisplayCalibrationWindow(
+void ColourDetector::DisplayCalibrationWindow(
     const cv::Mat &aImage,
     const std::vector<apriltag_msgs::msg::AprilTagDetection> &aDetections)
 {
@@ -796,7 +796,7 @@ void CColourDetector::DisplayCalibrationWindow(
     }
 }
 
-void CColourDetector::DrawSamplingRegions(cv::Mat &aImage, int aTagCenterX,
+void ColourDetector::DrawSamplingRegions(cv::Mat &aImage, int aTagCenterX,
                                           int aTagCenterY, int aTagSize)
 {
     if (aImage.empty() || aTagSize <= 0)
@@ -817,7 +817,7 @@ void CColourDetector::DrawSamplingRegions(cv::Mat &aImage, int aTagCenterX,
         }
 
         cv::Mat sub = aImage(roi);
-        CColourDetector::eDamageType cls = ClassifyColour(sub);
+        ColourDetector::eDamageType cls = ClassifyColour(sub);
 
         // Choose border colour (BGR) by detected class
         cv::Scalar border;
@@ -853,7 +853,7 @@ void CColourDetector::DrawSamplingRegions(cv::Mat &aImage, int aTagCenterX,
     }
 }
 
-void CColourDetector::OverlayHSVStatistics(cv::Mat &aImage,
+void ColourDetector::OverlayHSVStatistics(cv::Mat &aImage,
                                            const cv::Rect &aRegion,
                                            const std::string &aLabel)
 {
@@ -950,7 +950,7 @@ void CColourDetector::OverlayHSVStatistics(cv::Mat &aImage,
     }
 }
 
-void CColourDetector::HandleKeyboardInput(int aKeyCode)
+void ColourDetector::HandleKeyboardInput(int aKeyCode)
 {
     if (aKeyCode == 's' || aKeyCode == 'S')
     {
@@ -1116,7 +1116,7 @@ void CColourDetector::HandleKeyboardInput(int aKeyCode)
     }
 }
 
-void CColourDetector::SaveCalibrationToYAML(const std::string &aFilePath)
+void ColourDetector::SaveCalibrationToYAML(const std::string &aFilePath)
 {
     // Expand '~' to home directory if present
     auto expandPath = [](const std::string &p) -> std::string
@@ -1197,7 +1197,7 @@ void CColourDetector::SaveCalibrationToYAML(const std::string &aFilePath)
     }
 }
 
-std::string CColourDetector::DamageTypeToString(CColourDetector::eDamageType aDamageType) const
+std::string ColourDetector::DamageTypeToString(ColourDetector::eDamageType aDamageType) const
 {
     switch (aDamageType)
     {
@@ -1219,7 +1219,7 @@ std::string CColourDetector::DamageTypeToString(CColourDetector::eDamageType aDa
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
-    auto cColourDetector = std::make_shared<CColourDetector>();
+    auto cColourDetector = std::make_shared<ColourDetector>();
     rclcpp::spin(cColourDetector);
     rclcpp::shutdown();
     return 0;

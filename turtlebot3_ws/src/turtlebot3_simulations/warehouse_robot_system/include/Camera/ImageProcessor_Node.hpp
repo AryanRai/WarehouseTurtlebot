@@ -13,14 +13,14 @@
 #include <sensor_msgs/msg/image.hpp>
 
 /**
- * @class CImageProcessorNode
+ * @class ImageProcessorNode
  * @brief Abstract base class for image processing nodes.
  * @details Provides common functionality for subscribing to camera data,
  * converting ROS images to OpenCV format, and basic image validation. Derived
  * classes implement ProcessImage() to define specific detection/processing
  * algorithms.
  */
-class CImageProcessorNode : public rclcpp::Node
+class ImageProcessorNode : public rclcpp::Node
 {
     public:
         /**
@@ -28,13 +28,13 @@ class CImageProcessorNode : public rclcpp::Node
          * unified camera topic.
          * @param aNodeName name for this ROS node
          */
-        explicit CImageProcessorNode(const std::string &aNodeName);
+        explicit ImageProcessorNode(const std::string &aNodeName);
 
         /**
          * @brief Virtual destructor to ensure proper cleanup in derived
          * classes.
          */
-        virtual ~CImageProcessorNode();
+        virtual ~ImageProcessorNode();
 
     protected:
         /**

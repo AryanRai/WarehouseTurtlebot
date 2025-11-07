@@ -130,9 +130,9 @@ class PolymorphicWarehouseManager : public rclcpp::Node
             mParameterCallback;
 
         // Camera nodes (managed separately since not part of robot hierarchy)
-        std::shared_ptr<CCameraNode> mCameraNode;
-        std::shared_ptr<CAprilTagDetector> mAprilTagDetector;
-        std::shared_ptr<CColourDetector> mColourDetector;
+        std::shared_ptr<CameraNode> mCameraNode;
+        std::shared_ptr<AprilTagDetector> mAprilTagDetector;
+        std::shared_ptr<ColourDetector> mColourDetector;
 
         /**
          * @brief Parameter change callback for mode switching
@@ -411,15 +411,15 @@ class PolymorphicWarehouseManager : public rclcpp::Node
             try
             {
                 // Create camera aggregation node
-                mCameraNode = std::make_shared<CCameraNode>();
+                mCameraNode = std::make_shared<CameraNode>();
                 mExecutor->add_node(mCameraNode);
 
                 // Create AprilTag detector
-                mAprilTagDetector = std::make_shared<CAprilTagDetector>();
+                mAprilTagDetector = std::make_shared<AprilTagDetector>();
                 mExecutor->add_node(mAprilTagDetector);
 
                 // Create color detector (for inspection mode)
-                mColourDetector = std::make_shared<CColourDetector>();
+                mColourDetector = std::make_shared<ColourDetector>();
                 mExecutor->add_node(mColourDetector);
 
                 mCameraActive = true;

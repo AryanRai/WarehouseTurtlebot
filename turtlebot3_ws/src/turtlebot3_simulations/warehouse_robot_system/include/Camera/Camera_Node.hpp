@@ -14,14 +14,14 @@
 #include <vector>
 
 /**
- * @class CCameraNode
+ * @class CameraNode
  * @brief Aggregates multiple camera topics and republishes on a single unified
  * topic.
  * @details Subscribes to all camera sources defined in ROS parameters and
  * forwards image messages to downstream processing nodes. This decouples the
  * camera hardware interface from processing logic.
  */
-class CCameraNode : public rclcpp::Node
+class CameraNode : public rclcpp::Node
 {
     public:
         /**
@@ -29,13 +29,13 @@ class CCameraNode : public rclcpp::Node
          * parameters, creates subscribers for each camera source, and sets up
          * the unified publisher.
          */
-        CCameraNode();
+        CameraNode();
 
         /**
          * @brief Destructor - Cleans up ROS resources (handled automatically by
          * rclcpp).
          */
-        ~CCameraNode();
+        ~CameraNode();
 
         /// @}
 
